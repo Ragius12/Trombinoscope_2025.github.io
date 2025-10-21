@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Documents Importants</title>
+    <style>
+	    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: url("Ec's.png") no-repeat center center fixed;
+      background-size: cover;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      z-index: -1;
+    }
+
+    /* Bandeau supérieur */
+    .header {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 60px;
+      background: black;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Old English Text MT", serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      z-index: 1000;
+    }
+    .header img {
+      position: absolute;
+      height: 45px;
+    }
+    .header .left { left: 15px; }
+    .header .right { right: 15px; }
+
+    /* Conteneur principal */
+    .container {
+      max-width: 1100px;
+      margin: 100px auto 50px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #222;
+      margin-bottom: 30px;
+    }
+
+	.documents {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px;
+            gap: 20px;
+        }
+
+        .doc-card {
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            width: 300px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .doc-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .doc-card iframe, .doc-card video {
+            width: 100%;
+            height: 400px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .doc-title {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="Logo.png" alt="Logo" class="left">
+    Documents lar's import's de la promotion 2025
+    <img src="Buzzy.png" alt="Bourdon" class="right">
+  </div>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	    <div class="documents">
+        <!-- Livret 1 -->
+        <div class="doc-card">
+            <iframe src="Livret.pdf"></iframe>
+            <div class="doc-title">Livret d'acceuil</div>
+        </div>
+
+        <!-- Livret 2 -->
+        <div class="doc-card">
+            <iframe src="Lago.pdf"></iframe>
+            <div class="doc-title">Lago de la Bienvenue</div>
+        </div>
+		
+		<div class="doc-card">
+            <video controls>
+                <source src="Projet_Videal.mp4" type="video/mp4">
+                Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+            <div class="doc-title">Teaser du site</div>
+        </div>
+    </div>
+
+<footer style="text-align: center; font-family: 'Old English Text MT', 'Gothic', 'Blackletter', serif;">
+  Vespula 84 — Promotion 2025
+</footer>
+
+
+</body>
+</html>

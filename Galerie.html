@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Galerie Photo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: url("Ec's.png") no-repeat center center fixed;
+      background-size: cover;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      z-index: -1;
+    }
+
+    /* Bandeau supérieur */
+    .header {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 60px;
+      background: black;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Old English Text MT", serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      z-index: 1000;
+    }
+    .header img {
+      position: absolute;
+      height: 45px;
+    }
+    .header .left { left: 15px; }
+    .header .right { right: 15px; }
+
+    /* Conteneur principal */
+    .container {
+      max-width: 1100px;
+      margin: 100px auto 50px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #222;
+      margin-bottom: 30px;
+    }
+
+    /* Grille d’images */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 25px;
+    }
+
+    .photo {
+      background-color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+
+    .photo:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    .photo img {
+      width: 100%;
+      height: auto;
+      max-height: 250px;
+      border-radius: 12px;
+      object-fit: contain;
+      background-color: #f4f4f4;
+    }
+
+    /* Mode plein écran */
+    .fullscreen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      cursor: zoom-out;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .fullscreen.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .fullscreen img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="Logo.png" alt="Logo" class="left">
+    Galerie 2025
+    <img src="Buzzy.png" alt="Bourdon" class="right">
+  </div>
+
+  <div class="container">
+    <h1>Galerie Photo</h1>
+    <div class="grid" id="gallery"></div>
+  </div>
+
+  <!-- Image plein écran -->
+  <div class="fullscreen" id="fullscreen">
+    <img src="" alt="Image">
+  </div>
+
+<footer style="text-align: center; font-family: 'Old English Text MT', 'Gothic', 'Blackletter', serif;">
+  Vespula 84 — Promotion 2025
+</footer>
+
+<script>
+const gallery = document.getElementById("gallery");
+const files = [
+  "IMG-20251009-WA0005.jpg",
+  "IMG-20250924-WA0018.jpg",
+  "IMG-20250917-WA0006.jpg",
+  "IMG-20250917-WA0002.jpg",
+  "IMG-20250904-WA0013.jpg",
+  "IMG-20250904-WA0012.jpg",
+  "IMG_20251011_082040.jpg",
+  "IMG_20250916_221653.jpg",
+  "IMG_20250914_204132.jpg",
+  "DSCF0241.jpg",
+  "DSCF0240.jpg",
+  "DSCF0238.jpg",
+  "DSCF0235.jpg",
+  "DSCF0233.jpg",
+  "DSCF0232.jpg",
+  "DSCF0228.jpg",
+  "DSCF0225.jpg",
+  "DSCF0224.jpg",
+  "DSCF0223.jpg",
+  "DSCF0220.jpg",
+  "DSCF0218.jpg",
+    "DSCF0217.jpg",
+  "DSCF0216.jpg",
+  "DSCF0215.jpg",
+  "DSCF0214.jpg",
+  "DSCF0211.jpg",
+  "DSCF0210.jpg",
+  "DSCF0209.jpg",
+  "DSCF0208.jpg",
+  "DSCF0207.jpg",
+  "DSCF0206.jpg",
+  "DSCF0205.jpg",
+  "DSCF0204.jpg",
+    "DSCF0203.jpg",
+  "DSCF0202.jpg",
+  "DSCF0201.jpg",
+  "DSCF0200.jpg",
+  "DSCF0199.jpg",
+"DSCF0198.jpg",
+"DSCF0197.jpg",
+"DSCF0196.jpg",
+"DSCF0195.jpg",
+"DSCF0194.jpg",
+"DSCF0193.jpg",
+"DSCF0192.jpg",
+"DSCF0191.jpg",
+"DSCF0190.jpg",
+"DSCF0189.jpg",
+"DSCF0188.jpg",
+"DSCF0187.jpg",
+"DSCF0186.jpg",
+"DSCF0185.jpg",
+"DSCF0184.jpg",
+"DSCF0183.jpg",
+"DSCF0182.jpg",
+"DSCF0181.jpg",
+"DSCF0180.jpg",
+"DSCF0179.jpg",
+"DSCF0178.jpg",
+"DSCF0177.jpg",
+"DSCF0176.jpg",
+"DSCF0175.jpg",
+"DSCF0174.jpg",
+"DSCF0173.jpg",
+"DSCF0172.jpg",
+"DSCF0171.jpg",
+"DSCF0170.jpg",
+"DSCF0169.jpg",
+"DSCF0168.jpg",
+"DSCF0167.jpg",
+"DSCF0166.jpg",
+"DSCF0165.jpg",
+"DSCF0164.jpg",
+"DSCF0163.jpg",
+"DSCF0162.jpg",
+"DSCF0161.jpg",
+"DSCF0160.jpg",
+"DSCF0159.jpg",
+"DSCF0158.jpg",
+"DSCF0157.jpg",
+"DSCF0156.jpg",
+"DSCF0155.jpg",
+"DSCF0154.jpg",
+"DSCF0153.jpg",
+"DSCF0152.jpg",
+"DSCF0151.jpg",
+"DSCF0150.jpg",
+"DSCF0149.jpg",
+"DSCF0148.jpg",
+"DSCF0147.jpg",
+"DSCF0146.jpg",
+"DSCF0145.jpg",
+"DSCF0144.jpg",
+"DSCF0143.jpg",
+"DSCF0142.jpg",
+"DSCF0141.jpg",
+"DSCF0140.jpg",
+"DSCF0139.jpg",
+"DSCF0138.jpg",
+"DSCF0137.jpg",
+"DSCF0136.jpg",
+"DSCF0135.jpg",
+"DSCF0134.jpg",
+"DSCF0133.jpg",
+"DSCF0132.jpg",
+"DSCF0131.jpg",
+"DSCF0130.jpg",
+"DSCF0129.jpg",
+"DSCF0128.jpg",
+"DSCF0127.jpg",
+"DSCF0126.jpg",
+"DSCF0125.jpg",
+"DSCF0124.jpg",
+"DSCF0123.jpg",
+"DSCF0122.jpg",
+"DSCF0121.jpg",
+"DSCF0120.jpg",
+"DSCF0119.jpg",
+"DSCF0118.jpg",
+"DSCF0117.jpg",
+"DSCF0116.jpg",
+"DSCF0115.jpg",
+"DSCF0114.jpg",
+"DSCF0113.jpg",
+"DSCF0112.jpg",
+"DSCF0111.jpg",
+"DSCF0110.jpg",
+"DSCF0109.jpg",
+"DSCF0108.jpg",
+"DSCF0107.jpg",
+"DSCF0106.jpg",
+"DSCF0105.jpg",
+"DSCF0104.jpg",
+"DSCF0103.jpg",
+"DSCF0102.jpg",
+"DSCF0101.jpg",
+"DSCF0100.jpg",
+"DSCF0099.jpg",
+"DSCF0098.jpg",
+"DSCF0097.jpg",
+"DSCF0096.jpg",
+"DSCF0095.jpg",
+"DSCF0094.jpg",
+"DSCF0093.jpg",
+"DSCF0092.jpg",
+"DSCF0091.jpg",
+"DSCF0090.jpg",
+"DSCF0089.jpg",
+"DSCF0088.jpg",
+"DSCF0087.jpg",
+"DSCF0086.jpg",
+"DSCF0085.jpg",
+"DSCF0084.jpg",
+"DSCF0083.jpg",
+"DSCF0082.jpg",
+"DSCF0081.jpg",
+"DSCF0080.jpg",
+"DSCF0079.jpg",
+"DSCF0078.jpg",
+"DSCF0077.jpg",
+"DSCF0076.jpg",
+"DSCF0075.jpg",
+"DSCF0074.jpg",
+"DSCF0073.jpg",
+"DSCF0072.jpg",
+"DSCF0071.jpg",
+"DSCF0070.jpg",
+"DSCF0069.jpg",
+"DSCF0068.jpg",
+"DSCF0067.jpg",
+"DSCF0066.jpg",
+"DSCF0065.jpg",
+"DSCF0064.jpg",
+"DSCF0063.jpg",
+"DSCF0062.jpg",
+"DSCF0061.jpg",
+"DSCF0060.jpg",
+"DSCF0059.jpg",
+"DSCF0058.jpg",
+"DSCF0057.jpg",
+"DSCF0056.jpg",
+"DSCF0055.jpg",
+"DSCF0054.jpg",
+"DSCF0053.jpg",
+"DSCF0052.jpg"
+];
+
+files.forEach(file => {
+  const div = document.createElement("div");
+  div.className = "photo";
+  div.innerHTML = `<img src="gallery/${file}" alt="${file}" onerror="this.src='Contact.png'">`;
+  div.onclick = () => openFullscreen(`gallery/${file}`);
+  gallery.appendChild(div);
+});
+
+const fullscreen = document.getElementById("fullscreen");
+const fullscreenImg = fullscreen.querySelector("img");
+
+function openFullscreen(src) {
+  fullscreenImg.src = src;
+  fullscreen.classList.add("active");
+}
+
+fullscreen.addEventListener("click", () => {
+  fullscreen.classList.remove("active");
+  fullscreenImg.src = "";
+});
+</script>
+</body>
+</html>
