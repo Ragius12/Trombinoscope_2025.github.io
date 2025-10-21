@@ -11,268 +11,150 @@
 	})(window,document,'script','dataLayer','GTM-5X9NDHBP');</script>
 	<!-- End Google Tag Manager -->
 	
-  <meta charset="UTF-8">
-  <title>Surn's et fam's 2025</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Accueil — Promo 2025</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin:0; padding:0;
-      background: url("Ec's.png") no-repeat center center fixed;
-      background-size: cover;
+    :root{
+      --bg1:#090a1a; --bg2:#1a0f40; --accent:#ffd700; --text:#e6eef9; --muted:#bfc7d6;
+      --card:rgba(255,255,255,0.05); --glass:rgba(255,255,255,0.08);
     }
-    body::before {
-      content: "";
-      position: fixed;
-      top:0; left:0; width:100%; height:100%;
-      background: rgba(255,255,255,0.7);
-      z-index: -1;
-    }
-    .container { 
-      display:flex; 
-      margin-top:70px; 
-      justify-content:center; 
-      align-items:flex-start;
-    }
-    .game { 
-      flex:2; 
-      padding:20px; 
-      font-size: 1.2em; 
-      max-width:650px; 
-      text-align:center; 
-      margin-right:20px;
-    }
-    .toolbox { 
-      flex:1; 
-      background:#fff; 
-      padding:15px; 
-      border-left:2px solid #ccc; 
-      font-size:1em; 
-      max-width:500px;
-    }
-    .box { margin-bottom:20px; padding:10px; border:1px solid #ccc; border-radius:8px; }
-    .error { color:red; font-size:0.9em; position:absolute; top:5px; right:10px; }
-    button { margin-top:5px; font-size:1em; padding:6px 10px; }
+    *{box-sizing:border-box;transition:all .4s ease}
+    body,html{margin:0;padding:0;height:100%;overflow-x:hidden;
+      font-family:'Poppins',sans-serif;
+      background:radial-gradient(circle at top left,var(--bg1),var(--bg2));
+      color:var(--text)}
+    a{color:inherit;text-decoration:none}
 
-    /* Bandeau supérieur */
-    .header {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      height: 60px;
-      background: black;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: "Old English Text MT", "Gothic Old English", serif;
-      font-size: 32px;
-      letter-spacing: 2px;
-      z-index: 1000;
+    #bgCanvas{position:fixed;inset:0;z-index:0;filter:blur(1px);}
+
+    .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;
+      padding:36px;position:relative;z-index:1;overflow:hidden;}
+    .hero::before{content:'';position:absolute;inset:0;
+      background:radial-gradient(circle at 50% 50%,rgba(255,255,255,0.06),transparent 70%);
+      animation:pulse 6s infinite alternate ease-in-out;}
+    @keyframes pulse{from{opacity:.3;transform:scale(1);}
+      to{opacity:.7;transform:scale(1.1);} }
+
+    .shell{width:1100px;max-width:95%;backdrop-filter:blur(10px) saturate(1.3);
+      background:var(--glass);border-radius:24px;padding:30px;
+      box-shadow:0 10px 40px rgba(2,6,23,0.8);
+      display:grid;grid-template-columns:420px 1fr;gap:24px;
+      border:1px solid rgba(255,255,255,0.1)}
+
+    .brand{display:flex;flex-direction:column;gap:16px;align-items:flex-start;
+      animation:slideInLeft 1.2s ease}
+    @keyframes slideInLeft{from{opacity:0;transform:translateX(-40px);}
+      to{opacity:1;transform:translateX(0);} }
+
+    .logo{
+      height:90px;width:90px;border-radius:25px;
+      display:flex;align-items:center;justify-content:center;font-weight:900;
+      animation:float 4s ease-in-out infinite;
+      position:relative;
     }
-    .header img {
+    @keyframes float{0%{transform:translateY(0);}
+      50%{transform:translateY(-10px);}
+      100%{transform:translateY(0);} }
+
+    .logo img.left{
+      transform:scaleX(-1);
+      width:90px;
+      height:auto;
+    }
+
+    .tooltip {
+      visibility: hidden;
+      width: 150px;
+      background-color: black;
+      color: #fff;
+      text-align: center;
+      padding: 5px 10px;
+      border-radius: 5px;
       position: absolute;
-      right: 15px;
-      height: 45px;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.3s;
     }
-    .header .left {
-      position: absolute;
-      left: 15px;
-    }
-    .header .right {
-      position: absolute;
-      right: 15px;
-    }
-
-    /* Centrage image + infos */
-    #personDisplay {
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-    }
-    #personDisplay img {
-      width: 200px;
-      height: 200px;
-      object-fit: cover;
-      border-radius: 10px;
-      margin-bottom:10px;
-    }
-    #personDisplay ul {
-      font-size: 1.2em;
-      line-height: 1.8em;
-      list-style:none;
-      padding:0;
-      margin:0;
-      text-align:center;
-    }
-    #guess {
-      font-size: 1.2em;
-      padding: 8px;
-      width: 250px;
-      margin-top:10px;
+    .logo:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
     }
 
-    /* Palette caractères spéciaux */
-    .special-chars {
-      margin-top: 5px;
+    .title{font-family:'Cinzel',serif;font-size:30px;
+      color:var(--accent);text-shadow:0 0 20px rgba(255,215,0,0.4)}
+    .subtitle{color:var(--muted);font-size:14px;animation:fadeIn 1.6s ease}
+    @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+    .promo-photo {
+      width:100%;
+      border-radius:18px;
+      margin-top:14px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.4);
+      transition:transform 0.4s ease, box-shadow 0.4s ease;
+      animation:fadeInUp 1.2s ease;
     }
-    .special-chars span {
-      cursor: pointer;
-      font-size: 1.3em;
-      margin-right: 8px;
-      padding: 3px 6px;
-      border:1px solid #ccc;
-      border-radius:4px;
-      background:#f9f9f9;
+    .promo-photo:hover {
+      transform:scale(1.03);
+      box-shadow:0 12px 40px rgba(0,0,0,0.5);
     }
-    .special-chars span:hover {
-      background:#e0e0e0;
+    @keyframes fadeInUp {
+      from {opacity:0; transform:translateY(20px);}
+      to {opacity:1; transform:translateY(0);}
     }
 
-    /* Responsive */
-    @media (max-width: 900px) {
-      .container { 
-        flex-direction:column; 
-        align-items:center; 
-      }
-      .toolbox { 
-        border-left:none; 
-        border-top:2px solid #ccc; 
-        width:95%; 
-        margin-top:20px;
-      }
-      #guess { width: 90%; }
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+      gap:16px;animation:slideInUp 1.2s ease}
+    @keyframes slideInUp{from{opacity:0;transform:translateY(40px);}
+      to{opacity:1;transform:translateY(0);} }
+
+    .card{background:var(--card);padding:18px;border-radius:16px;
+      border:1px solid rgba(255,255,255,0.05);position:relative;
+      overflow:hidden;cursor:pointer;backdrop-filter:blur(4px)}
+    .card:hover{transform:translateY(-12px) scale(1.02);
+      box-shadow:0 10px 50px rgba(255,255,255,0.08)}
+    .card::after{content:'';position:absolute;inset:0;
+      background:linear-gradient(120deg,rgba(255,255,255,0.15),transparent 70%);
+      transform:translateX(-100%);transition:1s;opacity:0.2}
+    .card:hover::after{transform:translateX(100%)}
+
+    .label{font-weight:700;font-size:17px;margin-bottom:6px}
+    .desc{font-size:13px;color:var(--muted)}
+
+    .footer{grid-column:1/-1;text-align:center;margin-top:10px;
+      color:var(--muted);font-size:13px;animation:fadeIn 2s ease}
+
+    /* 🔹 Responsive styles 🔹 */
+    @media(max-width:950px){
+      .shell{grid-template-columns:1fr;padding:20px;}
+      .brand{align-items:center;text-align:center;}
+      .title{font-size:26px;}
     }
-	h1 {
-    text-align: center;
-    color: #333;
-  }
 
-  .controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
+    @media(max-width:650px){
+      .hero{padding:20px;}
+      .shell{padding:18px;}
+      .title{font-size:22px;}
+      .subtitle{font-size:13px;}
+      .logo{height:70px;width:70px;}
+      .logo img.left{width:70px;}
+      .grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+      .label{font-size:15px;}
+      .desc{font-size:12px;}
+      .promo-photo{border-radius:12px;}
+    }
 
-  .controls input, .controls select, .controls button {
-    padding: 10px 15px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-  }
-
-  .controls button {
-    background-color: #007bff;
-    color: #fff;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s ease;
-  }
-
-  .controls button:hover {
-    background-color: #0056b3;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 20px;
-  }
-
-  .card {
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    padding: 15px;
-    text-align: center;
-    transition: transform 0.2s;
-  }
-
-  .card:hover {
-    transform: translateY(-5px);
-  }
-
-  .card img {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-radius: 10px;
-    margin-bottom: 10px;
-  }
-
-  .card h3 {
-    margin: 5px 0;
-    font-size: 18px;
-    color: #333;
-	 font-weight: bold;
-  }
-
-  .card p {
-    margin: 0;
-    color: #666;
-	 font-weight: bold;
-  }
-  
-	font-family: Arial, sans-serif;
-		  display: flex;
-		  justify-content: center;
-		  align-items: center;
-		  height: 100vh;
-		  background: linear-gradient(to right, #6a11cb, #2575fc);
-		  margin: 0;
-		}
-
-		.trombi-container {
-		  display: flex;
-		  justify-content: flex-end;
-		  align-items: center;
-		  flex-wrap: wrap;
-		  gap: 10px;
-		  width: 100%;
-		  margin-top: 10px;
-		}
-
-		.btn-trombi {
-		  padding: 14px 40px;
-		  font-size: 1.2em;
-		  font-weight: bold;
-		  font-family: "Cinzel", "Old English Text MT", serif;
-		  color: #fff;
-		  background: linear-gradient(135deg, #ffd700, #7f00ff, #000000);
-		  border: 2px solid #d4af37;
-		  border-radius: 12px;
-		  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4),
-					  inset 0 0 10px rgba(255, 215, 0, 0.3);
-		  cursor: pointer;
-		  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
-		  transition: all 0.3s ease-in-out;
-		}
-
-		.btn-trombi:hover:enabled {
-		  transform: scale(1.08);
-		  background: linear-gradient(135deg, #3b2f00, #ffd700, #fff4a3);
-		  box-shadow: 0 8px 18px rgba(255, 215, 0, 0.6),
-					  inset 0 0 15px rgba(255, 255, 255, 0.3);
-		  color: #000;
-		}
-
-		.btn-trombi:disabled {
-		  opacity: 0.6;
-		  cursor: not-allowed;
-		  transform: none;
-		}
-
-		@media (max-width: 768px) {
-		  .trombi-container {
-			justify-content: center;
-		  }
-		  .btn-trombi {
-			width: 90%;
-			font-size: 1.1em;
-			padding: 12px 20px;
-		  }
-		}
+    @media(max-width:450px){
+      .title{font-size:20px;}
+      .subtitle{font-size:12px;}
+      .card{padding:14px;}
+      .logo{height:60px;width:60px;}
+      .logo img.left{width:60px;}
+      .grid{gap:10px;}
+    }
   </style>
 </head>
 <body>
@@ -282,746 +164,101 @@
 	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	<!-- End Google Tag Manager (noscript) -->
 	
-  <div class="header">
-	<img src="Logo.png" alt="Arts et Métiers d'Angers" class="left">
-    Compilons à nos surn's (2025/2026)
-    <img src="Buzzy.png" alt="bourdon" class="right">
-	<button id="adminBtn" style="position:absolute; right:90px; top:8px; padding:6px 10px; font-size:14px;">Mode Admin</button>
-  </div>
-
-  <div class="error" id="errorBox"></div>
-  <div class="container">
-    <div class="game">
-      <h1>Qui est ce chicop's de notre orde ?</h1>
-      <div id="personDisplay"></div>
-      <input id="guess" placeholder="Votre réponse">
-      <div class="special-chars">
-        <span onclick="insertCharTo('guess','&')">&</span>
-        <span onclick="insertCharTo('guess','^')">^</span>
-        <span onclick="insertCharTo('guess','φ')">φ</span>
-		<span onclick="insertCharTo('guess','τ')">τ</span>
-        <span onclick="insertCharTo('guess','~')">~</span>
-        <span onclick="insertCharTo('guess','♥')">♥</span>
-        <span onclick="insertCharTo('guess','π')">π</span>
-        <span onclick="insertCharTo('guess','²')">²</span>
-        <span onclick="insertCharTo('guess','ᵀ')">ᵀ</span>
-		<span onclick="insertCharTo('guess','∇')">∇</span>
-		<span onclick="insertCharTo('guess','∫')">∫</span>
-      </div>
-      <button onclick="checkGuess()">Valider</button>
-      <button onclick="skip()">Skip (-0.5 vie)</button>
-      <p>Vies : <span id="lives"></span></p>
-      <p>Score : <span id="score"></span></p>
-      <div class="trombi-container">
-		  <button id="btnTrombi" class="btn-trombi" onclick="ouvrirTrombi()">Voir le trombinoscope</button>
-		</div>
-      <p>Restants : <span id="remaining"></span></p>
-    </div>
-
-    <div class="toolbox">
-      <div class="box">
-        <h3>Résultats personnels</h3>
-        <ul id="scoreboard"></ul>
-        <button onclick="clearScoreboard()">Effacer les résultats</button>
-      </div>
-	
-	<div class="box" id="settingsBox">
-	  <h3>Paramètres</h3>
-	  <label><input type="checkbox" id="chkPrenom" checked> Prénom</label><br>
-	  <label><input type="checkbox" id="chkNom" checked> Nom</label><br>
-	  <label><input type="checkbox" id="chkSurnom" checked> Surnom</label><br>
-	  <label><input type="checkbox" id="chkNumero" checked> Numéro</label><br>
-	  <button onclick="updateHiddenFields()">Appliquer</button>
-	  <button id="btnSetLives" onclick="setLives()">Définir les vies</button>
-	  <button id="btnToggleUnknowns" onclick="toggleUnknowns()">Masquer les '??'</button>
-	 </div>
-
-      <div class="box" id="listBox">
-        <h3>Listes</h3>
-        <select id="listSelect" onchange="changeList()"></select><br>
-        <input id="newListName" placeholder="Nouvelle liste">
-        <button id="btnCreateList" onclick="createList()">Créer liste</button><br>
-        <input id="renameListName" placeholder="Renommer">
-        <button id="btnRenameList" onclick="renameList()">Renommer</button><br>
-        <button id="btnDeleteList" onclick="deleteList()">Supprimer liste</button>
-      </div>
-
-      <div class="box" id="personBox">
-        <h3>Ajouter / modifier</h3>
-        <input id="prenom" placeholder="Prénom"><br>
-        <input id="nom" placeholder="Nom"><br>
-        <input id="surnom" placeholder="Surnom"><br>
-        <div class="special-chars">
-          <span onclick="insertCharTo('surnom','&')">&</span>
-          <span onclick="insertCharTo('surnom','^')">^</span>
-          <span onclick="insertCharTo('surnom','φ')">φ</span>
-          <span onclick="insertCharTo('surnom','~')">~</span>
-          <span onclick="insertCharTo('surnom','♥')">♥</span>
-          <span onclick="insertCharTo('surnom','π')">π</span>
-          <span onclick="insertCharTo('surnom','²')">²</span>
-          <span onclick="insertCharTo('surnom','ᵀ')">ᵀ</span>
+  <canvas id="bgCanvas"></canvas>
+  <div class="hero">
+    <main class="shell">
+      <section class="brand">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;">
+          <div class="logo">
+            <img src="Buzzy.png" alt="bourdon" class="left">
+            <span class="tooltip">Sal's chicop's, je suis Vespula Jr.!</span>
+          </div>
+          <div>
+            <h1 class="title">Promotion 2025</h1>
+            <div class="subtitle">Acceuil — Les Soüvenirs de notre (.)orde</div>
+            <img src="Promotion.png" alt="Photo de la promo 2025" class="promo-photo">
+          </div>
         </div>
-        <input id="numero" placeholder="Numéro de la famille"><br>
-        <input id="photo" placeholder="Lien photo"}" ><br>
-        <button id="btnAddPerson" onclick="addPerson()">Ajouter</button>
-      </div>
-    </div>
+      </section>
+
+      <section class="grid">
+        <div class="card" onclick="openPage('jeu.html')">
+          <div class="label">Le Jeu</div>
+          <div class="desc">Amusez-vous à apprendre les 180 visages de la promo !</div>
+        </div>
+        <div class="card" onclick="openPage('trombinoscope.html')">
+          <div class="label">Trombinoscope</div>
+          <div class="desc">Infals des chicop's.</div>
+        </div>
+        <div class="card" onclick="openPage('carnet.html')">
+          <div class="label">Carn's</div>
+          <div class="desc">Pages du carn's à bucquer.</div>
+        </div>
+        <div class="card" onclick="openPage('monomes.html')">
+          <div class="label">Monômes</div>
+          <div class="desc">Monômes, paroles et musiques trad's.</div>
+        </div>
+        <div class="card" onclick="openPage('galerie.html')">
+          <div class="label">Galerie des Soüvenirs</div>
+          <div class="desc">Images et soüvenirs de l'année.</div>
+        </div>
+        <div class="card" onclick="openPage('documents.html')">
+          <div class="label">Documents import's</div>
+          <div class="desc">Livret d'acceuil, Lago...</div>
+        </div>
+        <div class="card" onclick="openPage('https://drive.google.com/drive/folders/1Celq4ZJYpbztZrv9gtaSDMB2Ck7nrzyh?usp=drive_link')">
+          <div class="label">Thuysses DDB</div>
+          <div class="desc">L'art de ne pas sacquer.</div>
+        </div>
+        <div class="card">
+          <div class="label">À venir</div>
+          <div class="desc">Prochainement de nouvelles rubriques !</div>
+        </div>
+      </section>
+
+      <div class="footer">Fait avec coher's par l'un de vos chicop’s, envoyez moi un message privé pour de potentiels problèmes !</div>
+    </main>
   </div>
-<script>
 
-	function ouvrirTrombi() {
-      window.open('trombinoscope.html', '_blank');
-    }
+  <footer style="text-align: center; font-family: 'Old English Text MT', 'Gothic', 'Blackletter', serif;">
+    Vespula 84 — Promotion 2025
+  </footer>
 
-  function insertCharTo(inputId,char){
-    const input=document.getElementById(inputId);
-    const start=input.selectionStart;
-    const end=input.selectionEnd;
-    input.value=input.value.slice(0,start)+char+input.value.slice(end);
-    input.focus();
-    input.selectionStart=input.selectionEnd=start+char.length;
-  }
+  <script>
+    function openPage(path){window.open(path,'_blank');}
 
-  /********************
-   * NORMALISATION ET TOLÉRANCE
-   ********************/
-  function normalizeString(str){
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g,"")
-      .toLowerCase()
-      .replace(/['’`]/g,"")
-      .replace(/[-_]/g," ")
-      .replace(/\s+/g," ")
-      .trim();
-  }
-
-  function levenshtein(a,b){
-    const m=a.length, n=b.length;
-    const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
-    for(let i=0;i<=m;i++) dp[i][0]=i;
-    for(let j=0;j<=n;j++) dp[0][j]=j;
-    for(let i=1;i<=m;i++){
-      for(let j=1;j<=n;j++){
-        const cost=a[i-1]===b[j-1]?0:1;
-        dp[i][j]=Math.min(
-          dp[i-1][j]+1,
-          dp[i][j-1]+1,
-          dp[i-1][j-1]+cost
-        );
-        if(i>1 && j>1 && a[i-1]===b[j-2] && a[i-2]===b[j-1])
-          dp[i][j]=Math.min(dp[i][j],dp[i-2][j-2]+1);
+    const c=document.getElementById('bgCanvas');
+    const ctx=c.getContext('2d');
+    let w=c.width=innerWidth,h=c.height=innerHeight;
+    const p=[];
+    function rand(min,max){return Math.random()*(max-min)+min;}
+    for(let i=0;i<100;i++)
+      p.push({x:rand(0,w),y:rand(0,h),r:rand(1,3),vx:rand(-0.4,0.4),
+              vy:rand(-0.4,0.4),hue:rand(180,300)});
+    function draw(){
+      ctx.clearRect(0,0,w,h);
+      for(let i of p){
+        i.x+=i.vx;i.y+=i.vy;
+        if(i.x<0||i.x>w)i.vx*=-1;
+        if(i.y<0||i.y>h)i.vy*=-1;
+        ctx.beginPath();ctx.arc(i.x,i.y,i.r,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${i.hue},70%,60%,0.5)`;ctx.fill();
       }
-    }
-    return dp[m][n];
-  }
-
-  function isPermissiveMatch(guess, correct) {
-    const g = normalizeString(guess);
-    const c = normalizeString(correct);
-    if (!c || !g) return false;
-    if (g === c) return true;
-    if (g.length < Math.min(3, Math.floor(c.length / 3))) return false;
-    if (g.length > c.length * 1.5) return false;
-    const dist = levenshtein(g, c);
-    const len = Math.max(c.length, 1);
-    const similarity = 1 - dist / len;
-    let minSimilarity;
-    if (len <= 5) minSimilarity = 0.8;
-    else if (len <= 10) minSimilarity = 0.7;
-    else if (len <= 20) minSimilarity = 0.6;
-    else minSimilarity = 0.55;
-    return similarity >= minSimilarity;
-  }
-
-const initialPeople = [
-    { prenom:'Lisa', nom:'Abbes', surnom:'Tym[Au]', numero:'56~53block', photo:'Trombinoscope/Lisa_Abbes.png'},
-	{ prenom:'Stanislas', nom:'Allier', surnom:'La Bete', numero:'114-109', photo:'Trombinoscope/Stanislas_Allier.jpg' },
-	{ prenom:'Chloé', nom:'Andre', surnom:'ShuPre[C]', numero:'10', photo:'Trombinoscope/Chloé_Andre.jpg' },
-	{ prenom:'Venance', nom:'Andriamihantamanana', surnom:'[Molo]²', numero:'119-155', photo:'Trombinoscope/Venance_Andriamihantamanana.jpg' },
-	{ prenom:'Kenzo', nom:'Andrieu', surnom:'Djir[L]', numero:'154-18~11', photo:'Trombinoscope/Kenzo_Andrieu.jpg' },
-	//{ prenom:'Antoine', nom:'Archevêque', surnom:'??', numero:'??', photo:'Trombinoscope/Antoine_Archevêque.jpg' },
-	{ prenom:'Élise', nom:'Arnaud', surnom:'Tosp[i]n', numero:'129-59♥-128', photo:'Trombinoscope/Élise_Arnaud.jpg' },
-	{ prenom:'Fatima Ezzahra', nom:'Ataf', surnom:'π-ta[F]', numero:'81-48', photo:'Trombinoscope/Fatima Ezzahra_Ataf.png' },
-	{ prenom:'Margaux', nom:'Bagas', surnom:'Ar[T]mis', numero:'79', photo:'Trombinoscope/Margaux_Bagas.jpg' },
-	{ prenom:'Bastien', nom:'Balbine-Le Corre', surnom:'Fen [T]', numero:'6', photo:'Trombinoscope/Bastien_Balbine-Le Corre.jpg' },
-	{ prenom:'Achille', nom:'Bazard', surnom:'Youri', numero:'122', photo:'Trombinoscope/Achille_Bazard.jpg' },
-	{ prenom:'Mathis', nom:'Bazin', surnom:'[AM]ᵀjor[ette]⁰', numero:'87', photo:'Trombinoscope/Mathis_Bazin.jpg' },
-	{ prenom:'Gwendal', nom:'Belliot', surnom:'B[L]idi[O]', numero:'29', photo:'Trombinoscope/Gwendal_Belliot.jpg' },
-	{ prenom:'Élouan', nom:'Bernard', surnom:'Ampozit°', numero:'69', photo:'Trombinoscope/Elouan_Bernard.png' },
-	{ prenom:'Ibrahim', nom:'Berrada Badaoui', surnom:'Vord', numero:'112-80', photo:'Trombinoscope/Ibrahim_Berrada Badaoui.png' },
-	{ prenom:'Clément', nom:'Biver', surnom:'DeT[R]', numero:'46', photo:'Trombinoscope/Clément_Biver.png' },
-	{ prenom:'Noah', nom:'Blandin', surnom:"Toler's", numero:'133-125', photo:'Trombinoscope/Noah_Blandin.jpg' },
-	{ prenom:'Maxence', nom:'Bordin', surnom:'Pr[&]ci pisse', numero:'258~(125)^0~(133)^0', photo:'Trombinoscope/Maxence_Bordin.jpg' },
-	{ prenom:'Baptiste', nom:'Bourdin', surnom:'Kamikaze', numero:'134', photo:'Trombinoscope/Baptiste_Bourdin.jpg' , tél: ""},
-	{ prenom:'Victor', nom:'Bourdin', surnom:'??', numero:'??', photo:'Trombinoscope/Victor_Bourdin.jpg' },
-	{ prenom:'Thomas', nom:'Bourdon', surnom:'Vespula', numero:'84', photo:'Trombinoscope/Thomas_Bourdon.png' },
-	{ prenom:'Aurélien', nom:'Bouton', surnom:"D'[Au]R", numero:'99-127', photo:'Trombinoscope/Aurélien_Bouton.jpg' },
-	{ prenom:'Raslene', nom:'Braiek', surnom:"a[B]i[MV]", numero:'7', photo:'Trombinoscope/Raslene_Braiek.jpg' },
-	{ prenom:'Aristide', nom:'Brasille', surnom:'Multiprix', numero:'136-169 Djellaba', photo:'Trombinoscope/Aristide_Brasille.jpg' },
-	{ prenom:'Jim', nom:'Brasseur', surnom:"Adémon[T][D]TTan's", numero:'13', photo:'Trombinoscope/Jim_Brasseur.jpg' },
-	{ prenom:'Gaspard', nom:'Bresch', surnom:'Si[A]te', numero:'9', photo:'Trombinoscope/Gaspard_Bresch.jpg' },
-	{ prenom:'Martin', nom:'Brillouet', surnom:"Big'oüdi", numero:'30-50', photo:'Trombinoscope/Nathan_Brioullet.jpg' },
-	{ prenom:'Florence', nom:'Brizion', surnom:'Médi[6]', numero:'19', photo:'Trombinoscope/Florence_Brizon.png' },
-	{ prenom:'Louan', nom:'Buan', surnom:'2minma(X)**0', numero:'158-90', photo:'Trombinoscope/Louan_Buan.jpg' },
-	{ prenom:'Étienne', nom:'Caillet', surnom:'Fines Herbes', numero:'74-57', photo:'Trombinoscope/Étienne_Caillet.jpg' },
-	{ prenom:'Fallou', nom:'Camara', surnom:'Dolce', numero:'32♥', photo:'Trombinoscope/Fallou_Camara.jpg' },
-	{ prenom:'Paul', nom:'Caron', surnom:"[K]r's", numero:'168-132', photo:'Trombinoscope/Paul_Caron.jpg' },
-	{ prenom:'Valentin', nom:'Charles', surnom:'Le[V]', numero:'8', photo:'Trombinoscope/Valentin_Charles.png' },
-	{ prenom:'Léonard', nom:'Chauvin', surnom:'[B]rbe', numero:'78 (121-89)', photo:'Trombinoscope/Léonard_Chauvin.jpg' },
-	{ prenom:'Aloïs', nom:'Chombart de Lauwe', surnom:'Berouj', numero:'180-107', photo:'Trombinoscope/Aloïs_Chombard.jpg' },
-	{ prenom:'Enzo', nom:'Cingal', surnom:'Alfa[2][S]', numero:'169Djelaba136', photo:'Trombinoscope/Enzo_Cingal.jpg' },
-	{ prenom:'Arthus', nom:'Colas', surnom:'??', numero:'??', photo:'Trombinoscope/Arthus_Colas.jpg' },
-	{ prenom:'Louise', nom:'Collomb', surnom:'Yat[A]k', numero:'103', photo:'Trombinoscope/Louise_Collomb.png' },
-	{ prenom:'François', nom:'Colluard', surnom:'??', numero:'7', photo:'Trombinoscope/François_Colluard.png' },
-	{ prenom:'Marie-Lou', nom:'Cossé', surnom:'Kyl[T]', numero:'89-121-78', photo:'Trombinoscope/Marie-Lou_Cossé.jpg' },
-	{ prenom:'Enzo', nom:'Courseault-Proteau', surnom:"Ktapa[δij]'S", numero:'145-65', photo:'Trombinoscope/Enzo_Courseault-Proteau.jpg' },
-	{ prenom:'Benoît', nom:'Créalet', surnom:'Zage', numero:'141-118~118-141', photo:'Trombinoscope/Benoît_Créalet.jpg' },
-	{ prenom:'Nathan', nom:'Crinon', surnom:'Bin[R]', numero:'45', photo:'Trombinoscope/Nathan_Crinon.jpg' },
-	{ prenom:'Foulques', nom:'Dauce', surnom:'[K]lva', numero:'95♥-190', photo:'Trombinoscope/Foulques_Dauce.jpg' , tél: ""},
-	{ prenom:'Emilio', nom:'D’Azevedo Neves', surnom:'Samoal', numero:'7i', photo:'Trombinoscope/Emilio_D’Azevedo Neves.jpg' },
-	{ prenom:'Xavier', nom:'de Teyssier', surnom:'[T]ra’S', numero:'43', photo:'Trombinoscope/Xavier_De Teyssier.jpg' },
-	{ prenom:'Nolann', nom:'Decurey', surnom:'M[E]l à Meth', numero:'66-149', photo:'Trombinoscope/Nolann_Decurey.jpg' },
-	{ prenom:'Noa', nom:'Defontaine', surnom:'[2]Joüvence', numero:'35', photo:'Trombinoscope/Noa_Defontaine.jpg' },
-	{ prenom:'Maxence', nom:'Depret', surnom:'[P]rvier', numero:'167', photo:'Trombinoscope/Maxence_Depret.jpg' },
-	{ prenom:'Cyrille', nom:'de Gélis', surnom:'Hareng', numero:'123-80', photo:'Trombinoscope/Cyrille_De Gélis.jpg' },
-	{ prenom:'Jim', nom:'de Laborde De Monpezat', surnom:'[O]pper', numero:'101 nike', photo:'Trombinoscope/Jim_De Laborde De Monpezat.jpg' },
-	{ prenom:'Wandrille', nom:'de Montfort', surnom:'Khlys', numero:'157', photo:'Trombinoscope/Wandrille_De Montfort.jpg' },
-	//{ prenom:'Arthur', nom:'de Oliveira Lopes', surnom:'??', numero:'??', photo:'Trombinoscope/Arthur_De Oliveira Lopes.jpg' },
-	{ prenom:'Jean-Denis', nom:'de Robillard', surnom:'Strike', numero:'911', photo:'Trombinoscope/Jean-denis.jpg' },
-	{ prenom:'Baptiste', nom:'Desmars', surnom:'L[A][B][K]ne', numero:'1582', photo:'Trombinoscope/Baptiste_Desmars.jpg' },
-	{ prenom:'Malo', nom:'Dessard', surnom:'seg[a]', numero:'144', photo:'Trombinoscope/Malo_Dessard.jpg' },
-	{ prenom:'Philippe', nom:'Drouineau', surnom:'A[τ]s', numero:'135', photo:'Trombinoscope/Philippe_Drouineau.jpg' , tél: "0767375156"},
-	{ prenom:'Clément', nom:'Ducy', surnom:'Flard', numero:'127-99', photo:'Trombinoscope/Clément_Ducy.jpg' },
-	{ prenom:'Marie', nom:'Dumasdelage', surnom:"Del’Or", numero:'96', photo:'Trombinoscope/Marie_Dumasdelage.jpg' },
-	{ prenom:'Augustin', nom:'Duplessy', surnom:"Fyl[u-u]’s", numero:'121-89-78', photo:'Trombinoscope/Augustin_Duplessy.jpg' },
-	{ prenom:'Yvan', nom:'Extrêmes', surnom:'Mc-Ron[X]plos!on', numero:'75', photo:'Trombinoscope/Yvan_Extrêmes.jpg' },
-	//{ prenom:'Alex', nom:'Eynard', surnom:'??', numero:'??', photo:'Trombinoscope/Alex_Eynard.jpg' },
-	{ prenom:'Antoine', nom:'Fauchois', surnom:'bat', numero:'55-4-51', photo:'Trombinoscope/Antoine_Fauchois.jpg' },
-	{ prenom:'Pedro', nom:'Fernandes', surnom:'Lekch[X]', numero:'21-97', photo:'Trombinoscope/Pedro_Fernandes.jpg' , tél: ""},
-	{ prenom:'Thomas', nom:'Flon', surnom:'[A]’lakrem', numero:'112', photo:'Trombinoscope/Thomas_Flon.jpg' },
-	{ prenom:'Steeve', nom:'Foucher', surnom:"Eveet'∫", numero:'53block~56', photo:'Trombinoscope/Steeve_Foucher.jpg' },
-	{ prenom:'Lilian', nom:'Furio', surnom:'Ori[π]ler', numero:'54', photo:'Trombinoscope/Lilian_Furio.jpg' },
-	{ prenom:'Brieuc', nom:'Gac', surnom:'Coüch[&]', numero:'67-65', photo:'Trombinoscope/Brieuc_Gac.jpg' },
-	{ prenom:'Théo', nom:'Gauchot', surnom:'[FA]SHOW', numero:'23', photo:'Trombinoscope/Théo_Gauchot.jpg' },
-	{ prenom:'Léopold', nom:'Gennequin', surnom:'Morpheus', numero:'70-60', photo:'Trombinoscope/Léopold_Gennequin.png' },
-	{ prenom:'Benjamin', nom:'Genon Mandy', surnom:'??', numero:'??', photo:'Trombinoscope/Benjamin_Genon Mandy.jpg' },
-	{ prenom:'Arthur', nom:'Georget', surnom:"S'[T]b[A]n", numero:'48-81', photo:'Trombinoscope/Arthur_Georget.jpg' },
-	{ prenom:'Clarisse', nom:'Gerbaud', surnom:'Boeing ', numero:'911', photo:'Trombinoscope/Clarisse_Gerbaud.jpg' },
-	{ prenom:'Fiona', nom:'Gigou', surnom:'Lag', numero:'3', photo:'Trombinoscope/Fiona_Gigou.jpg' },
-	{ prenom:'Constantin', nom:'Gillet', surnom:"Pas lar's de la", numero:'161~', photo:'Trombinoscope/Constantin_Gillet.jpg' },
-	{ prenom:'Timothée', nom:'Gloannec', surnom:'[C]Lent', numero:'115-31', photo:'Trombinoscope/Timothée_Gloannec.jpg' },
-	{ prenom:'Simon', nom:'Godin', surnom:'Fred', numero:'90-158', photo:'Trombinoscope/Simon_Godin.jpg' },
-	{ prenom:'Mariam', nom:'Gohar', surnom:'Sph[1]x', numero:'52-42', photo:'Trombinoscope/Mariam_Gohar.jpg' },
-	{ prenom:'Bertille', nom:'Gouranton', surnom:'Ladybag', numero:'164', photo:'Trombinoscope/Bertille_Gouranton.jpg' },
-	//{ prenom:'Théo', nom:'Grammont', surnom:'??', numero:'??', photo:'Trombinoscope/Théo_Grammont.jpg' },
-	{ prenom:'Alexis', nom:'Grould', surnom:'[π]R', numero:'39', photo:'Trombinoscope/Alexis_Grould.jpg' },
-	{ prenom:'Baptiste', nom:'Guemas', surnom:'[1]´s tiK', numero:'151', photo:'Trombinoscope/Baptiste_Guemas.jpg' },
-	//{ prenom:'Flavien', nom:'Guerrier-Hay', surnom:"??", numero:'??', photo:'Trombinoscope/Flavien_Guerrier-Hay.jpg' },
-	{ prenom:'Aurélien', nom:'Guieu', surnom:'Abaddon', numero:'18-154~(11)^0', photo:'Trombinoscope/Aurélien_Guieu.jpg' },
-	{ prenom:'Hermès', nom:'Guilbert', surnom:'Bodycount', numero:'148-22', photo:'Trombinoscope/Hermès_Guilbert.jpg' },
-	{ prenom:'Eliot', nom:'Guitton', surnom:'iiist', numero:'111', photo:'Trombinoscope/Eliot_Guitton.jpg' },
-	{ prenom:'Ali', nom:'Hassny', surnom:'⁠[e^x]pre’∫', numero:'⁠92-160-116', photo:'Trombinoscope/Ali_Hassny.jpg' },
-	{ prenom:'Louis', nom:'Hazard', surnom:'viensbriserlacharte dansma', numero:'106-113', photo:'Trombinoscope/Louis_Hazard.jpg' , tél: ""},
-	{ prenom:'Lilian', nom:'Hintzy', surnom:'Poket', numero:'51-4-55', photo:'Trombinoscope/Lilian_Hintzy.jpg' },
-	{ prenom:'Mathias', nom:'Houari-Zaniroli', surnom:'Krak', numero:'152', photo:'Trombinoscope/Mathias_Houari-Zaniroli.jpg' },
-	{ prenom:'Arthur', nom:'Houëix', surnom:'[β]mèche', numero:'102P-38', photo:'Trombinoscope/Arthur_Houëix.jpg' },
-	{ prenom:'Yoann', nom:'Jahier', surnom:"Kra[♥]‘s", numero:'143-126', photo:'Trombinoscope/Yoann_Jahier.jpg' },
-	{ prenom:'Florian', nom:'Jégo', surnom:'Toboon', numero:'98', photo:'Trombinoscope/Florian_Jégo.jpg' },
-	{ prenom:'Erwan', nom:'Jehanno', surnom:'Le [Q]sec', numero:'22-148', photo:'Trombinoscope/Erwan_Jehanno.jpg' , tél: ""},
-	{ prenom:'Louis', nom:'Jouvence', surnom:'Emile', numero:'2', photo:'Trombinoscope/Louis_Jouvence.jpg' },
-	//{ prenom:'Aymann', nom:'Kheiri', surnom:'HU', numero:'HU', photo:'Trombinoscope/Aymann_Kheiri.jpg' },
-	{ prenom:'Tyfenn', nom:'Kiev', surnom:'n[n]', numero:'178-138', photo:'Trombinoscope/Tyfenn_Kiev.jpg' },
-	{ prenom:'Julie', nom:'Klein', surnom:'Mabawa', numero:'88-44', photo:'Trombinoscope/Julie_Klein.jpg' },
-	{ prenom:'Andéol', nom:'Lallemand', surnom:'Kwalität', numero:'105♥-12', photo:'Trombinoscope/Andéol_Lallemand.jpg' },
-	{ prenom:'Paul', nom:'Landais', surnom:'Ladron^t', numero:'124-33', photo:'Trombinoscope/Paul_Landais.jpg' },
-	{ prenom:'Jean-Eudes', nom:'Lantz', surnom:'Vi[J]', numero:'1', photo:'Trombinoscope/Jean-Eudès_Lantz.jpg' },
-	{ prenom:'Thibault', nom:'Le Baron', surnom:'Roüge', numero:'60-70', photo:'Trombinoscope/Thibault_Le Baron.jpg' },
-	{ prenom:'Marie', nom:'de Château-Thierry', surnom:'Ti-grrr[S]', numero:'117', photo:'Trombinoscope/Marie_Le-Bout-De-Chateau-Thierry-De-Beaumanoir.jpg' },
-	{ prenom:'Ethan', nom:'Le Callonnec', surnom:'+[U]ltra', numero:'7²', photo:'Trombinoscope/Ethan_Le Callonnec.jpg' },
-	{ prenom:'Tom', nom:'Lechevalier', surnom:'Perce Val', numero:'156', photo:'Trombinoscope/Tom_Lechevalier.jpg' },
-	{ prenom:'Gabriel', nom:'Le Duff', surnom:'??', numero:'??', photo:'Trombinoscope/Gabriel_Le Duff.jpg' },
-	{ prenom:'Jean', nom:'Le Forestier', surnom:'Zipette', numero:'97-(21)', photo:'Trombinoscope/Jean_Le Forestier.png' },
-	{ prenom:'Jules', nom:'Lefort', surnom:'Niké', numero:'335', photo:'Trombinoscope/Jules_Lefort.jpg' },
-	{ prenom:'Timon', nom:'Legal', surnom:'[K]pôn', numero:'72', photo:'Trombinoscope/Timon_Légal.jpg' },
-	{ prenom:'Élouen', nom:'Le Grand', surnom:'Sam²', numero:'27', photo:'Trombinoscope/Élouen_Le Grand.jpg' },
-	{ prenom:'Antoine', nom:'Lelarge', surnom:'Triplix[L]', numero:'153', photo:'Trombinoscope/Antoine_Lelarge.jpg' },
-	{ prenom:'Joseph', nom:'Le Maréchal', surnom:'NoüsV[O]ala', numero:'59♡-129-128', photo:'Trombinoscope/Joseph_Le Maréchal.jpg' },
-	{ prenom:'Diane', nom:'Leroy--Clabault', surnom:'Sun', numero:'41', photo:'Trombinoscope/Diane_Leroy--Clabault.jpg' },
-	{ prenom:'Liam', nom:'Le Tallec', surnom:'Krôh', numero:'5!', photo:'Trombinoscope/Liam_Le Tallec.jpg' },
-	{ prenom:'Clément', nom:'Liège', surnom:'Fonc[L]', numero:'171-173', photo:'Trombinoscope/Clément_Liège.jpg' },
-	{ prenom:'Charles', nom:'Liet', surnom:"Lachok's", numero:'26', photo:'Trombinoscope/Charles_Liet.jpg' },
-	{ prenom:'Thibault', nom:'Loyer', surnom:'Wazulq', numero:'38 102P', photo:'Trombinoscope/Thibault_Loyer.jpg' },
-	{ prenom:'Maxime', nom:'Lugaz', surnom:"Z[A]³ck'∫", numero:'76-86-108', photo:'Trombinoscope/Maxime_Lugaz.jpg' },
-	{ prenom:'Kilian', nom:'Mahé', surnom:'Lal[π]ne', numero:'47', photo:'Trombinoscope/Kilian_Mahé.jpg' },
-	{ prenom:'Romain', nom:'Mancel', surnom:'A[D]', numero:'61-159', photo:'Trombinoscope/Romain_Mancel.jpg' },
-	{ prenom:'Cloé', nom:'Marchand', surnom:'[2π]nar', numero:'5²5-94-25-155', photo:'Trombinoscope/Cloé_Marchand.jpg' },
-	{ prenom:'Théoping', nom:'Marchix', surnom:'[O][π]che', numero:'130', photo:'Trombinoscope/Théoping_Marchix.jpg' },
-	//{ prenom:'Phénicia', nom:'Marionval', surnom:'??', numero:'??', photo:'Trombinoscope/Phénicia_Marionval.jpg' },
-	{ prenom:'Enzo', nom:'Martin', surnom:'[TT]lot', numero:'77', photo:'Trombinoscope/Enzo_Martin.jpg' },
-	{ prenom:'Basile', nom:'Martin', surnom:'Barbalcoolic[E]', numero:'126-143-110-165', photo:'Trombinoscope/Basile_Martin.jpg' },
-	{ prenom:'Côme', nom:'Maunier', surnom:'Avi', numero:'11-18-154', photo:'Trombinoscope/Côme_Maunier.jpg' },
-	{ prenom:'Gabriel', nom:'Méritet', surnom:'Tula', numero:'128-129-59♥', photo:'Trombinoscope/Gabriel_Méritet.jpg' },
-	{ prenom:'Paul', nom:'Métivier', surnom:'[n]Dou?', numero:'146', photo:'Trombinoscope/Paul_Metivier.jpg' },
-	{ prenom:'Jean', nom:'Mijonnet', surnom:'Glij', numero:'170-71', photo:'Trombinoscope/Jean_Mijonnet.png' },
-	{ prenom:'Lucian', nom:'Millerioux', surnom:'Zaagermeister', numero:'131', photo:'Trombinoscope/Lucian_Millerioux.jpg' },
-	{ prenom:'Baptiste', nom:'Monnier', surnom:"Kho'pate", numero:'73-16', photo:'Trombinoscope/Baptiste_Monnier.jpg' },
-	{ prenom:'Albéric', nom:'Moreaud', surnom:"Grim's", numero:'36', photo:'Trombinoscope/Albéric_Moreaud.jpg' },
-	{ prenom:'Maïan', nom:'Moulinot', surnom:'Himal', numero:'57 & 74', photo:'Trombinoscope/Maïan_Moulinot.jpg' },
-	{ prenom:'Galatée', nom:'Netto', surnom:'Kyla', numero:'58 20 37', photo:'Trombinoscope/Galatée_Netto.jpg' },
-	{ prenom:'Lohann', nom:'Nobilet', surnom:'Lugh', numero:'104', photo:'Trombinoscope/Lohann_Nobilet.jpg' },
-	{ prenom:'Anatole', nom:'Oudot', surnom:'Ch[F]2**2', numero:'24-62', photo:'Trombinoscope/Anatole_Oudot.jpg' },
-	{ prenom:'Lucas', nom:'Palierne', surnom:'Arcass', numero:'85', photo:'Trombinoscope/Lucas_Palierne.jpg' },
-	{  prenom:'Hugo', nom:'Patoux-Soenen', surnom:'Chamon[Q]', numero:'125~133', photo:'Trombinoscope/Hugo_Patoux-Soenen.jpg' , tél: ""},
-	{ prenom:'Mathéo', nom:'Paudois', surnom:'??', numero:'??', photo:'Trombinoscope/Mathéo_Paudois.jpg' },
-	{ prenom:'Vinojan', nom:'Pavarajithan', surnom:'??', numero:'92-160', photo:'Trombinoscope/Vinojan_Pavarajithan.jpg' },
-	{ prenom:'Clément', nom:'Pelletier', surnom:'Lav[N]', numero:'25-155-5²-5-94', photo:'Trombinoscope/Clément_Pelletier.jpg' },
-	{ prenom:'Anaïs', nom:'de Chambure', surnom:'Am[a]batrix', numero:'34(137)°', photo:'Trombinoscope/Anaïs_Chambure.jpg' },
-	{ prenom:'Matthieu', nom:'Perroy', surnom:"Mach'", numero:'100', photo:'Trombinoscope/Matthieu_Perroy.jpg' },
-	{ prenom:'Antonin', nom:'Perseguers', surnom:"[B]’S TONFROK", numero:'139', photo:'Trombinoscope/Antonin_Perseguer.jpg' },
-	{ prenom:'Brieuc', nom:'Poullain', surnom:'Pur 100', numero:'93', photo:'Trombinoscope/Brieuc_Poullain.jpg' },
-	{ prenom:'Simon', nom:'Preault', surnom:"L'Arts", numero:'163 & 63', photo:'Trombinoscope/Simon_Préault.jpg' },
-	{ prenom:'Alexandre', nom:'Quentric', surnom:'Awalp', numero:'XIV', photo:'Trombinoscope/Alexandre_Quentric.jpg' },
-	{ prenom:'Noé', nom:'Quirke', surnom:'[G]z[R]', numero:'28', photo:'Trombinoscope/Noé_Quirke.jpg' },
-	{ prenom:'Enzo', nom:'Rahard', surnom:"La P[R]l's", numero:'62-24', photo:'Trombinoscope/Enzo_Rahard.jpg' },
-	{ prenom:'Pierre-François', nom:'Restif', surnom:'Fañch', numero:'42-52', photo:'Trombinoscope/Pierre-François_Restif.jpg' },
-	{ prenom:'Jean-Emmanuel', nom:'Richard', surnom:'♥[2]Lion', numero:'71-170', photo:'Trombinoscope/Jean-Emmanuel_Richard.jpg' },
-	{ prenom:'Enzo', nom:'Rivière', surnom:'O[φ]ly', numero:'65-67-145', photo:'Trombinoscope/Enzo_Rivière.jpg' },
-	{ prenom:'Benoît', nom:'Robert', surnom:'lad[N]', numero:'147', photo:'Trombinoscope/Benoît_Robert.jpg' },
-	{ prenom:'Azélie', nom:'Rocaboy', surnom:'[D]L', numero:'116-160-59♥', photo:'Trombinoscope/Azélie_Rocaboy.jpg' },
-	{ prenom:'Marion', nom:'Rollier', surnom:"Corakia’s", numero:'68,,', photo:'Trombinoscope/Marion_Rollier.jpg' },
-	{ prenom:'Malo', nom:'Santolalla', surnom:'Tasty', numero:'150∇', photo:'Trombinoscope/Malo_Santolalla.jpg' },
-	{  prenom:'Benjamin', nom:'Sappa', surnom:'M(A)^21RC', numero:'21-(97)^0', photo:'Trombinoscope/Benjamin_Sappa.jpg'},
-	{ prenom:'Amr', nom:'Sarhan', surnom:'[A]bout', numero:'40² -140', photo:'Trombinoscope/Amr_Sarhan.jpg' },
-	{ prenom:'Benjamin', nom:'Seguin', surnom:'MaBiquette', numero:'113-106', photo:'Trombinoscope/Benjamin_Seguin.jpg' },
-	{ prenom:'Maria', nom:'Silva', surnom:'Dukunata', numero:'137', photo:'Trombinoscope/Maria_Silva.jpg'},
-	{ prenom:'Nicolas', nom:'Taroux', surnom:"L’[1]pet", numero:'12-105', photo:'Trombinoscope/Nicolas_Taroux.jpg' },
-	{ prenom:'Pierre', nom:'Teissier', surnom:"Cristal's", numero:'155-119', photo:'Trombinoscope/Pierre_Teissier.jpg' },
-	{ prenom:'Lucas', nom:'Teixeira', surnom:"Trakina[H]", numero:'50-30', photo:'Trombinoscope/Lucas_Teixeira.jpg' },
-	{ prenom:'Jules', nom:'Tesson', surnom:'[T]ston', numero:'37-20 (58)°', photo:'Trombinoscope/Jules_Tesson.jpg' },
-	{ prenom:'Marie-Luce', nom:'Teysseyre', surnom:'6[ρ]', numero:'31-115', photo:'Trombinoscope/Marie-Luce_Teysseyre.jpg' },
-	{ prenom:'Mathieu', nom:'Thérond', surnom:'Carrey', numero:'56~53 block', photo:'Trombinoscope/Mathieu_Thérond.jpg' },
-	{ prenom:'Etienne', nom:'Touleau', surnom:'Toüsl[é]', numero:'20-37-(58)°', photo:'Trombinoscope/Etienne_Touleau.jpg' },
-	{ prenom:'Victor', nom:'Valadié', surnom:'Tator', numero:'91', photo:'Trombinoscope/Victor_Valadié.jpg' },
-	{ prenom:'Judith', nom:'Vallin', surnom:'Sanaa', numero:'86 76 108', photo:'Trombinoscope/Judith_Vallin.jpg' },
-	//{ prenom:'Paul', nom:'Van Houtte', surnom:'??', numero:'??', photo:'Trombinoscope/Paul_Van Houtte.jpg' },
-	{ prenom:'Hugo', nom:'Verdie-Maucort', surnom:'Trip[O]xx', numero:'40', photo:'Trombinoscope/Hugo_Verdie-Maucort.jpg' },
-	{ prenom:'Lilian', nom:'Verrier', surnom:'Vidlô', numero:'44-88', photo:'Trombinoscope/Lilian_Verrier.jpg' },
-	{ prenom:'Louis', nom:'Videux', surnom:'[T]rium', numero:'190-95♥', photo:'Trombinoscope/Louis_Videux.jpg' },
-	{ prenom:'Oscar', nom:'Villemer', surnom:'[O]dia 4', numero:'51-55', photo:'Trombinoscope/Oscar_Villemer.jpg' },
-	{ prenom:'Oscar', nom:'Wambergue', surnom:'Gamb[R]ge', numero:'94-5-5²', photo:'Trombinoscope/Oscar_Wambergue.jpg' },
-	{ prenom:'Yann', nom:'Zannier', surnom:'Apa', numero:'33-124', photo:'Trombinoscope/Yann_Zannier.jpg' },
-  ];
-
-  initialPeople.forEach(p => {
-	  if (!p.photo || p.photo.toString().trim() === "") {
-		p.photo = 'Contact.png'; 
-	  }
-	});
-	
-  const fields = ['prenom','nom','surnom','numero'];
-  let lists = [];
-  let current = null, hiddenField = null;
-  let cycleQueue = [], cyclesDone = 0, maxCycles = 4;
-  let lives = 3, initialLives = 3, attemptLocked=false;
-  let gameCount = parseInt(localStorage.getItem("gameCount")||"0");
-  let correctAnswers = 0;
-
-
-  let activeFields = [...fields];
-
-  /********************
-   * MOT DE PASSE
-   ********************/
- let unlocked = false; // par défaut bloqué: NE PAS demander de mot de passe au chargement
-window.addEventListener("DOMContentLoaded", ()=>{
-// Ne pas demander le mot de passe automatiquement à l'arrivée : rester bloqué (unlocked=false)
-updateLockState();
-init();
-
-
-// associer le bouton admin au prompt
-const adminBtn = document.getElementById('adminBtn');
-if(adminBtn){
-adminBtn.addEventListener('click', ()=>{
-const pwd = prompt("Mot de passe admin :", "");
-if(pwd === "Respect"){
-unlocked = true;
-document.getElementById("errorBox").textContent = "Mode admin activé.";
-updateLockState();
-} else {
-document.getElementById("errorBox").textContent = "Mot de passe incorrect : édition désactivée.";
-}
-});
-}
-});
-
-
-function updateLockState(){
-const disable = !unlocked;
-document.querySelectorAll("#listBox input, #listBox button, #personBox input, #personBox button")
-.forEach(el=> el.disabled=disable);
-
-
-
-
-document.querySelectorAll("#personBox .special-chars span")
-.forEach(span => span.style.pointerEvents = disable ? "none" : "auto");
-
-
-document.querySelectorAll("#personBox .special-chars span")
-.forEach(span => span.style.opacity = disable ? "0.5" : "1");
-}
-  /********************
-   * GESTION DES LISTES
-   ********************/
-  function genId(){ return Math.random().toString(36).substr(2,9); }
-  function makeDefaultList(){
-    return { id: genId(), name:"Promo 2025", people: initialPeople.map(p=>({...p,id:genId()})) };
-  }
-  function loadLists(){ return JSON.parse(localStorage.getItem("lists")||"[]"); }
-  function saveLists(l){ localStorage.setItem("lists",JSON.stringify(l)); }
-  function getActiveList(){ return lists.find(l=>l.active); }
-  function setActiveList(id){ lists.forEach(l=>l.active=(l.id===id)); saveLists(lists); }
-
-  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
-
-  function prepareCycle(){
-    const active=getActiveList(); if(!active) return;
-    cycleQueue=[];
-    active.people.forEach(p=>{
-      const f=activeFields[Math.floor(Math.random()*activeFields.length)];
-      cycleQueue.push({person:p,field:f});
-    });
-    shuffle(cycleQueue);
-    cyclesDone++;
-  }
-
-  function pickNext(){
-    if(cycleQueue.length===0){
-      if(cyclesDone>=maxCycles){ 
-        gameOver(); 
-        return;
+      for(let i=0;i<p.length;i++){
+        for(let j=i+1;j<p.length;j++){
+          const a=p[i],b=p[j];
+          const dx=a.x-b.x,dy=a.y-b.y;const d2=dx*dx+dy*dy;
+          if(d2<25000){
+            ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+            ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.stroke();
+          }
+        }
       }
-      prepareCycle();
+      requestAnimationFrame(draw);
     }
-    const next=cycleQueue.pop();
-    current=next.person; hiddenField=next.field;
-    renderCurrent(); 
-    document.getElementById("remaining").textContent=cycleQueue.length;
-  }
-
-  function renderCurrent(){
-
-  const photoSrc = (current.photo && current.photo.toString().trim()) ? current.photo.toString().trim() : 'Contact.png';
-
-  let html = `<img src="${photoSrc}" alt="photo" onerror="this.onerror=null; this.src='Contact.png'"><ul>`;
-
-  fields.forEach(f=>{
-    let label = f==="prenom" ? "Prénom" : f==="nom" ? "Nom" : f==="surnom" ? "Surnom" : "Numéro de la famille";
-    html += `<li><strong>${label}:</strong> ${f===hiddenField ? "???" : current[f]}</li>`;
-  });
-
-  html += "</ul>";
-  document.getElementById("personDisplay").innerHTML = html;
-  document.getElementById("guess").value = "";
-}
-
-  /********************
-   * JEU
-   ********************/
-  function checkGuess(){
-  const g=document.getElementById("guess").value;
-  const correct=current[hiddenField]||"";
-  attemptLocked=true;
-
-	if (!hasGuessed) {
-    hasGuessed = true;
-    document.getElementById("btnToggleUnknowns").disabled = true;
-  }
-
-  attemptLocked = true;
-
-  document.getElementById("btnSetLives").disabled=true;
-  document.querySelector("#settingsBox button").disabled=true;
-
-  if(isPermissiveMatch(g, correct)){ 
-    correctAnswers++;
-    updateScore();
-    pickNext(); 
-  }
-  else { 
-    alert("Mauvaise réponse ! La bonne réponse était : " + current[hiddenField]);
-    lives--; updateLives();
-    if(lives<=0) gameOver(); else pickNext();
-  }
-  document.getElementById("btnToggleUnknowns").disabled = true;
-}
-
-  function skip(){
-    attemptLocked=true;
-    document.getElementById("btnSetLives").disabled=true;
-    lives-=0.5; updateLives();
-    if(lives<=0) gameOver(); else pickNext();
-  }
-
-  function updateLives(){ document.getElementById("lives").textContent=lives; }
-  function updateScore(){ document.getElementById("score").textContent=correctAnswers; }
-
-  function gameOver(){
-  gameCount++; localStorage.setItem("gameCount",gameCount);
-  alert("Game Over !");
-  const today = new Date();
-  const dateStr = today.toLocaleDateString();
-  const conformity = (initialLives <= 3 && activeFields.length === 4);
-  const score={ 
-    run:gameCount, 
-    lives:initialLives, 
-    correct:correctAnswers, 
-    date:dateStr,
-    conformity:conformity
-  };
-  let sc=JSON.parse(localStorage.getItem("scoreboard")||"[]");
-  sc.push(score); localStorage.setItem("scoreboard",JSON.stringify(sc));
-  renderScoreboard();
-
-  lives=initialLives; updateLives(); cycleQueue=[]; cyclesDone=0; prepareCycle(); pickNext(); attemptLocked=false;
-  document.getElementById("btnSetLives").disabled=false;
-  document.querySelector("#settingsBox button").disabled=false; 
-  correctAnswers=0; updateScore();
-  
-  
-}
-
-
-  function renderScoreboard(){
-    let sc=JSON.parse(localStorage.getItem("scoreboard")||"[]");
-    sc.sort((a,b)=>b.correct - a.correct); // tri décroissant
-    let ul=document.getElementById("scoreboard");
-    ul.innerHTML=`
-      <table style="width:100%; font-size:0.9em; border-collapse:collapse;">
-        <tr style="font-weight:bold; border-bottom:1px solid #aaa;">
-          <td>Essai</td><td>Bonnes réponses</td><td>Date</td><td>Conformité</td>
-        </tr>
-        ${sc.map(s=>`
-          <tr>
-            <td>${s.run}</td>
-            <td>${s.correct}</td>
-            <td>${s.date}</td>
-            <td style="text-align:center;">${s.conformity ? "✅" : "❌"}</td>
-          </tr>`).join("")}
-      </table>
-    `;
-  }
-
-  function clearScoreboard(){
-    if(confirm("Effacer le classement ?")){ localStorage.removeItem("scoreboard"); renderScoreboard(); }
-  }
-
-  function populateListSelect(){
-    let sel=document.getElementById("listSelect"); sel.innerHTML="";
-    lists.forEach(l=>{
-      let opt=document.createElement("option");
-      opt.value=l.id; opt.textContent=l.name; if(l.active) opt.selected=true;
-      sel.appendChild(opt);
-    });
-  }
-
-  function changeList(){
-    setActiveList(document.getElementById("listSelect").value); cycleQueue=[]; cyclesDone=0; prepareCycle(); pickNext();
-  }
-  function createList(){
-    let n=document.getElementById("newListName").value.trim(); if(!n) return;
-    lists.push({id:genId(),name:n,people:[],active:false}); saveLists(lists); populateListSelect();
-  }
-  function renameList(){
-    let id=document.getElementById("listSelect").value;
-    let l=lists.find(x=>x.id===id); if(!l) return;
-    l.name=document.getElementById("renameListName").value.trim();
-    saveLists(lists); populateListSelect();
-  }
-  function deleteList(){
-    if(!confirm("Supprimer la liste ?")) return;
-    let id=document.getElementById("listSelect").value;
-    lists=lists.filter(x=>x.id!==id); if(lists.length===0) lists=[makeDefaultList()]; 
-    lists[0].active=true; saveLists(lists); populateListSelect();
-  }
-
-  function addPerson(){
-	  const photoVal = (photo.value && photo.value.trim()) ? photo.value.trim() : 'Contact.png';
-	  const p = {
-		prenom: prenom.value,
-		nom: nom.value,
-		surnom: surnom.value,
-		numero: numero.value,
-		photo: photoVal,
-		id: genId()
-	  };
-	  let act = getActiveList();
-	  act.people.push(p);
-	  saveLists(lists);
-	  cycleQueue = [];
-	  cyclesDone = 0;
-	  prepareCycle();
-	  pickNext();
-	  prenom.value = nom.value = surnom.value = numero.value = photo.value = '';
-	}
-	
-  let hideUnknowns = false; // état du filtre
-	let hasGuessed = false;   // pour savoir si un guess a déjà été fait
-
-	function toggleUnknowns(forceInit) {
-	  const act = getActiveList();
-	  if (!act) return;
-
-	  // Si on force le masquage initial, on ne bascule pas l'état
-	  if (forceInit === true) hideUnknowns = true;
-	  else hideUnknowns = !hideUnknowns;
-
-	  const btn = document.getElementById("btnToggleUnknowns");
-	  btn.textContent = hideUnknowns ? "Afficher les '??'" : "Masquer les '??'";
-
-	  const fullPeople = act.people;
-	  const filtered = hideUnknowns
-		? fullPeople.filter(p => p.surnom.trim() !== "??" && p.numero.trim() !== "??")
-		: fullPeople;
-
-	  cycleQueue = [];
-	  cyclesDone = 0;
-	  prepareCycleFrom(filtered);
-	  pickNext();
-	}
-
-	function prepareCycleFrom(people) {
-	  const activeFieldsCopy = [...activeFields];
-	  cycleQueue = [];
-	  people.forEach(p => {
-		const f = activeFieldsCopy[Math.floor(Math.random() * activeFieldsCopy.length)];
-		cycleQueue.push({ person: p, field: f });
-	  });
-	  shuffle(cycleQueue);
-	  cyclesDone++;
-	}
-
-  function setLives(){
-    const val=parseInt(prompt("Nombre de vies de départ :", initialLives));
-    if(!isNaN(val) && val>0){ initialLives=val; lives=val; updateLives(); }
-  }
-
-  function updateHiddenFields(){
-    activeFields = [];
-    if(document.getElementById("chkPrenom").checked) activeFields.push("prenom");
-    if(document.getElementById("chkNom").checked) activeFields.push("nom");
-    if(document.getElementById("chkSurnom").checked) activeFields.push("surnom");
-    if(document.getElementById("chkNumero").checked) activeFields.push("numero");
-    cycleQueue=[]; cyclesDone=0; prepareCycle(); pickNext();
-  }
-
-  function init(){
-    const storedVersion = localStorage.getItem("initialVersion");
-    const currentVersion = JSON.stringify(initialPeople);
-
-    if(storedVersion !== currentVersion){
-      lists=[makeDefaultList()];
-      lists[0].active=true;
-      saveLists(lists);
-      localStorage.setItem("initialVersion", currentVersion);
-    } else {
-      lists=loadLists(); 
-      if(lists.length===0){ lists=[makeDefaultList()]; saveLists(lists); }
-    }
-
-    if(!lists.some(l=>l.active)) lists[0].active=true;
-    saveLists(lists);
-
-    populateListSelect();
-    cyclesDone=0; prepareCycle();
-    lives=initialLives; updateLives();
-    pickNext();
-    renderScoreboard();
-    updateScore();
-
-    document.getElementById("guess").addEventListener("keydown", e=>{
-      if(e.key==="Enter") checkGuess();
-    });
-	toggleUnknowns(true);
-  }
-  /********************
- * RENDU TROMBINOSCOPE
- ********************/
-function renderGrid() {
-  const grid = document.getElementById("grid");
-  const searchValue = document.getElementById("search").value.toLowerCase();
-  const sortBy = document.getElementById("sort").value;
-
-  let people = getActiveList()?.people || [];
-
-  // Filtrer par recherche
-  let filteredPeople = people;
-  if (searchValue) {
-    filteredPeople = people.filter(p => {
-      return (p.prenom + p.nom + p.surnom + p.numero)
-        .toLowerCase()
-        .includes(searchValue.toLowerCase());
-    });
-  }
-
-  function firstNumber(str) {
-    const match = str.match(/\d+/);
-    return match ? parseInt(match[0], 10) : null; 
-  }
-
-  filteredPeople.sort((a, b) => {
-    if (sortBy === "name") {
-      return (a.nom + a.prenom).localeCompare(b.nom + b.prenom);
-    }
-    if (sortBy === "family") {
-      const numA = firstNumber(a.numero);
-      const numB = firstNumber(b.numero);
-
-      
-      if (numA === null && numB === null) return 0;
-      if (numA === null) return 1;
-      if (numB === null) return -1;
-
-      return numA - numB;
-    }
-    return 0;
-  });
-
-  grid.innerHTML = "";
-  if (filteredPeople.length === 0) {
-    grid.innerHTML = `<div style="
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-      color: #c0392b;
-      font-size: 24px;
-      text-align: center;
-    ">Aucun chicop's ne correspond à cette description...</div>`;
-  } else {
-    filteredPeople.forEach(p => {
-      const photoSrc = p.photo && p.photo.trim() ? p.photo.trim() : "Contact.png";
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <img src="${photoSrc}" alt="photo" onerror="this.onerror=null;this.src='Contact.png'">
-        <h3>${p.prenom} ${p.nom}</h3>
-        <p>${p.surnom || "???"} - ${p.numero || "???"}</p>
-      `;
-      grid.appendChild(card);
-    });
-  }
-}
-
-
-window.addEventListener("DOMContentLoaded", () => {
-  renderGrid();
-  toggleUnknowns(true);
-});
-</script>
-
+    draw();
+    window.addEventListener('resize',()=>{w=c.width=innerWidth;h=c.height=innerHeight;});
+  </script>
 </body>
 </html>
 
