@@ -415,7 +415,7 @@ BEGIN:VCARD
 VERSION:3.0
 N:Fauchois;Antoine;;;
 FN:Antoine Fauchois
-TEL;TYPE=CELL:+33782509414
+TEL;TYPE=CELL:+33783906321
 NOTE:Surnom: bat\nNuméro de famille: 55-4-51
 END:VCARD
 BEGIN:VCARD
@@ -466,6 +466,13 @@ N:Gennequin;Léopold;;;
 FN:Léopold Gennequin
 TEL;TYPE=CELL:+33783943132
 NOTE:Surnom: Morpheus\nNuméro de famille: 70-60
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Genon Mandy;Benjamin;;;
+FN:Benjamin Genon Mandy
+TEL;TYPE=CELL:+33665243929
+NOTE:Surnom: Jamy\nNuméro de famille: 90-158
 END:VCARD
 BEGIN:VCARD
 VERSION:3.0
@@ -1040,6 +1047,13 @@ N:Sarhan;Amr;;;
 FN:Amr Sarhan
 TEL;TYPE=CELL:+33753196157
 NOTE:Surnom: [A]bout\nNuméro de famille: 40² -140
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Seguin;Benjamin;;;
+FN:Benjamin Seguin
+TEL;TYPE=CELL:+33632698523
+NOTE:Surnom: MaBiquette\nNuméro de famille: 113-106
 END:VCARD
 BEGIN:VCARD
 VERSION:3.0
