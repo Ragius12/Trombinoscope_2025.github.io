@@ -270,6 +270,7 @@
 	<div class="grid" id="grid"></div>
 <script>
 
+
 	function ouvrirTrombi() {
       window.open('trombinoscope.html', '_blank');
     }
@@ -386,7 +387,7 @@ const initialPeople = [
 	{ prenom:'Noa', nom:'Defontaine', surnom:'[2]Joüvence', numero:'35', photo:'Trombinoscope/Noa_Defontaine.jpg' , tél: "0681239559"},
 	{ prenom:'Maxence', nom:'Depret', surnom:'[P]rvier', numero:'167', photo:'Trombinoscope/Maxence_Depret.jpg' , tél: "0771152245"},
 	{ prenom:'Cyrille', nom:'de Gélis', surnom:'Hareng', numero:'123-80', photo:'Trombinoscope/Cyrille_De Gélis.jpg' , tél: "0652662489"},
-	{ prenom:'Jim', nom:'de Laborde De Monpezat', surnom:'[O]pper', numero:'101 nike', photo:'Trombinoscope/Jim_De Laborde De Monpezat.jpg' , tél: "0633529567"},
+	{ prenom:'Jim', nom:'de Laborde De Monpezat', surnom:'[O]pper', numero:'101 nike', photo:'Trombinoscope/Jim_De Laborde De Monpezat.jpg' , tél: "0750223058"},
 	{ prenom:'Wandrille', nom:'de Montfort', surnom:'Khlys', numero:'157', photo:'Trombinoscope/Wandrille_De Montfort.jpg' , tél: "0636112513"},
 	//{ prenom:'Arthur', nom:'de Oliveira Lopes', surnom:'??', numero:'??', photo:'Trombinoscope/Arthur_De Oliveira Lopes.jpg' , tél: ""},
 	{ prenom:'Jean-Denis', nom:'de Robillard', surnom:'Strike', numero:'911', photo:'Trombinoscope/Jean-Denis.jpg' , tél: "0762684679"},
@@ -618,40 +619,58 @@ window.addEventListener("load", function() {
     document.getElementById("remaining").textContent=cycleQueue.length;
   }
 
-  function formatPhoneNumber(raw) {
-  if (!raw) return "???";
-  let num = raw.replace(/[^\d+]/g, ""); // garde les chiffres et +
+function cleanPhone(raw) {
+  if (!raw) return "";
+  let s = raw.toString().trim();
+  // garde + et chiffres
+  let num = s.replace(/[^\d+]/g, "");
+  // si commence par 0 on convertit en +33 pour la génération de lien wa
+  if (num.startsWith("0")) num = "+33" + num.slice(1);
+  // si commence sans + on ajoute +
+  if (!num.startsWith("+")) num = "+" + num;
+  return num;
+}
 
-  // FRANCE : commence par 0 ou +33 et 10 chiffres
-  if (/^(?:\+33|0)[1-9]\d{8}$/.test(num)) {
-    num = num.replace(/^(\+33|0)([1-9]\d)(\d{2})(\d{2})(\d{2})(\d{2})$/, (_, p, a, b, c, d, e) =>
-      (p === "+33" ? "+33 " : "0") + `${a} ${b} ${c} ${d} ${e}`
-    );
-    return num;
+function formatFrenchLocalFromPlus33(num) {
+  // attend +33 suivi de 9 chiffres
+  let digits = num.replace(/[^\d]/g, "");
+  if (digits.startsWith("33") && digits.length === 11) {
+    // retourne sous forme 0X XX XX XX XX
+    let local = '0' + digits.slice(2);
+    return local.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+  }
+  return null;
+}
+
+
+  function formatPhoneDisplay(num) {
+  if (!num) return "";
+  // num est attendu sous forme +... (cleanPhone)
+  const rawDigits = num.replace(/[^\d+]/g, "");
+
+  // FRANCE : +33...
+  const frenchLocal = formatFrenchLocalFromPlus33(rawDigits);
+  if (frenchLocal) return frenchLocal; // ex: "06 95 72 40 82"
+
+  // BRÉSIL : +55 DDD(2) + 9 chiffres -> +55 21 99595-2610
+  if (/^\+55\d{11}$/.test(rawDigits)) {
+    return rawDigits.replace(/^\+55(\d{2})(\d{5})(\d{4})$/, "+55 $1 $2-$3");
   }
 
-  // UK : +44 ou 0 suivi de 10 chiffres
-  if (/^(?:\+44|0)7\d{9}$/.test(num)) {
-    num = num.replace(/^(\+44|0)(7\d{3})(\d{6})$/, (_, p, a, b) =>
-      (p === "+44" ? "+44 " : "0") + `${a} ${b.slice(0,3)} ${b.slice(3)}`
-    );
-    return num;
+  // UK mobile typical +447xxxxxxxxx -> +44 7XXX XXX XXX
+  if (/^\+447\d{9}$/.test(rawDigits)) {
+    return rawDigits.replace(/^\+44(7\d{3})(\d{3})(\d{3})$/, "+44 $1 $2 $3");
   }
 
-  // BRÉSIL : +55 suivi de DDD (2 chiffres) et 9 chiffres
-  if (/^\+55\d{11}$/.test(num)) {
-    num = num.replace(/^\+55(\d{2})(\d{5})(\d{4})$/, "+55 $1 $2-$3");
-    return num;
+  // USA/CA
+  if (/^\+1\d{10}$/.test(rawDigits)) {
+    return rawDigits.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, "+1 ($1) $2-$3");
   }
 
-  // USA / CANADA : +1 ou 1 suivi de 10 chiffres
-  if (/^(?:\+1|1)\d{10}$/.test(num)) {
-    num = num.replace(/^(?:\+1|1)(\d{3})(\d{3})(\d{4})$/, "+1 ($1) $2-$3");
-    return num;
-  }
-
-  // Si inconnu : espace tous les 2 chiffres si français probable
-  return num.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+  // Autres pays : affiche +CC XX XX ... (groupe de 2 après l'indicatif)
+  return rawDigits.replace(/^(\+\d{1,3})(\d+)$/, function(_, p, rest) {
+    return p + ' ' + rest.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
+  });
 }
 
   function renderCurrent(){
@@ -846,99 +865,31 @@ window.addEventListener("load", function() {
   /********************
  * RENDU TROMBINOSCOPE
  ********************/
-  function renderGrid() {
+ function renderGrid() {
   const grid = document.getElementById("grid");
-  const searchValue = document.getElementById("search").value.toLowerCase();
-  const sortBy = document.getElementById("sort").value;
+  const searchValue = (document.getElementById("search") && document.getElementById("search").value || "").toLowerCase();
+  const sortBy = (document.getElementById("sort") && document.getElementById("sort").value) || 'name';
+  let people = (getActiveList && getActiveList()?.people) || initialPeople;
 
-  let people = getActiveList()?.people || [];
-
-  // --- Formatage international des numéros (robuste) ---
-  function formatPhoneNumber(raw) {
-    if (!raw) return "???";
-    // garder le + s'il est en première position, puis uniquement les chiffres
-    raw = raw.toString().trim();
-    let num = raw.startsWith("+") ? "+" + raw.slice(1).replace(/\D/g, "") : raw.replace(/\D/g, "");
-
-    // FRANCE : commence par 0 et 10 chiffres (ex: 06xxxxxxxx) -> "06 06 06 06 06"
-    if (/^0\d{9}$/.test(num)) {
-      // grouper en paquets de 2 chiffres
-      const groups = num.match(/\d{2}/g) || [num];
-      return groups.join(" ");
-    }
-
-    // FRANCE avec indicatif +33 : +33 then 9 digits (leading 0 removed)
-    if (/^\+33\d{9}$/.test(num)) {
-      const rest = num.slice(3); // 9 chiffres restant, ex "695724082"
-      // afficher "+33 6 95 72 40 82" : premier chiffre seul puis paquets de 2
-      const first = rest.charAt(0);
-      const others = rest.slice(1).match(/\d{2}/g) || [];
-      return "+33 " + [first, ...others].join(" ");
-    }
-
-    // UK mobile common : starts with 07xxxx... or +447xxxx... -> format +44 7xxx xxx xxx or 07xx xxxx xxx
-    if (/^0?7\d{9}$/.test(num) || /^\+447\d{9}$/.test(num)) {
-      if (num.startsWith("+44")) {
-        const rest = num.slice(3); // 10? or 9? assume 10 after +44
-        const groups = rest.match(/.{1,3}/g) || [rest];
-        return "+44 " + groups.join(" ");
-      } else {
-        // '07xxxxxxxxx' -> '07xx xxx xxxx' (simple split)
-        const g = num.match(/^(\d{4})(\d{3})(\d{3})$/);
-        if (g) return `${g[1]} ${g[2]} ${g[3]}`;
-        return num;
-      }
-    }
-
-    // BRÉSIL : +55AA9BBBBBBBB or local patterns; if +55 and 11 chiffres après
-    if (/^\+55\d{11}$/.test(num)) {
-      const g = num.match(/^\+55(\d{2})(\d{5})(\d{4})$/);
-      if (g) return `+55 ${g[1]} ${g[2]}-${g[3]}`;
-      return num;
-    }
-
-    // USA / CANADA : +1XXXXXXXXXX or 1XXXXXXXXXX or XXXXXXXXXX -> +1 (AAA) BBB-CCCC
-    if (/^(?:\+1|1)?\d{10}$/.test(num)) {
-      let core = num;
-      if (num.startsWith("+1")) core = num.slice(2);
-      else if (num.length === 11 && num.startsWith("1")) core = num.slice(1);
-      // core est maintenant 10 chiffres
-      const g = core.match(/(\d{3})(\d{3})(\d{4})/);
-      if (g) return `+1 (${g[1]}) ${g[2]}-${g[3]}`;
-      return num;
-    }
-
-    // Si inconnu mais long : espace tous les 2 chiffres
-    const onlyDigits = num.replace(/\D/g, "");
-    if (onlyDigits.length >= 6) {
-      const groups = onlyDigits.match(/.{1,2}/g) || [onlyDigits];
-      return groups.join(" ");
-    }
-
-    // fallback : renvoyer tel "tel" nettoyé (ou original)
-    return num || raw;
-  }
-
-  // --- Filtrage ---
   let filteredPeople = people;
   if (searchValue) {
-    filteredPeople = people.filter(p => {
-      return (p.prenom + p.nom + p.surnom + p.numero)
+    filteredPeople = people.filter((p) =>
+      (p.prenom + p.nom + (p.surnom||'') + (p.numero||''))
         .toLowerCase()
-        .includes(searchValue.toLowerCase());
-    });
+        .includes(searchValue)
+    );
   }
 
-  // --- Tri ---
   function firstNumber(str) {
     const match = str && str.toString().match(/\d+/);
     return match ? parseInt(match[0], 10) : null;
   }
-
   filteredPeople.sort((a, b) => {
-    if (sortBy === "name") return (a.nom + a.prenom).localeCompare(b.nom + b.prenom);
+    if (sortBy === "name")
+      return (a.nom + a.prenom).localeCompare(b.nom + b.prenom);
     if (sortBy === "prenom") return a.prenom.localeCompare(b.prenom);
-    if (sortBy === "surnom") return (a.surnom || "").localeCompare(b.surnom || "");
+    if (sortBy === "surnom")
+      return (a.surnom || "").localeCompare(b.surnom || "");
     if (sortBy === "family") {
       const numA = firstNumber(a.numero);
       const numB = firstNumber(b.numero);
@@ -950,52 +901,89 @@ window.addEventListener("load", function() {
     return 0;
   });
 
-  // --- Affichage ---
   grid.innerHTML = "";
+
   if (filteredPeople.length === 0) {
-    grid.innerHTML = `<div style="
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-      color: #c0392b;
-      font-size: 24px;
-      text-align: center;
-    ">Aucun chicop's ne correspond à cette description...</div>`;
-  } else {
-    filteredPeople.forEach(p => {
-      const photoSrc = p.photo && p.photo.trim() ? p.photo.trim() : "Contact.png";
-      const telFormatted = p['tél'] ? formatPhoneNumber(p['tél']) : "";
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `
-        <img src="${photoSrc}" alt="photo" onerror="this.onerror=null;this.src='Contact.png'">
-        <h3 style="font-family: 'Old English Text MT', 'Gothic Old English', serif; margin:5px 0;">
-          ${p.prenom} ${p.nom}
-        </h3>
-        <p style="margin:0;">${p.surnom || "???"} - ${p.numero || "???"}</p>
-        <p style="font-size:0.85em; margin-top:6px; color:#555;">
-          ${telFormatted ? 'Tél : ' + telFormatted : ''}
-        </p>
-      `;
-      grid.appendChild(card);
-    });
+    grid.innerHTML = `<div style="text-align:center; color:#c0392b; font-size:24px;">Aucun chicop's ne correspond à cette description...</div>`;
+    return;
   }
+
+  // --- Bouton d'affichage WhatsApp ---
+  const toggleBtn = document.createElement("button");
+  toggleBtn.textContent = "Afficher les contacts WhatsApp";
+  toggleBtn.style = "margin-bottom:15px; padding:8px 15px; font-weight:bold;";
+  let waVisible = false;
+  toggleBtn.onclick = () => {
+    waVisible = !waVisible;
+    document.querySelectorAll(".wa-buttons").forEach((div) => {
+      div.style.display = waVisible ? "flex" : "none";
+    });
+    document.querySelectorAll('.phone').forEach(p => {
+      p.style.display = waVisible ? 'block' : 'none';
+    });
+    toggleBtn.textContent = waVisible
+      ? "Masquer les contacts WhatsApp"
+      : "Afficher les contacts WhatsApp";
+  };
+  grid.appendChild(toggleBtn);
+
+  filteredPeople.forEach((p) => {
+    const photoSrc = p.photo && p.photo.trim() ? p.photo.trim() : "Contact.png";
+    const rawPhone = p["tél"] ? cleanPhone(p["tél"]) : ""; // +33... form
+    const displayPhone = rawPhone ? formatPhoneDisplay(rawPhone) : "";
+    const waLink = rawPhone ? `https://wa.me/${rawPhone.replace(/\D/g, "")}` : null;
+    const vcfName = `${p.prenom}_${p.nom}`
+      .replace(/\s+/g, "_")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const vcfPath = `contacts/${vcfName}.vcf`;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${photoSrc}" alt="photo" onerror="this.onerror=null;this.src='Contact.png'">
+      <h3 style="font-family:'Old English Text MT',serif;">${p.prenom} ${p.nom}</h3>
+      <p>${p.surnom || "???"} - ${p.numero || "???"}</p>
+      <p class="phone" style="display:none; font-size:0.9em;color:#555;">${displayPhone ? "Tél : " + displayPhone : ""}</p>
+      <div class="wa-buttons" style="display:none; justify-content:center; gap:8px; margin-top:8px;">
+        ${waLink
+          ? `<a href="${waLink}" target="_blank"
+               style="background:#25D366; color:white; padding:6px 10px;
+                      border-radius:6px; text-decoration:none; font-weight:bold;">Message WhatsApp</a>`
+          : ""}
+        <a href="${vcfPath}" download
+           style="background:#007bff; color:white; padding:6px 10px;
+                  border-radius:6px; text-decoration:none; font-weight:bold;">Ajouter Contact</a>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  // --- Carte "Tout ajouter" ---
+  const allCard = document.createElement("div");
+  allCard.className = "card";
+  allCard.style.background = "#f8f9fa";
+  allCard.innerHTML = `
+    <h3>Toüs en un clic</h3>
+    <p>Ajoute l'ensemble des chicop's à ton téléf's.</p>
+    <button style="background:#28a745; color:white; padding:10px 15px;
+                   border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
+      Tout ajouter
+    </button>`;
+  allCard.querySelector("button").onclick = () => {
+    if (confirm("Confirmer l'ajout de tous les contacts WhatsApp ?")) {
+      window.location.href = "contacts/contacts_all.vcf";
+    }
+  };
+  grid.appendChild(allCard);
 }
 
-
-window.addEventListener("load", function() {
-    // Appel automatique de la fonction d’actualisation
-    renderGrid();
+window.addEventListener("load", function () {
+  renderGrid();
 });
 </script>
 
 </body>
 </html>
-
-
-
-
 
 
 
