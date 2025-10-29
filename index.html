@@ -210,12 +210,77 @@
           <div class="label">Thuysses DDB</div>
           <div class="desc">L'art de ne pas sacquer.</div>
         </div>
+		<div class="card" onclick="openPage('https://savoir.ensam.eu/moodle/')">
+          <div class="label">Savoir Ensam</div>
+          <div class="desc">Un peu de Birse ça fait pas de mal ?</div>
+        </div>
+		
+		<div class="card" id="liseCard" onclick="openLiseFast()">
+			  <div class="label">Connexion à Lise</div>
+			  <div id="statusLise" style="margin-top:8px;font-size:0.9em;opacity:0.7;">
+				Planning, notes, abscences...
+			  </div>
+			</div>
+
+			<script>
+			async function openLiseFast() {
+			  const status = document.getElementById("statusLise");
+			  status.textContent = "Connexion à Outlook...";
+			  status.style.opacity = 1;
+
+			  // durée max de validité locale (ex: 6 mois)
+			  const VALIDITY = 1000 * 60 * 60 * 24 * 30 * 6; 
+			  const lastConnect = localStorage.getItem("liseConnectTime");
+			  const now = Date.now();
+
+			  if (lastConnect && now - lastConnect < VALIDITY) {
+				status.textContent = "Session Outlook récente ✔️";
+				window.open("https://lise.ensam.eu/", "_blank");
+				return;
+			  }
+
+			  // tentative d'auto-connexion Outlook
+			  status.textContent = "Ouverture de la session Outlook...";
+			  const win = window.open("https://outlook.office.com/mail/", "_blank", "width=500,height=500,opacity=0");
+			  
+			  // Attente de 5 secondes (permet de réactiver la session SSO)
+			  await new Promise(r => setTimeout(r, 5000));
+
+			  try { win.close(); } catch(e) {}
+
+			  // enregistre une "session locale" longue durée
+			  localStorage.setItem("liseConnectTime", Date.now());
+			  status.textContent = "Redirection vers Lise...";
+			  window.open("https://lise.ensam.eu/", "_blank");
+
+			  setTimeout(() => {
+				status.textContent = "Connecté ✔️ (valide 30 jours)";
+				status.style.opacity = 0.7;
+			  }, 1000);
+			}
+			</script>
+
         <div class="card">
           <div class="label">À venir</div>
           <div class="desc">Prochainement de nouvelles rubriques !</div>
         </div>
       </section>
 
+	<script>
+	function simulateLogin(){
+	  const user = prompt("Entrez votre adresse Outlook ENSAM (ex: prenom.nom@ensam.eu)");
+	  if(user){
+		localStorage.setItem("ensamUser", user);
+		document.getElementById("ensamUser").textContent = user;
+	  }
+	}
+	window.addEventListener("load", ()=>{
+	  const u = localStorage.getItem("ensamUser");
+	  if(u) document.getElementById("ensamUser").textContent = u;
+	});
+	</script>
+	
+	
       <div class="footer">Fait avec coher's par l'un de vos chicop’s, brassez moi en privé pour de potentiels problèmes !<BR> Version 1.0 - Je suis déjà au courant pour la vidéal et les photos de la galerie...</div>
     </main>
   </div>
