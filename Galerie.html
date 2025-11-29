@@ -15,42 +15,7 @@
 <title>Blablac'Arts</title>
 
 <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
-
-			<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
-			<script>
-			  const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
-			  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"; 
-			  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-			async function login() {
-			  const email = document.getElementById("email").value.trim();
-			  if (!email) return alert("Entre ton email.");
-
-			  const { error } = await supabase.auth.signInWithOtp({ email });
-			  if (error) alert(error.message);
-			  else alert("Lien envoyé ! Vérifie ta boîte mail.");
-			}
-			async function logout() {
-			  await supabase.auth.signOut();
-			  location.reload();
-			}
-			supabase.auth.onAuthStateChange((event, session) => {
-			  if (session) {
-				// connecté
-				document.getElementById("loginArea").style.display = "none";
-				document.getElementById("publishArea").style.display = "block";
-				document.getElementById("userEmail").textContent = session.user.email;
-
-				loadTrips();
-				loadMyReservation();
-			  } else {
-				// déconnecté
-				document.getElementById("loginArea").style.display = "block";
-				document.getElementById("publishArea").style.display = "none";
-			  }
-			});
-			</script>
-
+	
 <style>
 @font-face {
     font-family: "Old English Text MT", "Gothic Old English", serif;
@@ -256,7 +221,41 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
 
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 <script>
+			  const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
+			  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"; 
+			  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+			async function login() {
+			  const email = document.getElementById("email").value.trim();
+			  if (!email) return alert("Entre ton email.");
+
+			  const { error } = await supabase.auth.signInWithOtp({ email });
+			  if (error) alert(error.message);
+			  else alert("Lien envoyé ! Vérifie ta boîte mail.");
+			}
+			async function logout() {
+			  await supabase.auth.signOut();
+			  location.reload();
+			}
+			supabase.auth.onAuthStateChange((event, session) => {
+			  if (session) {
+				// connecté
+				document.getElementById("loginArea").style.display = "none";
+				document.getElementById("publishArea").style.display = "block";
+				document.getElementById("userEmail").textContent = session.user.email;
+
+				loadTrips();
+				loadMyReservation();
+			  } else {
+				// déconnecté
+				document.getElementById("loginArea").style.display = "block";
+				document.getElementById("publishArea").style.display = "none";
+			  }
+			});
+
 const ADMIN_PASS = "Error404trads";
 let adminMode = false;
 let currentUser = null;
@@ -594,6 +593,7 @@ function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"'
 </script>
 </body>
 </html>
+
 
 
 
