@@ -9,123 +9,153 @@
 	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 	})(window,document,'script','dataLayer','GTM-5X9NDHBP');</script>
 	<!-- End Google Tag Manager -->
-  
-  <meta charset="UTF-8">
-  <title>Galerie Photo</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
-      background: url("Ec's.png") no-repeat center center fixed;
-      background-size: cover;
-    }
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(255, 255, 255, 0.7);
-      z-index: -1;
-    }
 
-    /* Bandeau supérieur */
-    .header {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      height: 60px;
-      background: black;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: "Old English Text MT", serif;
-      font-size: 32px;
-      letter-spacing: 2px;
-      z-index: 1000;
-    }
-    .header img {
-      position: absolute;
-      height: 45px;
-    }
-    .header .left { left: 15px; }
-    .header .right { right: 15px; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Blablac'Arts</title>
 
-    /* Conteneur principal */
-    .container {
-      max-width: 1100px;
-      margin: 100px auto 50px auto;
-      padding: 20px;
-    }
+<link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
 
-    h1 {
-      text-align: center;
-      color: #222;
-      margin-bottom: 30px;
-    }
+			<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+			<script>
+			  const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
+			  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"; 
+			  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    /* Grille d’images */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 25px;
-    }
+			async function login() {
+			  const email = document.getElementById("email").value.trim();
+			  if (!email) return alert("Entre ton email.");
 
-    .photo {
-      background-color: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      overflow: hidden;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-      cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 10px;
-    }
+			  const { error } = await supabase.auth.signInWithOtp({ email });
+			  if (error) alert(error.message);
+			  else alert("Lien envoyé ! Vérifie ta boîte mail.");
+			}
+			async function logout() {
+			  await supabase.auth.signOut();
+			  location.reload();
+			}
+			supabase.auth.onAuthStateChange((event, session) => {
+			  if (session) {
+				// connecté
+				document.getElementById("loginArea").style.display = "none";
+				document.getElementById("publishArea").style.display = "block";
+				document.getElementById("userEmail").textContent = session.user.email;
 
-    .photo:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-    }
+				loadTrips();
+				loadMyReservation();
+			  } else {
+				// déconnecté
+				document.getElementById("loginArea").style.display = "block";
+				document.getElementById("publishArea").style.display = "none";
+			  }
+			});
+			</script>
 
-    .photo img {
-      width: 100%;
-      height: auto;
-      max-height: 250px;
-      border-radius: 12px;
-      object-fit: contain;
-      background-color: #f4f4f4;
-    }
+<style>
+@font-face {
+    font-family: 'ZaGoth';
+    src: url('zagoth.ttf');
+}
 
-    /* Mode plein écran */
-    .fullscreen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.9);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-      cursor: zoom-out;
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1b1f3b, #2e345c);
+    margin: 0; padding: 0; color: white;
+}
 
-    .fullscreen.active {
-      visibility: visible;
-      opacity: 1;
-    }
+header {
+    text-align:center; padding:25px;
+    font-family:'ZaGoth','MedievalSharp',cursive;
+}
 
-    .fullscreen img {
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 12px;
-      box-shadow: 0 0 30px rgba(255,255,255,0.3);
-    }
-  </style>
+h1 { font-size:2.8rem; margin:0; }
+.container { max-width:900px; margin:auto; padding:20px; }
+
+.card {
+    background: rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    position: relative;
+    animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+
+.btn-publish {
+    display: block;
+    margin: 0 auto 20px auto;
+    text-align: center;
+}
+
+.bandeau {
+    position:absolute;
+    top:40%;  
+    left:15%;  
+    transform: translateX(-50%) rotate(-35deg);
+    background:#c62828;
+    color:white;
+    padding:10px 44px;
+    font-size:18px;
+    font-family:'ZaGoth','MedievalSharp',cursive;
+    box-shadow:0 4px 12px rgba(0,0,0,0.5);
+    letter-spacing:2px;
+    z-index:2;
+	opacity: 0.8;
+}
+
+.trajet {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  background: rgba(255,255,255,0.12);
+  border-left: 5px solid #ffd369;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 26px;
+  position: relative;
+}
+.trajet-info {
+  flex: 1;
+  min-width: 0; 
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 150px;
+  align-items: stretch;
+}
+.btn-disabled {
+  background: gray;
+  color: #444;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.label-fixed { font-family:'ZaGoth','MedievalSharp',cursive; letter-spacing:1px; font-weight:bold}
+
+.btn { background:#ffd369; color:#1b1f3b; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; transition:0.2s; }
+.btn:hover{transform:scale(1.03);} 
+
+.delete-btn{ background:#d9534f; padding:6px 10px; border-radius:6px; cursor:pointer; transition:0.2s; }
+.delete-btn:hover{transform:scale(1.03);} 
+
+form input, form select, form textarea { width:100%; padding:10px; border-radius:8px; border:none; margin-bottom:12px; }
+
+select, input, textarea { transition: 0.25s; }
+select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 0 0 12px #ffd369; }
+
+.trajet { transition: transform 0.25s, box-shadow 0.25s; }
+.trajet:hover{ transform: translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
+
+.autre-input { display:none; margin-top:6px; }
+
+</style>
 </head>
 <body>
 
@@ -134,237 +164,416 @@
 	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	<!-- End Google Tag Manager (noscript) -->
   
-  <div class="header">
-    <img src="Logo.png" alt="Logo" class="left">
-    Galerie 2025
-    <img src="Buzzy.png" alt="Bourdon" class="right">
-  </div>
+<header><h1>Blablac'Arts – Tunnel entre deux villes</h1></header>
 
-  <div class="container">
-    <h1>Galerie Photo</h1>
-    <div class="grid" id="gallery"></div>
-  </div>
+<div id="loginArea">
+   <input id="email" placeholder="email">
+   <button onclick="login()">Connexion</button>
+</div>
 
-  <!-- Image plein écran -->
-  <div class="fullscreen" id="fullscreen">
-    <img src="" alt="Image">
-  </div>
+<div id="publishArea" style="display:none;">
+   Connecté : <span id="userEmail"></span>
+   <button onclick="logout()">Déconnexion</button>
+</div>
 
-<footer style="text-align: center; font-family: 'Old English Text MT', 'Gothic', 'Blackletter', serif;">
-  Vespula 84 — Promotion 2025
-</footer>
+<div class="container">
+
+<!-- Bouton afficher/masquer formulaire -->
+<div class="btn btn-publish" onclick="toggleForm()">➕ Publier un trajet</div>
+<BR>
+<!-- Formulaire publication -->
+<div id="form-container" class="card" style="display:none;">
+<h2 class="label-fixed">Publier un trajet</h2>
+<form id="publishForm" onsubmit="publishTrip(event)">
+    <span class="label-fixed">Identité du conducteur :</span>
+    <input id='nom' placeholder='Nom' required>
+    <input id='prenom' placeholder='Prénom' required>
+	<input id='surns_pub' placeholder="Surn's" required>
+    <input id='fams_pub' placeholder="Fam's" required>
+    <select id='promo' required>
+        <option value="">— Promo —</option>
+        <option>An223</option><option>An224</option><option>An225</option>
+    </select>
+
+    <span class="label-fixed">Départ :</span>
+    <select id="depart" required>
+        <option value="">Choisir une ville</option>
+        <option>Angers</option><option>Nantes</option><option>Tours</option>
+        <option>Paris</option><option>Marseille</option><option>Lyon</option>
+        <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
+        <option>Autre</option>
+    </select>
+    <input id="depart_autre" class="autre-input" placeholder="Autre ville (départ)">
+
+    <span class="label-fixed">Arrivée :</span>
+    <select id="arrivee" required>
+        <option value="">Choisir une ville</option>
+        <option>Angers</option><option>Nantes</option><option>Tours</option>
+        <option>Paris</option><option>Marseille</option><option>Lyon</option>
+        <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
+        <option>Autre</option>
+    </select>
+    <input id="arrivee_autre" class="autre-input" placeholder="Autre ville (arrivée)">
+
+    <span class="label-fixed">Date & heure :</span>
+    <input id="datetime" type="datetime-local" required>
+
+    <span class="label-fixed">Places disponibles :</span>
+    <select id="places"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+
+    <span class="label-fixed">Description : (optionnel ; max : 1000 mots)</span>
+    <textarea id="desc" maxlength="1000"></textarea>
+
+    <button class="btn">Publier</button>
+</form>
+</div>
+
+<!-- Recherche -->
+<div class="card">
+<h2 class="label-fixed">🔎 Rechercher une destination</h2>
+
+<!-- Plus d'espace demandé -->
+<div style="margin-bottom:25px;"></div>
+
+<select id="searchDest">
+    <option value="">Toutes les destinations</option>
+	<BR>
+    <option>Angers</option><option>Nantes</option><option>Tours</option>
+    <option>Paris</option><option>Marseille</option><option>Lyon</option>
+    <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
+    <option>Autre</option>
+</select>
+<input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)">
+
+<div id="trajets"></div>
+</div>
+
+<!-- Mode Admin -->
+<div class="card"><h2 class="label-fixed">Mode admin</h2>
+<input type="password" id="adminKey" placeholder="Mot de passe admin">
+<button class="btn" onclick="activateAdmin()">Activer</button>
+<p id="adminStatus"></p>
+</div>
+
+</div>
 
 <script>
-const gallery = document.getElementById("gallery");
-const files = [
-  "IMG-20251009-WA0005.jpg",
-  "IMG-20250924-WA0018.jpg",
-  "IMG-20250917-WA0006.jpg",
-  "IMG-20250917-WA0002.jpg",
-  "IMG-20250904-WA0013.jpg",
-  "IMG-20250904-WA0012.jpg",
-  "IMG_20251011_082040.jpg",
-  "IMG_20250916_221653.jpg",
-  "IMG_20250914_204132.jpg",
-  "DSCF0241.jpg",
-  "DSCF0240.jpg",
-  "DSCF0238.jpg",
-  "DSCF0235.jpg",
-  "DSCF0233.jpg",
-  "DSCF0232.jpg",
-  "DSCF0228.jpg",
-  "DSCF0225.jpg",
-  "DSCF0224.jpg",
-  "DSCF0223.jpg",
-  "DSCF0220.jpg",
-  "DSCF0218.jpg",
-    "DSCF0217.jpg",
-  "DSCF0216.jpg",
-  "DSCF0215.jpg",
-  "DSCF0214.jpg",
-  "DSCF0211.jpg",
-  "DSCF0210.jpg",
-  "DSCF0209.jpg",
-  "DSCF0208.jpg",
-  "DSCF0207.jpg",
-  "DSCF0206.jpg",
-  "DSCF0205.jpg",
-  "DSCF0204.jpg",
-    "DSCF0203.jpg",
-  "DSCF0202.jpg",
-  "DSCF0201.jpg",
-  "DSCF0200.jpg",
-  "DSCF0199.jpg",
-"DSCF0198.jpg",
-"DSCF0197.jpg",
-"DSCF0196.jpg",
-"DSCF0195.jpg",
-"DSCF0194.jpg",
-"DSCF0193.jpg",
-"DSCF0192.jpg",
-"DSCF0191.jpg",
-"DSCF0190.jpg",
-"DSCF0189.jpg",
-"DSCF0188.jpg",
-"DSCF0187.jpg",
-"DSCF0186.jpg",
-"DSCF0185.jpg",
-"DSCF0184.jpg",
-"DSCF0183.jpg",
-"DSCF0182.jpg",
-"DSCF0181.jpg",
-"DSCF0180.jpg",
-"DSCF0179.jpg",
-"DSCF0178.jpg",
-"DSCF0177.jpg",
-"DSCF0176.jpg",
-"DSCF0175.jpg",
-"DSCF0174.jpg",
-"DSCF0173.jpg",
-"DSCF0172.jpg",
-"DSCF0171.jpg",
-"DSCF0170.jpg",
-"DSCF0169.jpg",
-"DSCF0168.jpg",
-"DSCF0167.jpg",
-"DSCF0166.jpg",
-"DSCF0165.jpg",
-"DSCF0164.jpg",
-"DSCF0163.jpg",
-"DSCF0162.jpg",
-"DSCF0161.jpg",
-"DSCF0160.jpg",
-"DSCF0159.jpg",
-"DSCF0158.jpg",
-"DSCF0157.jpg",
-"DSCF0156.jpg",
-"DSCF0155.jpg",
-"DSCF0154.jpg",
-"DSCF0153.jpg",
-"DSCF0152.jpg",
-"DSCF0151.jpg",
-"DSCF0150.jpg",
-"DSCF0149.jpg",
-"DSCF0148.jpg",
-"DSCF0147.jpg",
-"DSCF0146.jpg",
-"DSCF0145.jpg",
-"DSCF0144.jpg",
-"DSCF0143.jpg",
-"DSCF0142.jpg",
-"DSCF0141.jpg",
-"DSCF0140.jpg",
-"DSCF0139.jpg",
-"DSCF0138.jpg",
-"DSCF0137.jpg",
-"DSCF0136.jpg",
-"DSCF0135.jpg",
-"DSCF0134.jpg",
-"DSCF0133.jpg",
-"DSCF0132.jpg",
-"DSCF0131.jpg",
-"DSCF0130.jpg",
-"DSCF0129.jpg",
-"DSCF0128.jpg",
-"DSCF0127.jpg",
-"DSCF0126.jpg",
-"DSCF0125.jpg",
-"DSCF0124.jpg",
-"DSCF0123.jpg",
-"DSCF0122.jpg",
-"DSCF0121.jpg",
-"DSCF0120.jpg",
-"DSCF0119.jpg",
-"DSCF0118.jpg",
-"DSCF0117.jpg",
-"DSCF0116.jpg",
-"DSCF0115.jpg",
-"DSCF0114.jpg",
-"DSCF0113.jpg",
-"DSCF0112.jpg",
-"DSCF0111.jpg",
-"DSCF0110.jpg",
-"DSCF0109.jpg",
-"DSCF0108.jpg",
-"DSCF0107.jpg",
-"DSCF0106.jpg",
-"DSCF0105.jpg",
-"DSCF0104.jpg",
-"DSCF0103.jpg",
-"DSCF0102.jpg",
-"DSCF0101.jpg",
-"DSCF0100.jpg",
-"DSCF0099.jpg",
-"DSCF0098.jpg",
-"DSCF0097.jpg",
-"DSCF0096.jpg",
-"DSCF0095.jpg",
-"DSCF0094.jpg",
-"DSCF0093.jpg",
-"DSCF0092.jpg",
-"DSCF0091.jpg",
-"DSCF0090.jpg",
-"DSCF0089.jpg",
-"DSCF0088.jpg",
-"DSCF0087.jpg",
-"DSCF0086.jpg",
-"DSCF0085.jpg",
-"DSCF0084.jpg",
-"DSCF0083.jpg",
-"DSCF0082.jpg",
-"DSCF0081.jpg",
-"DSCF0080.jpg",
-"DSCF0079.jpg",
-"DSCF0078.jpg",
-"DSCF0077.jpg",
-"DSCF0076.jpg",
-"DSCF0075.jpg",
-"DSCF0074.jpg",
-"DSCF0073.jpg",
-"DSCF0072.jpg",
-"DSCF0071.jpg",
-"DSCF0070.jpg",
-"DSCF0069.jpg",
-"DSCF0068.jpg",
-"DSCF0067.jpg",
-"DSCF0066.jpg",
-"DSCF0065.jpg",
-"DSCF0064.jpg",
-"DSCF0063.jpg",
-"DSCF0062.jpg",
-"DSCF0061.jpg",
-"DSCF0060.jpg",
-"DSCF0059.jpg",
-"DSCF0058.jpg",
-"DSCF0057.jpg",
-"DSCF0056.jpg",
-"DSCF0055.jpg",
-"DSCF0054.jpg",
-"DSCF0053.jpg",
-"DSCF0052.jpg"
-];
+const ADMIN_PASS = "Error404trads";
+let adminMode = false;
+let currentUser = null;
 
-files.forEach(file => {
-  const div = document.createElement("div");
-  div.className = "photo";
-  div.innerHTML = `<img src="gallery/${file}" alt="${file}" onerror="this.src='Contact.png'">`;
-  div.onclick = () => openFullscreen(`gallery/${file}`);
-  gallery.appendChild(div);
-});
+// Helpers pour récupérer éléments
+const $ = id => document.getElementById(id);
 
-const fullscreen = document.getElementById("fullscreen");
-const fullscreenImg = fullscreen.querySelector("img");
-
-function openFullscreen(src) {
-  fullscreenImg.src = src;
-  fullscreen.classList.add("active");
+function toggleForm(){
+    const f=$("form-container"); f.style.display = f.style.display==="none"?"block":"none";
 }
 
-fullscreen.addEventListener("click", () => {
-  fullscreen.classList.remove("active");
-  fullscreenImg.src = "";
+// monitoring des selects 'Autre'
+["depart","arrivee"].forEach(id=>{
+    $(id).addEventListener('change',()=>{
+        const inp = $(id+"_autre");
+        if($(id).value === 'Autre') inp.style.display='block'; else inp.style.display='none';
+    });
 });
+
+
+function formatFR(dateStr){
+    const d = new Date(dateStr);
+    if(isNaN(d)) return dateStr;
+    const j=String(d.getDate()).padStart(2,'0');
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const a=d.getFullYear();
+    const h=String(d.getHours()).padStart(2,'0');
+    const min=String(d.getMinutes()).padStart(2,'0');
+    return `${j}/${m}/${a} ${h}h${min}`;
+}
+
+function isExpired(dateStr){ const d=new Date(dateStr); return new Date() > new Date(d.getTime()+3600*1000); }
+function isEnCours(dateStr){ const d=new Date(dateStr); const now=new Date(); return now>=d && now<= new Date(d.getTime()+3600*1000); }
+
+async function loadTrips() {
+  const list = document.getElementById("trajets");
+  list.innerHTML = "Chargement...";
+
+  const { data, error } = await supabase
+    .from("trips")
+    .select("*")
+    .order("datetime", { ascending: true });
+
+  if (error) return list.innerHTML = error.message;
+
+  list.innerHTML = "";
+
+  const session = (await supabase.auth.getSession()).data.session;
+  const uid = session?.user?.id;
+
+  data.forEach(t => {
+		const elem = createTrajetElement(t, t.id);
+		list.appendChild(elem);
+	});
+}
+
+async function loadMyReservation() {
+  const zone = document.getElementById("myReservationArea");
+  const content = document.getElementById("myReservationContent");
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    zone.style.display = "none";
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*, trips(*)")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  zone.style.display = "block";
+
+  if (!data) {
+    content.innerHTML = "Aucune réservation active.";
+    return;
+  }
+
+  const r = data;
+
+  content.innerHTML = `
+    <p><b>Trajet :</b> ${r.trips.depart} → ${r.trips.arrivee}</p>
+    <p><b>Date :</b> ${new Date(r.trips.datetime).toLocaleString()}</p>
+    <button onclick="cancelReservation(${r.id})" class="btn">Annuler</button>
+  `;
+}
+
+async function cancelReservation(resId) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase.rpc("cancel_reservation", {
+    p_reservation_id: resId,
+    p_user_id: user.id
+  });
+
+  if (error || data.ok === false)
+    return alert(error?.message || data?.error);
+
+  alert("Réservation annulée !");
+  loadTrips();
+  loadMyReservation();
+}
+
+async function createTrajetElement(t, i) {
+  const d = document.createElement('div');
+  d.className = 'trajet';
+
+  // --- Bandeau EN COURS / PLEIN ---
+  if (isEnCours(t.datetime) || t.places <= 0) {
+    const b = document.createElement('div');
+    b.className = 'bandeau';
+    b.textContent = isEnCours(t.datetime) ? 'EN COURS' : 'PLEIN';
+    d.appendChild(b);
+  }
+
+  // --- Infos trajet ---
+  const info = document.createElement('div');
+  info.className = 'trajet-info';
+  info.innerHTML = `
+    <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
+    <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
+    <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
+    <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
+    <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
+  `;
+
+  if (t.desc && t.desc.trim() !== '') {
+    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.desc)}</p>`;
+  }
+
+  // --- Zone des boutons ---
+  const actions = document.createElement('div');
+  actions.className = 'action-buttons';
+
+  // --- Récupération de l'utilisateur connecté ---
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // --- Vérifier si cet utilisateur a déjà réservé ce trajet ---
+  let reserved = false;
+  let myRes = null;
+
+  if (user) {
+    const res = await supabase
+      .from("reservations")
+      .select("*")
+      .eq("trip_id", t.id)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    myRes = res.data;
+    reserved = !!res.data;
+  }
+
+
+  // --- Bouton ADMIN : supprimer ---
+  if (adminMode) {
+    const del = document.createElement('button');
+    del.className = 'delete-btn';
+    del.textContent = 'Supprimer';
+    del.onclick = () => deleteTrip(t.id);
+    actions.appendChild(del);
+  }
+
+  // --- Bouton ANNULER ou RÉSERVER ---
+  if (reserved) {
+    const un = document.createElement('button');
+    un.className = 'btn';
+    un.textContent = 'Annuler';
+    un.onclick = () => cancelReservation(myRes.id);
+    actions.appendChild(un);
+
+  } else if (t.places > 0 && !isEnCours(t.datetime)) {
+    const res = document.createElement('button');
+    res.className = 'btn';
+    res.textContent = 'Réserver';
+    res.onclick = () => reserve(t.id);
+    actions.appendChild(res);
+  }
+
+
+  // --- Bouton voir les réservations ---
+  const maySee = await canViewReservations(t);
+
+  if (maySee) {
+    const btnRes = document.createElement('button');
+    btnRes.className = 'btn';
+    btnRes.textContent = 'Réservations';
+    btnRes.onclick = () => viewReservations(t.id);
+    actions.appendChild(btnRes);
+
+  } else {
+    const btnRes = document.createElement('button');
+    btnRes.className = 'btn btn-disabled';
+    btnRes.textContent = 'Réservations';
+    btnRes.setAttribute('aria-disabled', 'true');
+    actions.appendChild(btnRes);
+  }
+
+
+  // --- Placement final ---
+  d.appendChild(info);
+  d.appendChild(actions);
+
+  return d;
+}
+
+async function publishTrip() {
+  const user = (await supabase.auth.getUser()).data.user;
+  if (!user) return alert("Connecte-toi !");
+
+  const trip = {
+    owner: user.id,
+    nom: document.getElementById("nom").value,
+    prenom: document.getElementById("prenom").value,
+    surns: document.getElementById("surns_pub").value,
+    fams: document.getElementById("fams_pub").value,
+    promo: document.getElementById("promo").value,
+    depart: document.getElementById("depart").value,
+    arrivee: document.getElementById("arrivee").value,
+    datetime: document.getElementById("datetime").value,
+    places: parseInt(document.getElementById("places").value),
+    desc: document.getElementById("desc").value
+  };
+
+  const { error } = await supabase.from("trips").insert(trip);
+  if (error) return alert(error.message);
+
+  alert("Trajet publié !");
+  loadTrips();
+}
+
+async function reserve(tripId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Connecte-toi !");
+
+
+const profil = await supabase
+  .from("profiles")  // si tu as une table profiles (recommandé)
+  .select("*")
+  .eq("id", user.id)
+  .single();
+
+if (!profil.data) return alert("Impossible de lire ton profil.");
+
+  const { data, error } = await supabase.rpc("reserve_trip", {
+    p_trip_id: tripId,
+    p_user_id: user.id,
+    p_nom: profil.data.nom,
+    p_prenom: profil.data.prenom,
+    p_surns: profil.data.surns,
+    p_fams: profil.data.fams,
+    p_promo: profil.data.promo
+});
+
+  if (error) return alert(error.details || error.message);
+  if (data.ok === false) return alert(data.error);
+
+  alert("Réservation confirmée !");
+  loadTrips();
+  loadMyReservation();
+}
+
+async function canViewReservations(t) {
+  if (adminMode) return true;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  return user.id === t.owner;
+}
+
+async function viewReservations(tripId) {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("trip_id", tripId);
+
+  if (error) return alert(error.message);
+
+  if (!data.length) return alert("Aucun réservant.");
+
+  let msg = "Réservants :\n\n";
+  data.forEach(r => {
+    msg += `${r.prenom} ${r.nom} ${r.surns} ${r.fams} (${r.promo})\n`;
+  });
+
+  alert(msg);
+}
+
+async function deleteTrip(id) {
+  if (!confirm("Supprimer ce trajet ?")) return;
+
+  const { error } = await supabase
+    .from("trips")
+    .delete()
+    .eq("id", id);
+
+  if (error) return alert(error.message);
+
+  alert("Trajet supprimé !");
+  loadTrips();
+}
+
+function activateAdmin(){
+    adminMode = $('adminKey').value === ADMIN_PASS;
+    $('adminStatus').textContent = adminMode ? 'Accès admin' : 'Mot de passe incorrect';
+    loadTrips();
+}
+
+function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+
 </script>
 </body>
 </html>
+
 
