@@ -467,33 +467,48 @@ async function createTrajetElement(t, i) {
   return d;
 }
 
-async function publishTrip(event) {
-  event.preventDefault();
+async function publishTrip(e) {
+  // Empêche le submit classique du formulaire qui reload la page
+  if (e && e.preventDefault) e.preventDefault();
 
-  const user = (await supabase.auth.getUser()).data.user;
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return alert("Connecte-toi !");
 
-  const departValue = depart.value === "Autre" ? depart_autre.value : depart.value;
-  const arriveeValue = arrivee.value === "Autre" ? arrivee_autre.value : arrivee.value;
+  // Récupération propre des champs
+  const departEl = document.getElementById("depart");
+  const arriveeEl = document.getElementById("arrivee");
+  const depart_autreEl = document.getElementById("depart_autre");
+  const arrivee_autreEl = document.getElementById("arrivee_autre");
+
+  const departValue = departEl.value === "Autre" ? depart_autreEl.value.trim() : departEl.value;
+  const arriveeValue = arriveeEl.value === "Autre" ? arrivee_autreEl.value.trim() : arriveeEl.value;
 
   const trip = {
     owner: user.id,
-    nom: document.getElementById("nom").value,
-    prenom: document.getElementById("prenom").value,
-    surns: document.getElementById("surns_pub").value,
-    fams: document.getElementById("fams_pub").value,
+    nom: document.getElementById("nom").value.trim(),
+    prenom: document.getElementById("prenom").value.trim(),
+    surns: document.getElementById("surns_pub").value.trim(),
+    fams: document.getElementById("fams_pub").value.trim(),
     promo: document.getElementById("promo").value,
     depart: departValue,
     arrivee: arriveeValue,
     datetime: document.getElementById("datetime").value,
-    places: parseInt(document.getElementById("places").value),
-    description: document.getElementById("desc").value
+    places: parseInt(document.getElementById("places").value) || 1,
+    description: document.getElementById("desc").value.trim()
   };
 
-  const { error } = await supabase.from("trips").insert(trip);
-  if (error) return alert(error.message);
+  // Insert
+  const { data, error } = await supabase.from("trips").insert(trip);
+
+  if (error) {
+    // Affiche l'erreur remontée par Supabase (utile pour debugger RLS)
+    return alert("Erreur publication : " + (error.message || JSON.stringify(error)));
+  }
 
   alert("Trajet publié !");
+  // remise à zéro / fermeture du formulaire si besoin
+  document.getElementById("publishForm").reset();
+  document.getElementById("form-container").style.display = "none";
   loadTrips();
 }
 
@@ -580,6 +595,7 @@ function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"'
 </script>
 </body>
 </html>
+
 
 
 
