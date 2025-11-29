@@ -218,19 +218,10 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       <input id="profile_prenom" placeholder="Prénom" required>
       <input id="profile_surns" placeholder="Surn's" required>
       <input id="profile_fams" placeholder="Fam's" required>
-
       <select id="profile_promo" required>
         <option value="">— Promo —</option>
         <option>An223</option><option>An224</option><option>An225</option>
       </select>
-
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-        <button type="button" class="btn" onclick="closeProfile()">Fermer</button>
-        <button class="btn" type="submit">Enregistrer</button>
-      </div>
-    </form>
-  </div>
-</div>
 
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
         <button type="button" class="btn" onclick="closeProfile()">Fermer</button>
@@ -248,7 +239,6 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <div id="form-container" class="card" style="display:none;">
 <h2 class="label-fixed">Publier un trajet</h2>
 <form id="publishForm" onsubmit="publishTrip(event)">
-
     <span class="label-fixed">Identité du conducteur :</span>
 
     <input id="nom" placeholder="Nom" required>
@@ -295,10 +285,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn" type="submit" id="publishBtn">Publier</button>
     </div>
-
 </form>
 </div>
-
 
 <!-- Recherche -->
 <div class="card">
@@ -1014,6 +1002,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
