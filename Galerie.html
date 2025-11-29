@@ -231,8 +231,14 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
 			async function login() {
 			  const email = document.getElementById("email").value.trim();
 			  if (!email) return alert("Entre ton email.");
-
-			  const { error } = await supabase.auth.signInWithOtp({ email });
+			
+			  const { error } = await supabase.auth.signInWithOtp({
+			    email,
+			    options: {
+			      emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html"
+			    }
+			  });
+			
 			  if (error) alert(error.message);
 			  else alert("Lien envoyé ! Vérifie ta boîte mail.");
 			}
@@ -593,6 +599,7 @@ function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"'
 </script>
 </body>
 </html>
+
 
 
 
