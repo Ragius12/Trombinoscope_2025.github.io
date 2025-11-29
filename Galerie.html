@@ -243,8 +243,10 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
     <input id="nom" placeholder="Nom" required>
     <input id="prenom" placeholder="Prénom" required>
-    <input id="surns" placeholder="Surn's" required>
-    <input id="fams" placeholder="Fam's" required>
+
+    <!-- IDs nécessaires pour ton JS -->
+    <input id="surns_pub" placeholder="Surn's" required>
+    <input id="fams_pub" placeholder="Fam's" required>
 
     <select id="promo" required>
         <option value="">— Promo —</option>
@@ -280,7 +282,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     </select>
 
     <span class="label-fixed">Description : (optionnel ; max : 1000 mots)</span>
-    <textarea id="description" maxlength="1000" placeholder="Infos utiles : fumeur/non-fumeur, bagages, arrêt(s) intermédiaire(s)..."></textarea>
+    <textarea id="desc" maxlength="1000" placeholder="Infos utiles : fumeur/non-fumeur, bagages, arrêt(s) intermédiaire(s)..."></textarea>
 
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn" type="submit" id="publishBtn">Publier</button>
@@ -1002,6 +1004,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
