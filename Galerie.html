@@ -571,23 +571,13 @@ function activateAdmin(){
     $('adminStatus').textContent = adminMode ? 'Accès admin' : 'Mot de passe incorrect';
     loadTrips();
 }
-
-const { data, error } = await supabase
-  .from("trips")
-  .insert({
-    owner: user.id,   // OBLIGATOIRE POUR RLS
-    depart,
-    arrivee,
-    datetime,
-    places,
-    description
-  });
 	
 function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
 </script>
 </body>
 </html>
+
 
 
 
