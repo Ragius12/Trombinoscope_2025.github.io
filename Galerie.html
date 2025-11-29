@@ -17,94 +17,69 @@
 <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
 	
 <style>
-/* ------------------------
-   TYPO + THEME
-   ------------------------ */
 @font-face {
     font-family: "Old English Text MT", "Gothic Old English", serif;
 }
 
-:root{
-  --bg1:#0f1630;
-  --bg2:#232743;
-  --accent:#ffd369;
-  --muted: rgba(255,255,255,0.08);
-  --card: rgba(255,255,255,0.06);
-  --danger: #d9534f;
-  --success: #4caf50;
-  --glass: rgba(255,255,255,0.04);
-}
-
-*{box-sizing:border-box}
 body {
-    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-    background: linear-gradient(135deg, var(--bg1), var(--bg2));
-    margin: 0; padding: 0; color: #fff;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1b1f3b, #2e345c);
+    margin: 0; padding: 0; color: white;
 }
 
 header {
-    text-align:center; padding:28px 16px 10px 16px;
+    text-align:center; padding:25px;
     font-family: "Old English Text MT", "Gothic Old English", serif;
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-    border-bottom: 1px solid rgba(255,255,255,0.03);
 }
-h1 { font-size:2.2rem; margin:0; letter-spacing:1px; }
-.container { max-width:1000px; margin:24px auto; padding:16px; width:96%; }
 
-/* ------------------------
-   CARDS / LAYOUT
-   ------------------------ */
+h1 { font-size:2.8rem; margin:0; }
+.container { max-width:900px; margin:auto; padding:20px; }
+
 .card {
-    background: var(--card);
+    background: rgba(255,255,255,0.08);
     border-radius: 14px;
     padding: 20px;
-    margin-bottom: 18px;
-    box-shadow: 0 6px 30px rgba(0,0,0,0.35);
+    margin-bottom: 25px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     position: relative;
-    animation: fadeIn 0.45s ease;
+    animation: fadeIn 0.6s ease;
 }
 
 @keyframes fadeIn {
-    from {opacity:0; transform:translateY(6px);} to {opacity:1; transform:translateY(0);} }
+    from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
 
 .btn-publish {
-    display: inline-block;
-    margin: 0 auto 12px auto;
+    display: block;
+    margin: 0 auto 20px auto;
     text-align: center;
 }
 
-/* bandeau rouge */
 .bandeau {
     position:absolute;
-    top:36%;
-    left:12%;
+    top:40%;  
+    left:15%;  
     transform: translateX(-50%) rotate(-35deg);
     background:#c62828;
     color:white;
-    padding:8px 30px;
-    font-size:16px;
+    padding:10px 44px;
+    font-size:18px;
     font-family: "Old English Text MT", "Gothic Old English", serif;
     box-shadow:0 4px 12px rgba(0,0,0,0.5);
-    letter-spacing:1px;
+    letter-spacing:2px;
     z-index:2;
-    opacity: 0.9;
+	opacity: 0.8;
 }
 
 .trajet {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  background: rgba(255,255,255,0.04);
-  border-left: 5px solid var(--accent);
+  gap: 20px;
+  background: rgba(255,255,255,0.12);
+  border-left: 5px solid #ffd369;
   border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 14px;
+  padding: 20px;
+  margin-bottom: 26px;
   position: relative;
 }
 .trajet-info {
@@ -123,59 +98,26 @@ h1 { font-size:2.2rem; margin:0; letter-spacing:1px; }
   background: gray;
   color: #444;
   cursor: not-allowed;
-  opacity: 0.75;
+  opacity: 0.7;
 }
 
 .label-fixed {font-family: "Old English Text MT", "Gothic Old English", serif; letter-spacing:1px; font-weight:bold}
 
-.btn { background:var(--accent); color:#1b1f3b; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; transition:0.18s; border:none; }
+.btn { background:#ffd369; color:#1b1f3b; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; transition:0.2s; }
 .btn:hover{transform:scale(1.03);} 
 
-.delete-btn{ background:var(--danger); color:white; padding:8px 12px; border-radius:8px; cursor:pointer; transition:0.15s; border:none; }
+.delete-btn{ background:#d9534f; padding:6px 10px; border-radius:6px; cursor:pointer; transition:0.2s; }
 .delete-btn:hover{transform:scale(1.03);} 
 
-form input, form select, form textarea { width:100%; padding:10px; border-radius:8px; border:none; margin-bottom:12px; background: rgba(255,255,255,0.03); color:inherit; outline:none; }
-select, input, textarea { transition: 0.25s; }
-select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 0 0 14px rgba(255,211,105,0.12); }
+form input, form select, form textarea { width:100%; padding:10px; border-radius:8px; border:none; margin-bottom:12px; }
 
-.trajet { transition: transform 0.18s, box-shadow 0.18s; }
-.trajet:hover{ transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.45); }
+select, input, textarea { transition: 0.25s; }
+select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 0 0 12px #ffd369; }
+
+.trajet { transition: transform 0.25s, box-shadow 0.25s; }
+.trajet:hover{ transform: translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
 
 .autre-input { display:none; margin-top:6px; }
-
-/* ------------------------
-   LOGIN UI
-   ------------------------ */
-#loginWrapper{ display:flex; gap:12px; align-items:center; justify-content:center; margin-bottom:12px; flex-wrap:wrap;}
-.loginCard{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:10px; display:flex; gap:10px; align-items:center; }
-#email{ width:260px; padding:10px; border-radius:8px; border:none; background:rgba(255,255,255,0.03); color:inherit;}
-#loginHint{ font-size:0.9rem; opacity:0.8; }
-
-/* ------------------------
-   PROFILE MODAL
-   ------------------------ */
-#profileModal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.6); z-index:1000; }
-#profileFormCard{ width: 420px; max-width:92%; background:var(--card); padding:18px; border-radius:12px; }
-
-/* ------------------------
-   SMALL SCREENS
-   ------------------------ */
-@media (max-width:720px){
-  .action-buttons{ min-width:unset; flex-direction:row; flex-wrap:wrap; justify-content:flex-end; }
-  .bandeau{ left:10%; top:18%; transform: translateX(-10%) rotate(-25deg); padding:6px 20px; font-size:14px; }
-  .trajet{ padding:12px; gap:8px; }
-  h1{ font-size:1.6rem;}
-  header{padding:18px 10px;}
-}
-
-/* ------------------------
-   EXTRA
-   ------------------------ */
-.small{ font-size:0.9rem; opacity:0.88; }
-.center{ text-align:center }
-.right{ text-align:right }
-.success{ background:var(--success); color:#07210a; padding:8px 12px; border-radius:8px; display:inline-block; }
-.hidden{ display:none !important; }
 
 </style>
 </head>
@@ -188,143 +130,158 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   
 <header><h1>Blablac'Arts – Tunnel entre deux villes</h1></header>
 
+<div id="loginArea">
+   <input id="email" placeholder="email">
+   <button onclick="login()">Connexion</button>
+</div>
+
+<div id="publishArea" style="display:none;">
+   Connecté : <span id="userEmail"></span>
+   <button onclick="logout()">Déconnexion</button>
+</div>
+
 <div class="container">
 
-  <!-- LOGIN -->
-  <div id="loginArea" class="card center">
-    <div id="loginWrapper">
-      <div class="loginCard">
-        <input id="email" placeholder="ton.email@ensam.eu">
-        <button class="btn" onclick="login()">→ Se connecter</button>
-      </div>
-      <div id="loginHint" class="small">Seul le domaine <b>@ensam.eu</b> est autorisé. Tu recevras un lien magique par e-mail.</div>
-    </div>
-  </div>
+<!-- Bouton afficher/masquer formulaire -->
+<div class="btn btn-publish" onclick="toggleForm()">➕ Publier un trajet</div>
+<BR>
+<!-- Formulaire publication -->
+<div id="form-container" class="card" style="display:none;">
+<h2 class="label-fixed">Publier un trajet</h2>
+<form id="publishForm" onsubmit="publishTrip(event)">
+    <span class="label-fixed">Identité du conducteur :</span>
+    <input id='nom' placeholder='Nom' required>
+    <input id='prenom' placeholder='Prénom' required>
+	<input id='surns_pub' placeholder="Surn's" required>
+    <input id='fams_pub' placeholder="Fam's" required>
+    <select id='promo' required>
+        <option value="">— Promo —</option>
+        <option>An223</option><option>An224</option><option>An225</option>
+    </select>
 
-  <div id="publishArea" class="card hidden">
-    Connecté : <span id="userEmail" style="font-weight:700"></span>
-    <button class="btn" style="margin-left:12px" onclick="logout()">Déconnexion</button>
-    <div style="margin-top:8px"><span id="profileStatus" class="small"></span></div>
-  </div>
+    <span class="label-fixed">Départ :</span>
+    <select id="depart" required>
+        <option value="">Choisir une ville</option>
+        <option>Angers</option><option>Nantes</option><option>Tours</option>
+        <option>Paris</option><option>Marseille</option><option>Lyon</option>
+        <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
+        <option>Autre</option>
+    </select>
+    <input id="depart_autre" class="autre-input" placeholder="Autre ville (départ)">
 
-  <!-- MAIN -->
-  <div class="card center">
-    <div class="btn btn-publish" onclick="toggleForm()">➕ Publier un trajet</div>
-    <div class="small">Recherche rapide :</div>
-    <div style="display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;">
-      <select id="searchDest" onchange="onSearchChange()" style="padding:8px; border-radius:8px; background:rgba(255,255,255,0.03)">
-          <option value="">Toutes les villes</option>
-          <option>Angers</option><option>Nantes</option><option>Tours</option>
-          <option>Paris</option><option>Marseille</option><option>Lyon</option>
-          <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
-          <option value="Autre">Autre</option>
-      </select>
-      <input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)">
-      <button class="btn" onclick="loadTrips()">🔎 Rechercher</button>
-    </div>
-  </div>
+    <span class="label-fixed">Arrivée :</span>
+    <select id="arrivee" required>
+        <option value="">Choisir une ville</option>
+        <option>Angers</option><option>Nantes</option><option>Tours</option>
+        <option>Paris</option><option>Marseille</option><option>Lyon</option>
+        <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
+        <option>Autre</option>
+    </select>
+    <input id="arrivee_autre" class="autre-input" placeholder="Autre ville (arrivée)">
 
-  <!-- FORM -->
-  <div id="form-container" class="card" style="display:none;">
-    <h2 class="label-fixed">Publier un trajet</h2>
-    <form id="publishForm" onsubmit="publishTrip(event)">
-        <span class="label-fixed">Identité du conducteur :</span>
-        <input id='nom' placeholder='Nom' required>
-        <input id='prenom' placeholder='Prénom' required>
-        <input id='surns_pub' placeholder="Surn's" required>
-        <input id='fams_pub' placeholder="Fam's" required>
-        <select id='promo' required>
-            <option value="">— Promo —</option>
-            <option>An223</option><option>An224</option><option>An225</option>
-        </select>
+    <span class="label-fixed">Date & heure :</span>
+    <input id="datetime" type="datetime-local" required>
 
-        <span class="label-fixed">Départ :</span>
-        <select id="depart" required>
-            <option value="">Choisir une ville</option>
-            <option>Angers</option><option>Nantes</option><option>Tours</option>
-            <option>Paris</option><option>Marseille</option><option>Lyon</option>
-            <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
-            <option value="Autre">Autre</option>
-        </select>
-        <input id="depart_autre" class="autre-input" placeholder="Autre ville (départ)">
+    <span class="label-fixed">Places disponibles :</span>
+    <select id="places"><option>1</option><option>2</option><option>3</option><option>4</option></select>
 
-        <span class="label-fixed">Arrivée :</span>
-        <select id="arrivee" required>
-            <option value="">Choisir une ville</option>
-            <option>Angers</option><option>Nantes</option><option>Tours</option>
-            <option>Paris</option><option>Marseille</option><option>Lyon</option>
-            <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
-            <option value="Autre">Autre</option>
-        </select>
-        <input id="arrivee_autre" class="autre-input" placeholder="Autre ville (arrivée)">
+    <span class="label-fixed">Description : (optionnel ; max : 1000 mots)</span>
+    <textarea id="desc" maxlength="1000"></textarea>
 
-        <span class="label-fixed">Date & heure :</span>
-        <input id="datetime" type="datetime-local" required>
+    <button class="btn">Publier</button>
+</form>
+</div>
 
-        <span class="label-fixed">Places disponibles :</span>
-        <select id="places"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+<!-- Recherche -->
+<div class="card">
+<h2 class="label-fixed">🔎 Rechercher une destination</h2>
 
-        <span class="label-fixed">Description : (optionnel ; max : 1000 mots)</span>
-        <textarea id="desc" maxlength="1000" rows="4"></textarea>
+<!-- Plus d'espace demandé -->
+<div style="margin-bottom:25px;"></div>
 
-        <div style="display:flex; gap:8px; justify-content:flex-end;">
-          <button type="button" class="btn" onclick="document.getElementById('publishForm').reset(); document.getElementById('form-container').style.display='none'">Annuler</button>
-          <button class="btn" type="submit">Publier</button>
-        </div>
-    </form>
-  </div>
+<select id="searchDest">
+    <option value="">Toutes les destinations</option>
+	<BR>
+    <option>Angers</option><option>Nantes</option><option>Tours</option>
+    <option>Paris</option><option>Marseille</option><option>Lyon</option>
+    <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
+    <option>Autre</option>
+</select>
+<input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)">
 
-  <!-- LIST -->
-  <div class="card">
-    <h2 class="label-fixed">Trajets disponibles</h2>
-    <div id="trajets" style="margin-top:12px;"></div>
-  </div>
+<div id="trajets"></div>
+</div>
 
-  <!-- ADMIN (UI only; suppression côté DB via RPC) -->
-  <div class="card"><h2 class="label-fixed">Mode admin</h2>
-    <input type="password" id="adminKey" placeholder="Mot de passe admin">
-    <button class="btn" onclick="activateAdmin()">Activer</button>
-    <p id="adminStatus" class="small"></p>
-  </div>
+<!-- Mode Admin -->
+<div class="card"><h2 class="label-fixed">Mode admin</h2>
+<input type="password" id="adminKey" placeholder="Mot de passe admin">
+<button class="btn" onclick="activateAdmin()">Activer</button>
+<p id="adminStatus"></p>
+</div>
 
 </div>
 
-<!-- PROFILE MODAL -->
-<div id="profileModal">
-  <div id="profileFormCard">
-    <h3>Compléter ton profil</h3>
-    <p class="small">Pour pouvoir réserver et publier rapidement, remplis ces informations (elles seront sauvegardées).</p>
-    <form id="profileForm" onsubmit="saveProfile(event)">
-      <input id="profile_nom" placeholder="Nom" required>
-      <input id="profile_prenom" placeholder="Prénom" required>
-      <input id="profile_surns" placeholder="Surn's" required>
-      <input id="profile_fams" placeholder="Fam's" required>
-      <select id="profile_promo" required>
-          <option value="">— Promo —</option>
-          <option>An223</option><option>An224</option><option>An225</option>
-      </select>
-      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px;">
-        <button type="button" class="btn" onclick="closeProfileModal()">Fermer</button>
-        <button class="btn" type="submit">Sauvegarder</button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 <script>
-/* =========================
-   CONFIG Supabase
-   ========================= */
-const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+			  const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
+			  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"; 
+			  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* =========================
-   UTIL
-   ========================= */
+			async function login() {
+			  const email = document.getElementById("email").value.trim();
+			  if (!email) return alert("Entre ton email.");
+			
+			  const { error } = await supabase.auth.signInWithOtp({
+			    email,
+			    options: {
+			      emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html"
+			    }
+			  });
+			
+			  if (error) alert(error.message);
+			  else alert("Lien envoyé ! Vérifie ta boîte mail.");
+			}
+			async function logout() {
+			  await supabase.auth.signOut();
+			  location.reload();
+			}
+			supabase.auth.onAuthStateChange((event, session) => {
+			  if (session) {
+				// connecté
+				document.getElementById("loginArea").style.display = "none";
+				document.getElementById("publishArea").style.display = "block";
+				document.getElementById("userEmail").textContent = session.user.email;
+
+				loadTrips();
+				loadMyReservation();
+			  } else {
+				// déconnecté
+				document.getElementById("loginArea").style.display = "block";
+				document.getElementById("publishArea").style.display = "none";
+			  }
+			});
+
+const ADMIN_PASS = "Error404trads";
+let adminMode = false;
+let currentUser = null;
+
+// Helpers pour récupérer éléments
 const $ = id => document.getElementById(id);
-function toggleForm(){ const f=$("form-container"); f.style.display = f.style.display==="none" || f.style.display==="" ? "block":"none"; }
+
+function toggleForm(){
+    const f=$("form-container"); f.style.display = f.style.display==="none"?"block":"none";
+}
+
+// monitoring des selects 'Autre'
+["depart","arrivee"].forEach(id=>{
+    $(id).addEventListener('change',()=>{
+        const inp = $(id+"_autre");
+        if($(id).value === 'Autre') inp.style.display='block'; else inp.style.display='none';
+    });
+});
+
+
 function formatFR(dateStr){
     const d = new Date(dateStr);
     if(isNaN(d)) return dateStr;
@@ -335,193 +292,86 @@ function formatFR(dateStr){
     const min=String(d.getMinutes()).padStart(2,'0');
     return `${j}/${m}/${a} ${h}h${min}`;
 }
-function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
-/* =========================
-   ADMIN
-   ========================= */
-const ADMIN_PASS = "Error404trads"; // UI only
-let adminMode = false;
-function activateAdmin(){
-    adminMode = $('adminKey').value === ADMIN_PASS;
-    $('adminStatus').textContent = adminMode ? 'Accès admin activé (UI)' : 'Mot de passe incorrect';
-    loadTrips();
-}
-
-/* =========================
-   HANDLE SELECT "Autre" FIELDS
-   ========================= */
-["depart","arrivee"].forEach(id=>{
-    $(id).addEventListener('change',()=>{
-        const inp = $(id+"_autre");
-        if($(id).value === 'Autre') inp.style.display='block'; else inp.style.display='none';
-    });
-});
-$("searchDest").addEventListener('change', ()=>{
-    const v=$("searchDest").value;
-    $("searchOther").style.display = v === 'Autre' ? 'inline-block' : 'none';
-});
-
-/* =========================
-   AUTH: sign-in with OTP (magic link)
-   - enforce @ensam.eu domain
-   - on login, ensure profile exists (upsert)
-   ========================= */
-async function login(){
-  const email = $("email").value.trim().toLowerCase();
-  if(!email) return alert("Entre ton email.");
-  if(!email.endsWith("@ensam.eu")) return alert("Seuls les e-mails @ensam.eu sont autorisés.");
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href }
-  });
-  if(error) return alert("Erreur : " + error.message);
-  alert("Lien envoyé — vérifie ta boîte mail (pense aux SPAM).");
-}
-
-async function logout(){
-  await supabase.auth.signOut();
-  location.reload();
-}
-
-/* React to auth state */
-supabase.auth.onAuthStateChange(async (event, session) => {
-  if(session && session.user){
-    $("loginArea").style.display = "none";
-    $("publishArea").classList.remove("hidden");
-    $("userEmail").textContent = session.user.email;
-    await ensureProfile(session.user);
-    loadTrips();
-  } else {
-    $("loginArea").style.display = "block";
-    $("publishArea").classList.add("hidden");
-    $("userEmail").textContent = "";
-    // clear UI
-    $("trajets").innerHTML = "";
-  }
-});
-
-/* ensure profile exists; if missing or incomplete, show modal to complete */
-async function ensureProfile(user){
-  try{
-    const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-    if(error) throw error;
-    if(!data){
-      // show modal to create profile (prefill if user metadata has name)
-      openProfileModal({ email: user.email });
-    } else {
-      // check required fields
-      if(!data.nom || !data.prenom || !data.surns || !data.fams || !data.promo){
-        openProfileModal(data);
-      } else {
-        $("profileStatus").textContent = `Profil: ${data.prenom} ${data.nom} • ${data.promo}`;
-      }
-    }
-  }catch(err){
-    console.error(err);
-    alert("Impossible de lire/initialiser ton profil.");
-  }
-}
-
-function openProfileModal(prefill={}){
-  $("profileModal").style.display = "flex";
-  $("profile_nom").value = prefill.nom || "";
-  $("profile_prenom").value = prefill.prenom || "";
-  $("profile_surns").value = prefill.surns || "";
-  $("profile_fams").value = prefill.fams || "";
-  $("profile_promo").value = prefill.promo || "";
-}
-function closeProfileModal(){ $("profileModal").style.display="none"; }
-
-/* save profile (upsert) */
-async function saveProfile(e){
-  if(e && e.preventDefault) e.preventDefault();
-  const { data: { user } } = await supabase.auth.getUser();
-  if(!user) return alert("Connecte-toi d'abord.");
-  const prof = {
-    id: user.id,
-    nom: $("profile_nom").value.trim(),
-    prenom: $("profile_prenom").value.trim(),
-    surns: $("profile_surns").value.trim(),
-    fams: $("profile_fams").value.trim(),
-    promo: $("profile_promo").value
-  };
-  if(!prof.nom || !prof.prenom || !prof.surns || !prof.fams || !prof.promo) return alert("Tous les champs sont requis.");
-  const { error } = await supabase.from("profiles").upsert(prof, { returning: "minimal" });
-  if(error) return alert("Erreur sauvegarde profil : " + error.message);
-  closeProfileModal();
-  $("profileStatus").textContent = `Profil: ${prof.prenom} ${prof.nom} • ${prof.promo}`;
-  loadTrips();
-}
-
-/* =========================
-   LOAD TRIPS (with filters)
-   - exclude trips older than 1 hour (so they 'disappear' after 1h)
-   ========================= */
-async function onSearchChange(){ /* helper to immediate filter */ loadTrips(); }
+function isExpired(dateStr){ const d=new Date(dateStr); return new Date() > new Date(d.getTime()+3600*1000); }
+function isEnCours(dateStr){ const d=new Date(dateStr); const now=new Date(); return now>=d && now<= new Date(d.getTime()+3600*1000); }
 
 async function loadTrips() {
-  const list = $("trajets");
+  const list = document.getElementById("trajets");
   list.innerHTML = "Chargement...";
 
-  try {
-    const searchVal = $("searchDest").value;
-    const searchOther = $("searchOther").value.trim();
+  const { data, error } = await supabase
+    .from("trips")
+    .select("*")
+    .order("datetime", { ascending: true });
 
-    // compute cutoff: only trips with datetime >= (now - 1 hour) (keeps trips up to 1h past)
-    const cutoff = new Date(Date.now() - 3600*1000).toISOString();
+  if (error) return list.innerHTML = error.message;
 
-    let query = supabase
-      .from("trips")
-      .select("*")
-      .gte("datetime", cutoff)
-      .order("datetime", { ascending: true });
+  list.innerHTML = "";
 
-    const { data, error } = await query;
+  const session = (await supabase.auth.getSession()).data.session;
+  const uid = session?.user?.id;
 
-    if (error) throw error;
-    list.innerHTML = "";
-    if(!data || !data.length) { list.innerHTML = "<div class='small'>Aucun trajet disponible.</div>"; return; }
+  for (const t of data) {
+	  const elem = await createTrajetElement(t, t.id);
+	  list.appendChild(elem);
+	}
+}
 
-    // client-side filter by search box
-    const filtered = data.filter(t=>{
-      if(!searchVal) return true;
-      if(searchVal === "Autre"){
-        if(!searchOther) return true;
-        const s = searchOther.toLowerCase();
-        return (t.depart && t.depart.toLowerCase().includes(s)) || (t.arrivee && t.arrivee.toLowerCase().includes(s));
-      }
-      // match either depart or arrivee
-      return (t.depart && t.depart === searchVal) || (t.arrivee && t.arrivee === searchVal);
-    });
+async function loadMyReservation() {
+  const zone = document.getElementById("myReservationArea");
+  const content = document.getElementById("myReservationContent");
 
-    if(filtered.length === 0){ list.innerHTML = "<div class='small'>Aucun trajet correspondant.</div>"; return; }
-
-    for (const t of filtered) {
-      const elem = await createTrajetElement(t);
-      list.appendChild(elem);
-    }
-  } catch(err){
-    console.error(err);
-    list.innerHTML = "Erreur lors du chargement : " + (err.message || err);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    zone.style.display = "none";
+    return;
   }
+
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*, trips(*)")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .maybeSingle();
+
+  zone.style.display = "block";
+
+  if (!data) {
+    content.innerHTML = "Aucune réservation active.";
+    return;
+  }
+
+  const r = data;
+
+  content.innerHTML = `
+    <p><b>Trajet :</b> ${r.trips.depart} → ${r.trips.arrivee}</p>
+    <p><b>Date :</b> ${new Date(r.trips.datetime).toLocaleString()}</p>
+    <button onclick="cancelReservation(${r.id})" class="btn">Annuler</button>
+  `;
 }
 
-/* =========================
-   CREATE TRAJET ELEMENT
-   ========================= */
-function isEnCours(dateStr){
-  const d = new Date(dateStr);
-  const now = new Date();
-  // considered 'en cours' if within [d, d+1h]
-  return now >= d && now <= new Date(d.getTime() + 3600*1000);
+async function cancelReservation(resId) {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase.rpc("cancel_reservation", {
+    p_reservation_id: resId,
+    p_user_id: user.id
+  });
+
+  if (error || data.ok === false)
+    return alert(error?.message || data?.error);
+
+  alert("Réservation annulée !");
+  loadTrips();
+  loadMyReservation();
 }
 
-async function createTrajetElement(t) {
+async function createTrajetElement(t, i) {
   const d = document.createElement('div');
   d.className = 'trajet';
 
-  // bandeau EN COURS / PLEIN
+  // --- Bandeau EN COURS / PLEIN ---
   if (isEnCours(t.datetime) || t.places <= 0) {
     const b = document.createElement('div');
     b.className = 'bandeau';
@@ -529,31 +379,33 @@ async function createTrajetElement(t) {
     d.appendChild(b);
   }
 
-  // infos
+  // --- Infos trajet ---
   const info = document.createElement('div');
   info.className = 'trajet-info';
   info.innerHTML = `
     <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
-    <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns || '')} ${escapeHTML(t.fams || '')} ${escapeHTML(t.promo || '')}</p>
+    <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
     <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
     <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
     <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
   `;
+
   if (t.description && t.description.trim() !== '') {
-    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
+    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.desc)}</p>`;
   }
 
-  // actions
+  // --- Zone des boutons ---
   const actions = document.createElement('div');
   actions.className = 'action-buttons';
 
-  // user
+  // --- Récupération de l'utilisateur connecté ---
   const { data: { user } } = await supabase.auth.getUser();
 
-  // check if user reserved
+  // --- Vérifier si cet utilisateur a déjà réservé ce trajet ---
   let reserved = false;
   let myRes = null;
-  if(user){
+
+  if (user) {
     const res = await supabase
       .from("reservations")
       .select("*")
@@ -561,220 +413,201 @@ async function createTrajetElement(t) {
       .eq("user_id", user.id)
       .eq("status", "active")
       .maybeSingle();
+
     myRes = res.data;
     reserved = !!res.data;
   }
 
-  // admin delete (UI) -> call RPC that will check owner
+
+  // --- Bouton ADMIN : supprimer ---
   if (adminMode) {
     const del = document.createElement('button');
     del.className = 'delete-btn';
-    del.textContent = 'Supprimer (admin)';
-    del.onclick = () => {
-      if(!confirm("Supprimer ce trajet (admin) ?")) return;
-      deleteTrip(t.id);
-    };
+    del.textContent = 'Supprimer';
+    del.onclick = () => deleteTrip(t.id);
     actions.appendChild(del);
   }
 
-  // owner delete (if owner)
-  if(user && user.id === t.owner){
-    const del2 = document.createElement('button');
-    del2.className = 'delete-btn';
-    del2.textContent = 'Supprimer (propre)';
-    del2.onclick = () => { if(confirm("Supprimer ce trajet ?")) deleteTrip(t.id); };
-    actions.appendChild(del2);
-  }
-
-  // reservation / cancel
+  // --- Bouton ANNULER ou RÉSERVER ---
   if (reserved) {
     const un = document.createElement('button');
     un.className = 'btn';
-    un.textContent = 'Annuler ma réservation';
-    un.onclick = () => { if(confirm("Annuler cette réservation ?")) cancelReservation(myRes.id); };
+    un.textContent = 'Annuler';
+    un.onclick = () => cancelReservation(myRes.id);
     actions.appendChild(un);
 
   } else if (t.places > 0 && !isEnCours(t.datetime)) {
-    const resBtn = document.createElement('button');
-    resBtn.className = 'btn';
-    resBtn.textContent = 'Réserver';
-    resBtn.onclick = () => reserve(t.id);
-    actions.appendChild(resBtn);
-  } else {
-    // disabled reserve
-    const resBtn = document.createElement('button');
-    resBtn.className = 'btn btn-disabled';
-    resBtn.textContent = 'Réserver';
-    resBtn.setAttribute('aria-disabled','true');
-    actions.appendChild(resBtn);
+    const res = document.createElement('button');
+    res.className = 'btn';
+    res.textContent = 'Réserver';
+    res.onclick = () => reserve(t.id);
+    actions.appendChild(res);
   }
 
-  // view reservations (if owner)
+
+  // --- Bouton voir les réservations ---
   const maySee = await canViewReservations(t);
+
   if (maySee) {
     const btnRes = document.createElement('button');
     btnRes.className = 'btn';
-    btnRes.textContent = 'Voir réservations';
+    btnRes.textContent = 'Réservations';
     btnRes.onclick = () => viewReservations(t.id);
     actions.appendChild(btnRes);
+
   } else {
     const btnRes = document.createElement('button');
     btnRes.className = 'btn btn-disabled';
     btnRes.textContent = 'Réservations';
-    btnRes.setAttribute('aria-disabled','true');
+    btnRes.setAttribute('aria-disabled', 'true');
     actions.appendChild(btnRes);
   }
 
+
+  // --- Placement final ---
   d.appendChild(info);
   d.appendChild(actions);
+
   return d;
 }
 
-/* =========================
-   PUBLISH TRIP
-   ========================= */
-async function publishTrip(e){
-  if(e && e.preventDefault) e.preventDefault();
-  const { data: { user } } = await supabase.auth.getUser();
-  if(!user) return alert("Connecte-toi !");
+async function publishTrip(e) {
+  // Empêche le submit classique du formulaire qui reload la page
+  if (e && e.preventDefault) e.preventDefault();
 
-  // use profile defaults to prefill if user has
-  const p = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  if(!p.data) return alert("Impossible de lire ton profil. Complète ton profil.");
-  // fields
-  const departEl = $("depart"), arriveeEl = $("arrivee"),
-        depart_autreEl = $("depart_autre"), arrivee_autreEl = $("arrivee_autre");
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Connecte-toi !");
+
+  // Récupération propre des champs
+  const departEl = document.getElementById("depart");
+  const arriveeEl = document.getElementById("arrivee");
+  const depart_autreEl = document.getElementById("depart_autre");
+  const arrivee_autreEl = document.getElementById("arrivee_autre");
+
   const departValue = departEl.value === "Autre" ? depart_autreEl.value.trim() : departEl.value;
   const arriveeValue = arriveeEl.value === "Autre" ? arrivee_autreEl.value.trim() : arriveeEl.value;
-  if(!departValue || !arriveeValue) return alert("Indique le départ et l'arrivée.");
 
   const trip = {
     owner: user.id,
-    nom: $("nom").value.trim() || p.data.nom,
-    prenom: $("prenom").value.trim() || p.data.prenom,
-    surns: $("surns_pub").value.trim() || p.data.surns,
-    fams: $("fams_pub").value.trim() || p.data.fams,
-    promo: $("promo").value || p.data.promo,
+    nom: document.getElementById("nom").value.trim(),
+    prenom: document.getElementById("prenom").value.trim(),
+    surns: document.getElementById("surns_pub").value.trim(),
+    fams: document.getElementById("fams_pub").value.trim(),
+    promo: document.getElementById("promo").value,
     depart: departValue,
     arrivee: arriveeValue,
-    datetime: $("datetime").value,
-    places: parseInt($("places").value) || 1,
-    description: $("desc").value.trim()
+    datetime: document.getElementById("datetime").value,
+    places: parseInt(document.getElementById("places").value) || 1,
+    description: document.getElementById("desc").value.trim()
   };
 
-  try {
-    const { data, error } = await supabase.from("trips").insert(trip).select().single();
-    if(error) throw error;
-    alert("Trajet publié !");
-    $("publishForm").reset();
-    $("form-container").style.display = "none";
-    loadTrips();
-  } catch(err){
-    console.error(err);
-    alert("Erreur publication : " + (err.message || err));
+  // Insert
+  const { data, error } = await supabase.from("trips").insert(trip);
+
+  if (error) {
+    // Affiche l'erreur remontée par Supabase (utile pour debugger RLS)
+    return alert("Erreur publication : " + (error.message || JSON.stringify(error)));
   }
+
+  alert("Trajet publié !");
+  // remise à zéro / fermeture du formulaire si besoin
+  document.getElementById("publishForm").reset();
+  document.getElementById("form-container").style.display = "none";
+  loadTrips();
 }
 
-/* =========================
-   RESERVE (calls RPC reserve_trip)
-   - ensure profile exists and is complete
-   ========================= */
-async function reserve(tripId){
+async function reserve(tripId) {
   const { data: { user } } = await supabase.auth.getUser();
-  if(!user) return alert("Connecte-toi !");
-  // ensure profile exists
-  const profil = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  if(!profil.data) return openProfileModal({}); // will prompt user to create profile
+  if (!user) return alert("Connecte-toi !");
 
-  if(!confirm("Confirmer la réservation ?")) return;
 
-  try{
-    const { data, error } = await supabase.rpc("reserve_trip", {
-      p_trip_id: tripId,
-      p_user_id: user.id,
-      p_nom: profil.data.nom,
-      p_prenom: profil.data.prenom,
-      p_surns: profil.data.surns,
-      p_fams: profil.data.fams,
-      p_promo: profil.data.promo
-    });
-    if(error) throw error;
-    if(data && data.ok === false) return alert(data.error || "Impossible de réserver.");
-    alert("Réservation confirmée !");
-    loadTrips();
-  }catch(err){
-    console.error(err);
-    alert("Erreur réservation : " + (err.message || err));
-  }
+const profil = await supabase
+  .from("profiles")  // si tu as une table profiles (recommandé)
+  .select("*")
+  .eq("id", user.id)
+  .single();
+
+if (!profil.data) return alert("Impossible de lire ton profil.");
+
+  const { data, error } = await supabase.rpc("reserve_trip", {
+    p_trip_id: tripId,
+    p_user_id: user.id,
+    p_nom: profil.data.nom,
+    p_prenom: profil.data.prenom,
+    p_surns: profil.data.surns,
+    p_fams: profil.data.fams,
+    p_promo: profil.data.promo
+});
+
+  if (error) return alert(error.details || error.message);
+  if (data.ok === false) return alert(data.error);
+
+  alert("Réservation confirmée !");
+  loadTrips();
+  loadMyReservation();
 }
 
-/* =========================
-   CANCEL RESERVATION
-   ========================= */
-async function cancelReservation(resId){
-  const { data: { user } } = await supabase.auth.getUser();
-  if(!user) return alert("Connecte-toi !");
-  try{
-    const { data, error } = await supabase.rpc("cancel_reservation", { p_reservation_id: resId, p_user_id: user.id });
-    if(error) throw error;
-    if(data && data.ok === false) return alert(data.error || "Impossible d'annuler.");
-    alert("Réservation annulée !");
-    loadTrips();
-  }catch(err){
-    console.error(err);
-    alert("Erreur annulation : " + (err.message || err));
-  }
-}
+async function canViewReservations(t) {
+  if (adminMode) return true;
 
-/* =========================
-   VIEW RESERVATIONS (owner)
-   ========================= */
-async function canViewReservations(t){
-  if(adminMode) return true;
   const { data: { user } } = await supabase.auth.getUser();
-  if(!user) return false;
+  if (!user) return false;
+
   return user.id === t.owner;
 }
-async function viewReservations(tripId){
-  try{
-    const { data, error } = await supabase.from("reservations").select("*").eq("trip_id", tripId);
-    if(error) throw error;
-    if(!data || data.length===0) return alert("Aucun réservant.");
-    let msg = "Réservants :\n\n";
-    data.forEach(r => msg += `${r.prenom} ${r.nom} ${r.surns || ''} ${r.fams || ''} (${r.promo || ''})\n`);
-    alert(msg);
-  }catch(err){
-    console.error(err);
-    alert("Erreur lecture réservations : " + (err.message || err));
-  }
+
+async function viewReservations(tripId) {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("trip_id", tripId);
+
+  if (error) return alert(error.message);
+
+  if (!data.length) return alert("Aucun réservant.");
+
+  let msg = "Réservants :\n\n";
+  data.forEach(r => {
+    msg += `${r.prenom} ${r.nom} ${r.surns} ${r.fams} (${r.promo})\n`;
+  });
+
+  alert(msg);
 }
 
-/* =========================
-   DELETE TRIP (RPC)
-   ========================= */
-async function deleteTrip(id){
-  try{
-    const { data, error } = await supabase.rpc("delete_trip", { p_trip_id: id });
-    if(error) throw error;
-    if(data && data.ok === false) return alert(data.error || "Suppression refusée.");
-    alert("Trajet supprimé !");
-    loadTrips();
-  }catch(err){
-    console.error(err);
-    alert("Erreur suppression : " + (err.message || err));
-  }
-}
+async function deleteTrip(id) {
+  if (!confirm("Supprimer ce trajet ?")) return;
 
-/* =========================
-   INIT
-   ========================= */
-document.addEventListener("DOMContentLoaded", ()=>{
-  // hide/show other inputs on startup
-  ["depart","arrivee"].forEach(id=>{ const el=$(id); if(el.value==="Autre") $(id+"_autre").style.display='block'; });
-  if($("searchDest").value==="Autre") $("searchOther").style.display='inline-block';
+  const { error } = await supabase
+    .from("trips")
+    .delete()
+    .eq("id", id);
+
+  if (error) return alert(error.message);
+
+  alert("Trajet supprimé !");
   loadTrips();
-});
+}
+
+function activateAdmin(){
+    adminMode = $('adminKey').value === ADMIN_PASS;
+    $('adminStatus').textContent = adminMode ? 'Accès admin' : 'Mot de passe incorrect';
+    loadTrips();
+}
+	
+function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+
 </script>
 </body>
 </html>
-</content>
+
+
+
+
+
+
+
+
+
+
+
+
