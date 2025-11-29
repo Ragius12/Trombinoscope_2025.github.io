@@ -208,20 +208,21 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
    </div>
 </div>
 
-<!-- Profile modal -->
 <div id="profileModal" class="profile-modal" role="dialog" aria-modal="true">
   <div class="panel card">
     <h3 style="margin-top:0;">Compléter ton profil</h3>
     <div style="margin-bottom:10px;color:rgba(255,255,255,0.8)">Ton adresse <span id="profileEmail"></span></div>
     <form id="profileForm" onsubmit="saveProfile(event)">
-      <input id='nom' placeholder='Nom' value="">
-		<input id='prenom' placeholder='Prénom' value="">
-		<input id='surns_pub' placeholder="Surn's" value="">
-		<input id='fams_pub' placeholder="Fam's" value="">
-		<select id='promo' required>
+      <input id="profile_nom" placeholder="Nom" required>
+      <input id="profile_prenom" placeholder="Prénom" required>
+      <input id="profile_surns" placeholder="Surn's" required>
+      <input id="profile_fams" placeholder="Fam's" required>
+
+      <select id="profile_promo" required>
         <option value="">— Promo —</option>
         <option>An223</option><option>An224</option><option>An225</option>
       </select>
+
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
         <button type="button" class="btn" onclick="closeProfile()">Fermer</button>
         <button class="btn" type="submit">Enregistrer</button>
@@ -997,4 +998,5 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
