@@ -467,12 +467,15 @@ async function createTrajetElement(t, i) {
   return d;
 }
 
-async function publishTrip() {
+async function publishTrip(event) {
+  event.preventDefault();
+
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) return alert("Connecte-toi !");
 
-	const departValue = depart.value === "Autre" ? depart_autre.value : depart.value;
-	const arriveeValue = arrivee.value === "Autre" ? arrivee_autre.value : arrivee.value;
+  const departValue = depart.value === "Autre" ? depart_autre.value : depart.value;
+  const arriveeValue = arrivee.value === "Autre" ? arrivee_autre.value : arrivee.value;
+
   const trip = {
     owner: user.id,
     nom: document.getElementById("nom").value,
@@ -480,8 +483,8 @@ async function publishTrip() {
     surns: document.getElementById("surns_pub").value,
     fams: document.getElementById("fams_pub").value,
     promo: document.getElementById("promo").value,
-	depart: departValue,
-	arrivee: arriveeValue,
+    depart: departValue,
+    arrivee: arriveeValue,
     datetime: document.getElementById("datetime").value,
     places: parseInt(document.getElementById("places").value),
     description: document.getElementById("desc").value
@@ -577,6 +580,7 @@ function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"'
 </script>
 </body>
 </html>
+
 
 
 
