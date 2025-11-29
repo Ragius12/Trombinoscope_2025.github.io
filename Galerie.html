@@ -208,6 +208,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
    </div>
 </div>
 
+<!-- Profile modal -->
 <div id="profileModal" class="profile-modal" role="dialog" aria-modal="true">
   <div class="panel card">
     <h3 style="margin-top:0;">Compléter ton profil</h3>
@@ -231,6 +232,14 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   </div>
 </div>
 
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn" onclick="closeProfile()">Fermer</button>
+        <button class="btn" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Bouton afficher/masquer formulaire -->
 <div style="text-align:center;"><div class="btn-publish" onclick="toggleForm()">➕ Publier un trajet</div></div>
 <br>
@@ -239,12 +248,15 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <div id="form-container" class="card" style="display:none;">
 <h2 class="label-fixed">Publier un trajet</h2>
 <form id="publishForm" onsubmit="publishTrip(event)">
+
     <span class="label-fixed">Identité du conducteur :</span>
-    <input id='nom' placeholder='Nom' required>
-    <input id='prenom' placeholder='Prénom' required>
-	<input id='surns_pub' placeholder="Surn's" required>
-    <input id='fams_pub' placeholder="Fam's" required>
-    <select id='promo' required>
+
+    <input id="nom" placeholder="Nom" required>
+    <input id="prenom" placeholder="Prénom" required>
+    <input id="surns" placeholder="Surn's" required>
+    <input id="fams" placeholder="Fam's" required>
+
+    <select id="promo" required>
         <option value="">— Promo —</option>
         <option>An223</option><option>An224</option><option>An225</option>
     </select>
@@ -273,16 +285,20 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     <input id="datetime" type="datetime-local" required>
 
     <span class="label-fixed">Places disponibles :</span>
-    <select id="places"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+    <select id="places">
+      <option>1</option><option>2</option><option>3</option><option>4</option>
+    </select>
 
     <span class="label-fixed">Description : (optionnel ; max : 1000 mots)</span>
-    <textarea id="desc" maxlength="1000" placeholder="Infos utiles : fumeur/non-fumeur, bagages, arrêt(s) intermédiaire(s)..."></textarea>
+    <textarea id="description" maxlength="1000" placeholder="Infos utiles : fumeur/non-fumeur, bagages, arrêt(s) intermédiaire(s)..."></textarea>
 
     <div style="display:flex;gap:10px;justify-content:flex-end">
       <button class="btn" type="submit" id="publishBtn">Publier</button>
     </div>
+
 </form>
 </div>
+
 
 <!-- Recherche -->
 <div class="card">
@@ -998,5 +1014,6 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
