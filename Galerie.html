@@ -16,11 +16,11 @@
 
 <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
 
-			<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+			<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 			<script>
 			  const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
 			  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"; 
-			  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+			  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 			async function login() {
 			  const email = document.getElementById("email").value.trim();
@@ -595,6 +595,7 @@ function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"'
 </script>
 </body>
 </html>
+
 
 
 
