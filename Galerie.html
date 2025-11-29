@@ -258,17 +258,6 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
 </div>
 
 <script>
-const { data, error } = await supabase
-  .from("trips")
-  .insert({
-    owner: user.id,   // OBLIGATOIRE POUR RLS
-    depart,
-    arrivee,
-    datetime,
-    places,
-    description
-  });
-
 const ADMIN_PASS = "Error404trads";
 let adminMode = false;
 let currentUser = null;
@@ -583,11 +572,23 @@ function activateAdmin(){
     loadTrips();
 }
 
+const { data, error } = await supabase
+  .from("trips")
+  .insert({
+    owner: user.id,   // OBLIGATOIRE POUR RLS
+    depart,
+    arrivee,
+    datetime,
+    places,
+    description
+  });
+	
 function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
 </script>
 </body>
 </html>
+
 
 
 
