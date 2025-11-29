@@ -395,6 +395,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 			});
 
 async function initApp() {
+  // Récupère la session persistante
   const { data: { session } } = await supabase.auth.getSession();
 
   if (session && session.user) {
@@ -403,25 +404,17 @@ async function initApp() {
     $('loginArea').style.display = 'none';
     $('publishArea').style.display = 'block';
     await ensureProfilePresent(user);
-    await loadTrips();
-    await loadMyReservation();
   } else {
-    // Pas connecté
     $('loginArea').style.display = 'block';
     $('publishArea').style.display = 'none';
   }
 
-  // Écoute des changements de session (logout/login via lien magique)
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (session && session.user) {
-      initApp(); // recharge l'UI
-    } else {
-      location.reload(); // ou reset UI
-    }
-  });
+  // Charge les trajets et réservation, que tu sois connecté ou non
+  await loadTrips();
+  await loadMyReservation();
 }
 
-// Appel au chargement
+// Appel au chargement de la page
 window.addEventListener('DOMContentLoaded', initApp);
 	
 const ADMIN_PASS = "Error404trads";
@@ -1041,6 +1034,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
