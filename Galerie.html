@@ -308,10 +308,10 @@ async function loadTrips() {
   const session = (await supabase.auth.getSession()).data.session;
   const uid = session?.user?.id;
 
-  data.forEach(t => {
-		const elem = createTrajetElement(t, t.id);
-		list.appendChild(elem);
-	});
+  for (const t of data) {
+	  const elem = await createTrajetElement(t, t.id);
+	  list.appendChild(elem);
+	}
 }
 
 async function loadMyReservation() {
@@ -386,7 +386,7 @@ async function createTrajetElement(t, i) {
     <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
   `;
 
-  if (t.desc && t.desc.trim() !== '') {
+  if (t.description && t.description.trim() !== '') {
     info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.desc)}</p>`;
   }
 
@@ -471,6 +471,8 @@ async function publishTrip() {
   const user = (await supabase.auth.getUser()).data.user;
   if (!user) return alert("Connecte-toi !");
 
+	const departValue = depart.value === "Autre" ? depart_autre.value : depart.value;
+	const arriveeValue = arrivee.value === "Autre" ? arrivee_autre.value : arrivee.value;
   const trip = {
     owner: user.id,
     nom: document.getElementById("nom").value,
@@ -478,11 +480,11 @@ async function publishTrip() {
     surns: document.getElementById("surns_pub").value,
     fams: document.getElementById("fams_pub").value,
     promo: document.getElementById("promo").value,
-    depart: document.getElementById("depart").value,
-    arrivee: document.getElementById("arrivee").value,
+	depart: departValue,
+	arrivee: arriveeValue,
     datetime: document.getElementById("datetime").value,
     places: parseInt(document.getElementById("places").value),
-    desc: document.getElementById("desc").value
+    description: document.getElementById("desc").value
   };
 
   const { error } = await supabase.from("trips").insert(trip);
@@ -575,5 +577,6 @@ function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"'
 </script>
 </body>
 </html>
+
 
 
