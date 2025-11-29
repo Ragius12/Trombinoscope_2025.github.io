@@ -394,6 +394,36 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 			  }
 			});
 
+async function initApp() {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session && session.user) {
+    const user = session.user;
+    $('userEmail').textContent = user.email;
+    $('loginArea').style.display = 'none';
+    $('publishArea').style.display = 'block';
+    await ensureProfilePresent(user);
+    await loadTrips();
+    await loadMyReservation();
+  } else {
+    // Pas connecté
+    $('loginArea').style.display = 'block';
+    $('publishArea').style.display = 'none';
+  }
+
+  // Écoute des changements de session (logout/login via lien magique)
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (session && session.user) {
+      initApp(); // recharge l'UI
+    } else {
+      location.reload(); // ou reset UI
+    }
+  });
+}
+
+// Appel au chargement
+window.addEventListener('DOMContentLoaded', initApp);
+	
 const ADMIN_PASS = "Error404trads";
 let adminMode = false;
 
@@ -1011,6 +1041,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
