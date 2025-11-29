@@ -21,37 +21,54 @@
     font-family: "Old English Text MT", "Gothic Old English", serif;
 }
 
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg, #1b1f3b, #2e345c);
-    margin: 0; padding: 0; color: white;
+:root{
+  --bg1: #1b1f3b;
+  --bg2: #2e345c;
+  --card: rgba(255,255,255,0.08);
+  --accent: #ffd369;
+  --accent-dark: #dba84a;
 }
+
+*{box-sizing:border-box}
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: linear-gradient(135deg, var(--bg1), var(--bg2));
+    margin: 0; padding: 0; color: white;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+
+.container { max-width:1100px; margin:auto; padding:20px; }
 
 header {
-    text-align:center; padding:25px;
+    text-align:center; padding:28px 12px 8px;
     font-family: "Old English Text MT", "Gothic Old English", serif;
 }
-
-h1 { font-size:2.8rem; margin:0; }
-.container { max-width:900px; margin:auto; padding:20px; }
+h1 { font-size:2.4rem; margin:0; letter-spacing:2px; }
 
 .card {
-    background: rgba(255,255,255,0.08);
+    background: var(--card);
     border-radius: 14px;
     padding: 20px;
     margin-bottom: 25px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     position: relative;
-    animation: fadeIn 0.6s ease;
+    animation: fadeIn 0.45s ease;
 }
 
 @keyframes fadeIn {
-    from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+    from {opacity:0; transform:translateY(6px);} to {opacity:1; transform:translateY(0);} }
 
 .btn-publish {
-    display: block;
-    margin: 0 auto 20px auto;
+    display: inline-block;
+    margin: 18px auto;
     text-align: center;
+    cursor:pointer;
+    padding:10px 16px;
+    border-radius:10px;
+    background: linear-gradient(180deg,var(--accent),var(--accent-dark));
+    color: #1b1f3b;
+    font-weight:700;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
 }
 
 .bandeau {
@@ -67,7 +84,7 @@ h1 { font-size:2.8rem; margin:0; }
     box-shadow:0 4px 12px rgba(0,0,0,0.5);
     letter-spacing:2px;
     z-index:2;
-	opacity: 0.8;
+	opacity: 0.9;
 }
 
 .trajet {
@@ -75,18 +92,17 @@ h1 { font-size:2.8rem; margin:0; }
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  background: rgba(255,255,255,0.12);
-  border-left: 5px solid #ffd369;
+  background: rgba(255,255,255,0.06);
+  border-left: 5px solid var(--accent);
   border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 26px;
+  padding: 16px;
+  margin-bottom: 18px;
   position: relative;
+  transition: transform 0.25s, box-shadow 0.25s;
 }
-.trajet-info {
-  flex: 1;
-  min-width: 0; 
-}
+.trajet:hover{ transform: translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
 
+.trajet-info { flex:1; min-width:0; }
 .action-buttons {
   display: flex;
   flex-direction: column;
@@ -94,31 +110,68 @@ h1 { font-size:2.8rem; margin:0; }
   min-width: 150px;
   align-items: stretch;
 }
+
 .btn-disabled {
   background: gray;
   color: #444;
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .label-fixed {font-family: "Old English Text MT", "Gothic Old English", serif; letter-spacing:1px; font-weight:bold}
 
-.btn { background:#ffd369; color:#1b1f3b; padding:10px 15px; border-radius:8px; font-weight:bold; cursor:pointer; transition:0.2s; }
-.btn:hover{transform:scale(1.03);} 
+.btn { background: var(--accent); color:#1b1f3b; padding:10px 12px; border-radius:8px; font-weight:700; cursor:pointer; transition:0.15s; border:none; }
+.btn:hover{ transform:scale(1.03); }
 
-.delete-btn{ background:#d9534f; padding:6px 10px; border-radius:6px; cursor:pointer; transition:0.2s; }
-.delete-btn:hover{transform:scale(1.03);} 
+.delete-btn{ background:#d9534f; padding:8px 12px; border-radius:8px; cursor:pointer; transition:0.15s; border:none; color:white; }
+.delete-btn:hover{ transform:scale(1.03); } 
 
-form input, form select, form textarea { width:100%; padding:10px; border-radius:8px; border:none; margin-bottom:12px; }
+form input, form select, form textarea { width:100%; padding:10px; border-radius:8px; border:none; margin-bottom:12px; background: rgba(255,255,255,0.04); color: white; }
+form input::placeholder, form textarea::placeholder { color: rgba(255,255,255,0.6); }
 
 select, input, textarea { transition: 0.25s; }
-select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 0 0 12px #ffd369; }
-
-.trajet { transition: transform 0.25s, box-shadow 0.25s; }
-.trajet:hover{ transform: translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.45); }
+select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 0 0 12px var(--accent); outline: none; }
 
 .autre-input { display:none; margin-top:6px; }
 
+.login-panel {
+  max-width:420px;
+  margin: 0 auto 18px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:center;
+}
+.login-input { flex:1; padding:10px 12px; border-radius:10px; border:none; background: rgba(255,255,255,0.04); color:white; }
+.login-btn { padding:10px 14px; border-radius:10px; border:none; background: linear-gradient(180deg,var(--accent),var(--accent-dark)); color:#1b1f3b; font-weight:700; cursor:pointer; }
+
+.small-muted { font-size:0.85rem; color: rgba(255,255,255,0.7); margin-top:6px; text-align:center; }
+
+/* Profile mini modal */
+.profile-modal {
+  position: fixed;
+  inset: 0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.profile-modal .panel {
+  width: min(560px, 95%);
+  background: rgba(10,10,20,0.96);
+  border-radius:12px;
+  padding:18px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.6);
+}
+
+/* Responsive */
+@media (max-width:800px){
+  .trajet { flex-direction: column; align-items:flex-start; }
+  .action-buttons { width:100%; flex-direction:row; flex-wrap:wrap; }
+  .action-buttons button { flex:1; min-width: 48%; }
+  header h1 { font-size:1.8rem; }
+  .login-panel { flex-direction:column; gap:8px; }
+}
 </style>
 </head>
 <body>
@@ -130,21 +183,55 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
   
 <header><h1>Blablac'Arts – Tunnel entre deux villes</h1></header>
 
-<div id="loginArea">
-   <input id="email" placeholder="email">
-   <button onclick="login()">Connexion</button>
+<div class="container">
+
+<!-- Login area improved -->
+<div id="loginArea" class="card" style="text-align:center;">
+  <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
+    <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
+    <button id="loginBtn" class="login-btn" onclick="login()">Se connecter</button>
+  </div>
+  <div class="small-muted">Connexion simplifiée : utilisez votre adresse <b>@ensam.eu</b>. Un lien de connexion sera envoyé.</div>
 </div>
 
-<div id="publishArea" style="display:none;">
-   Connecté : <span id="userEmail"></span>
-   <button onclick="logout()">Déconnexion</button>
+<div id="publishArea" class="card" style="display:none;">
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+     <div>Connecté : <span id="userEmail" style="font-weight:700"></span></div>
+     <div style="display:flex;gap:10px;align-items:center;">
+       <button class="btn" onclick="openProfile()">Mon profil</button>
+       <button class="login-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white" onclick="logout()">Déconnexion</button>
+     </div>
+   </div>
+</div>
+
+<!-- Profile modal -->
+<div id="profileModal" class="profile-modal" role="dialog" aria-modal="true">
+  <div class="panel card">
+    <h3 style="margin-top:0;">Compléter ton profil</h3>
+    <div style="margin-bottom:10px;color:rgba(255,255,255,0.8)">Ton adresse <span id="profileEmail"></span></div>
+    <form id="profileForm" onsubmit="saveProfile(event)">
+      <input id="profile_nom" placeholder="Nom" required>
+      <input id="profile_prenom" placeholder="Prénom" required>
+      <input id="profile_surns" placeholder="Surn's" required>
+      <input id="profile_fams" placeholder="Fam's" required>
+      <select id="profile_promo" required>
+        <option value="">— Promo —</option>
+        <option>An223</option><option>An224</option><option>An225</option>
+      </select>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+        <button type="button" class="btn" onclick="closeProfile()">Fermer</button>
+        <button class="btn" type="submit">Enregistrer</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="container">
 
 <!-- Bouton afficher/masquer formulaire -->
-<div class="btn btn-publish" onclick="toggleForm()">➕ Publier un trajet</div>
-<BR>
+<div style="text-align:center;"><div class="btn-publish" onclick="toggleForm()">➕ Publier un trajet</div></div>
+<br>
+
 <!-- Formulaire publication -->
 <div id="form-container" class="card" style="display:none;">
 <h2 class="label-fixed">Publier un trajet</h2>
@@ -186,9 +273,11 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
     <select id="places"><option>1</option><option>2</option><option>3</option><option>4</option></select>
 
     <span class="label-fixed">Description : (optionnel ; max : 1000 mots)</span>
-    <textarea id="desc" maxlength="1000"></textarea>
+    <textarea id="desc" maxlength="1000" placeholder="Infos utiles : fumeur/non-fumeur, bagages, arrêt(s) intermédiaire(s)..."></textarea>
 
-    <button class="btn">Publier</button>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn" type="submit" id="publishBtn">Publier</button>
+    </div>
 </form>
 </div>
 
@@ -196,31 +285,37 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
 <div class="card">
 <h2 class="label-fixed">🔎 Rechercher une destination</h2>
 
-<!-- Plus d'espace demandé -->
-<div style="margin-bottom:25px;"></div>
-
-<select id="searchDest">
-    <option value="">Toutes les destinations</option>
-	<BR>
-    <option>Angers</option><option>Nantes</option><option>Tours</option>
-    <option>Paris</option><option>Marseille</option><option>Lyon</option>
-    <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
-    <option>Autre</option>
-</select>
-<input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)">
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px;">
+  <select id="searchDest" style="min-width:220px;padding:8px;border-radius:8px;">
+      <option value="">Toutes les destinations</option>
+      <option>Angers</option><option>Nantes</option><option>Tours</option>
+      <option>Paris</option><option>Marseille</option><option>Lyon</option>
+      <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
+      <option>Autre</option>
+  </select>
+  <input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)">
+  <input id="searchText" placeholder="Recherche libre (nom conducteur, description...)" style="flex:1;padding:8px;border-radius:8px;background:rgba(255,255,255,0.04);border:none;color:white;">
+  <button class="btn" onclick="loadTrips()">Rechercher</button>
+  <button class="btn" onclick="resetFilters()" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Réinitialiser</button>
+</div>
 
 <div id="trajets"></div>
 </div>
 
 <!-- Mode Admin -->
 <div class="card"><h2 class="label-fixed">Mode admin</h2>
-<input type="password" id="adminKey" placeholder="Mot de passe admin">
+<input type="password" id="adminKey" placeholder="Mot de passe admin" style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.04);border:none;color:white">
 <button class="btn" onclick="activateAdmin()">Activer</button>
 <p id="adminStatus"></p>
 </div>
 
+<!-- My reservation area -->
+<div id="myReservationArea" class="card" style="display:none;">
+  <h2 class="label-fixed">Ma réservation</h2>
+  <div id="myReservationContent">Aucune réservation active.</div>
 </div>
 
+</div> <!-- container -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
 <script>
@@ -228,16 +323,22 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
 			  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"; 
 			  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+			  // small helpers
+			  const $ = id => document.getElementById(id);
+
 			async function login() {
-			  const email = document.getElementById("email").value.trim();
+			  const email = $('email').value.trim().toLowerCase();
 			  if (!email) return alert("Entre ton email.");
+			  if (!email.endsWith('@ensam.eu')) return alert("Utilise une adresse se terminant par @ensam.eu");
 			
+			  $('loginBtn').disabled = true;
 			  const { error } = await supabase.auth.signInWithOtp({
 			    email,
 			    options: {
-			      emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html"
+			      emailRedirectTo: window.location.href
 			    }
 			  });
+			  $('loginBtn').disabled = false;
 			
 			  if (error) alert(error.message);
 			  else alert("Lien envoyé ! Vérifie ta boîte mail.");
@@ -246,15 +347,30 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
 			  await supabase.auth.signOut();
 			  location.reload();
 			}
-			supabase.auth.onAuthStateChange((event, session) => {
-			  if (session) {
+
+			// show/hide profile modal
+			function openProfile(){
+			  $('profileModal').style.display='flex';
+			}
+			function closeProfile(){
+			  $('profileModal').style.display='none';
+			}
+
+			// Update UI when auth state changes
+			supabase.auth.onAuthStateChange(async (event, session) => {
+			  const s = session?.user ?? null;
+			  if (s) {
 				// connecté
 				document.getElementById("loginArea").style.display = "none";
 				document.getElementById("publishArea").style.display = "block";
-				document.getElementById("userEmail").textContent = session.user.email;
+				document.getElementById("userEmail").textContent = s.email;
+				$('profileEmail').textContent = s.email;
 
-				loadTrips();
-				loadMyReservation();
+				// Load or create profile: if no profile, prompt user to fill it
+				await ensureProfilePresent(s);
+
+				await loadTrips();
+				await loadMyReservation();
 			  } else {
 				// déconnecté
 				document.getElementById("loginArea").style.display = "block";
@@ -264,53 +380,90 @@ select:focus, input:focus, textarea:focus { transform: scale(1.02); box-shadow: 
 
 const ADMIN_PASS = "Error404trads";
 let adminMode = false;
-let currentUser = null;
 
 // Helpers pour récupérer éléments
-const $ = id => document.getElementById(id);
-
 function toggleForm(){
     const f=$("form-container"); f.style.display = f.style.display==="none"?"block":"none";
 }
 
-// monitoring des selects 'Autre'
-["depart","arrivee"].forEach(id=>{
-    $(id).addEventListener('change',()=>{
+// monitoring des selects 'Autre' et recherche
+["depart","arrivee","searchDest"].forEach(id=>{
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener('change',()=>{
         const inp = $(id+"_autre");
-        if($(id).value === 'Autre') inp.style.display='block'; else inp.style.display='none';
+        if(!inp) return;
+        if(el.value === 'Autre') inp.style.display='block'; else inp.style.display='none';
     });
 });
 
+$('searchText').addEventListener('keyup', (e)=>{ if(e.key === 'Enter') loadTrips(); });
 
+function resetFilters(){
+  $('searchDest').value = '';
+  $('searchOther').value = '';
+  $('searchText').value = '';
+  loadTrips();
+}
+
+// Format date in FR and fix timezone issues: force Europe/Paris
 function formatFR(dateStr){
     const d = new Date(dateStr);
     if(isNaN(d)) return dateStr;
-    const j=String(d.getDate()).padStart(2,'0');
-    const m=String(d.getMonth()+1).padStart(2,'0');
-    const a=d.getFullYear();
-    const h=String(d.getHours()).padStart(2,'0');
-    const min=String(d.getMinutes()).padStart(2,'0');
-    return `${j}/${m}/${a} ${h}h${min}`;
+    return d.toLocaleString('fr-FR', {
+      timeZone: 'Europe/Paris',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour:'2-digit', minute:'2-digit'
+    }).replace(',', '');
 }
 
-function isExpired(dateStr){ const d=new Date(dateStr); return new Date() > new Date(d.getTime()+3600*1000); }
-function isEnCours(dateStr){ const d=new Date(dateStr); const now=new Date(); return now>=d && now<= new Date(d.getTime()+3600*1000); }
+// Determine if trip is expired: trip considered lasting 1 hour from its datetime
+function isExpired(dateStr){ 
+    const d=new Date(dateStr);
+    if (isNaN(d)) return false;
+    return new Date() > new Date(d.getTime()+3600*1000);
+}
+function isEnCours(dateStr){ 
+    const d=new Date(dateStr);
+    if (isNaN(d)) return false;
+    const now=new Date();
+    return now>=d && now<= new Date(d.getTime()+3600*1000); 
+}
+
+// Prevent double submit for publish
+let publishing = false;
 
 async function loadTrips() {
   const list = document.getElementById("trajets");
   list.innerHTML = "Chargement...";
 
-  const { data, error } = await supabase
-    .from("trips")
-    .select("*")
-    .order("datetime", { ascending: true });
+  // Build query with filters
+  let query = supabase.from("trips").select("*").order("datetime", { ascending: true });
 
-  if (error) return list.innerHTML = error.message;
+  const searchDest = $('searchDest').value;
+  if (searchDest && searchDest !== '') {
+    if (searchDest === 'Autre') {
+      const s = $('searchOther').value.trim();
+      if (s) query = query.ilike('depart', `%${s}%`).or(`arrivee.ilike.%${s}%`);
+    } else {
+      // look for either depart OR arrivee matching the selection
+      query = query.or(`depart.eq.${searchDest},arrivee.eq.${searchDest}`);
+    }
+  }
+
+  const searchText = $('searchText').value.trim();
+  if (searchText) {
+    // simple text search on driver name and description (client-side fallback if RLS limits)
+    query = query.ilike('nom', `%${searchText}%`).or(`prenom.ilike.%${searchText}%,description.ilike.%${searchText}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
+  }
 
   list.innerHTML = "";
-
-  const session = (await supabase.auth.getSession()).data.session;
-  const uid = session?.user?.id;
 
   for (const t of data) {
 	  const elem = await createTrajetElement(t, t.id);
@@ -345,14 +498,15 @@ async function loadMyReservation() {
   const r = data;
 
   content.innerHTML = `
-    <p><b>Trajet :</b> ${r.trips.depart} → ${r.trips.arrivee}</p>
-    <p><b>Date :</b> ${new Date(r.trips.datetime).toLocaleString()}</p>
+    <p><b>Trajet :</b> ${escapeHTML(r.trips.depart)} → ${escapeHTML(r.trips.arrivee)}</p>
+    <p><b>Date :</b> ${formatFR(r.trips.datetime)}</p>
     <button onclick="cancelReservation(${r.id})" class="btn">Annuler</button>
   `;
 }
 
 async function cancelReservation(resId) {
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Connecte-toi !");
 
   const { data, error } = await supabase.rpc("cancel_reservation", {
     p_reservation_id: resId,
@@ -360,7 +514,7 @@ async function cancelReservation(resId) {
   });
 
   if (error || data.ok === false)
-    return alert(error?.message || data?.error);
+    return alert(error?.message || data?.error || "Erreur annulation.");
 
   alert("Réservation annulée !");
   loadTrips();
@@ -371,11 +525,22 @@ async function createTrajetElement(t, i) {
   const d = document.createElement('div');
   d.className = 'trajet';
 
-  // --- Bandeau EN COURS / PLEIN ---
-  if (isEnCours(t.datetime) || t.places <= 0) {
+  // --- Bandeau EN COURS / PLEIN / EXPIRÉ ---
+  if (isEnCours(t.datetime)) {
     const b = document.createElement('div');
     b.className = 'bandeau';
-    b.textContent = isEnCours(t.datetime) ? 'EN COURS' : 'PLEIN';
+    b.textContent = 'EN COURS';
+    d.appendChild(b);
+  } else if (t.places <= 0) {
+    const b = document.createElement('div');
+    b.className = 'bandeau';
+    b.textContent = 'PLEIN';
+    d.appendChild(b);
+  } else if (isExpired(t.datetime)) {
+    const b = document.createElement('div');
+    b.className = 'bandeau';
+    b.textContent = 'EXPIRÉ';
+    b.style.background = '#6c6c6c';
     d.appendChild(b);
   }
 
@@ -390,8 +555,8 @@ async function createTrajetElement(t, i) {
     <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
   `;
 
-  if (t.description && t.description.trim() !== '') {
-    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.desc)}</p>`;
+  if (t.description && String(t.description).trim() !== '') {
+    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
   }
 
   // --- Zone des boutons ---
@@ -418,8 +583,7 @@ async function createTrajetElement(t, i) {
     reserved = !!res.data;
   }
 
-
-  // --- Bouton ADMIN : supprimer ---
+  // --- Bouton ADMIN : supprimer (affiché, mais actual deletion only allowed if owner; adminMode is only UI) ---
   if (adminMode) {
     const del = document.createElement('button');
     del.className = 'delete-btn';
@@ -436,14 +600,19 @@ async function createTrajetElement(t, i) {
     un.onclick = () => cancelReservation(myRes.id);
     actions.appendChild(un);
 
-  } else if (t.places > 0 && !isEnCours(t.datetime)) {
-    const res = document.createElement('button');
-    res.className = 'btn';
-    res.textContent = 'Réserver';
-    res.onclick = () => reserve(t.id);
-    actions.appendChild(res);
+  } else if (t.places > 0 && !isEnCours(t.datetime) && !isExpired(t.datetime)) {
+    const resBtn = document.createElement('button');
+    resBtn.className = 'btn';
+    resBtn.textContent = 'Réserver';
+    resBtn.onclick = () => confirmReserve(t.id);
+    actions.appendChild(resBtn);
+  } else {
+    const disabled = document.createElement('button');
+    disabled.className = 'btn btn-disabled';
+    disabled.textContent = 'Réserver';
+    disabled.setAttribute('aria-disabled','true');
+    actions.appendChild(disabled);
   }
-
 
   // --- Bouton voir les réservations ---
   const maySee = await canViewReservations(t);
@@ -463,7 +632,6 @@ async function createTrajetElement(t, i) {
     actions.appendChild(btnRes);
   }
 
-
   // --- Placement final ---
   d.appendChild(info);
   d.appendChild(actions);
@@ -472,11 +640,17 @@ async function createTrajetElement(t, i) {
 }
 
 async function publishTrip(e) {
-  // Empêche le submit classique du formulaire qui reload la page
   if (e && e.preventDefault) e.preventDefault();
+  if (publishing) return;
+  publishing = true;
+  $('publishBtn').disabled = true;
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return alert("Connecte-toi !");
+  if (!user) {
+    publishing = false;
+    $('publishBtn').disabled = false;
+    return alert("Connecte-toi !");
+  }
 
   // Récupération propre des champs
   const departEl = document.getElementById("depart");
@@ -487,6 +661,9 @@ async function publishTrip(e) {
   const departValue = departEl.value === "Autre" ? depart_autreEl.value.trim() : departEl.value;
   const arriveeValue = arriveeEl.value === "Autre" ? arrivee_autreEl.value.trim() : arriveeEl.value;
 
+  const datetimeVal = document.getElementById("datetime").value;
+  if (!datetimeVal) { publishing = false; $('publishBtn').disabled = false; return alert("Choisis une date et heure."); }
+
   const trip = {
     owner: user.id,
     nom: document.getElementById("nom").value.trim(),
@@ -496,51 +673,76 @@ async function publishTrip(e) {
     promo: document.getElementById("promo").value,
     depart: departValue,
     arrivee: arriveeValue,
-    datetime: document.getElementById("datetime").value,
+    datetime: datetimeVal,
     places: parseInt(document.getElementById("places").value) || 1,
     description: document.getElementById("desc").value.trim()
   };
 
-  // Insert
-  const { data, error } = await supabase.from("trips").insert(trip);
-
-  if (error) {
-    // Affiche l'erreur remontée par Supabase (utile pour debugger RLS)
-    return alert("Erreur publication : " + (error.message || JSON.stringify(error)));
+  try {
+    // disable to avoid duplicate clicks
+    $('publishBtn').textContent = 'Publication...';
+    const { data, error } = await supabase.from("trips").insert(trip);
+    if (error) {
+      alert("Erreur publication : " + (error.message || JSON.stringify(error)));
+    } else {
+      alert("Trajet publié !");
+      document.getElementById("publishForm").reset();
+      document.getElementById("form-container").style.display = "none";
+      await loadTrips();
+    }
+  } finally {
+    publishing = false;
+    $('publishBtn').disabled = false;
+    $('publishBtn').textContent = 'Publier';
   }
+}
 
-  alert("Trajet publié !");
-  // remise à zéro / fermeture du formulaire si besoin
-  document.getElementById("publishForm").reset();
-  document.getElementById("form-container").style.display = "none";
-  loadTrips();
+// Confirm reserve (simple confirm then reserve)
+async function confirmReserve(tripId){
+  if(!confirm("Confirmer la réservation de ce trajet ?")) return;
+  await reserve(tripId);
 }
 
 async function reserve(tripId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return alert("Connecte-toi !");
 
+  // get profile properly
+  const { data: profilData, error: profilError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
 
-const profil = await supabase
-  .from("profiles")  // si tu as une table profiles (recommandé)
-  .select("*")
-  .eq("id", user.id)
-  .single();
-
-if (!profil.data) return alert("Impossible de lire ton profil.");
+  if (profilError) {
+    console.error(profilError);
+    return alert("Impossible de lire ton profil (erreur).");
+  }
+  if (!profilData) {
+    // prompt user to fill profile first
+    alert("Complète ton profil avant de réserver.");
+    $('profile_nom').value = '';
+    $('profile_prenom').value = '';
+    $('profile_surns').value = '';
+    $('profile_fams').value = '';
+    $('profile_promo').value = '';
+    $('profileEmail').textContent = user.email;
+    openProfile();
+    return;
+  }
 
   const { data, error } = await supabase.rpc("reserve_trip", {
     p_trip_id: tripId,
     p_user_id: user.id,
-    p_nom: profil.data.nom,
-    p_prenom: profil.data.prenom,
-    p_surns: profil.data.surns,
-    p_fams: profil.data.fams,
-    p_promo: profil.data.promo
-});
+    p_nom: profilData.nom,
+    p_prenom: profilData.prenom,
+    p_surns: profilData.surns,
+    p_fams: profilData.fams,
+    p_promo: profilData.promo
+  });
 
-  if (error) return alert(error.details || error.message);
-  if (data.ok === false) return alert(data.error);
+  if (error) return alert(error.details || error.message || JSON.stringify(error));
+  if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
 
   alert("Réservation confirmée !");
   loadTrips();
@@ -564,7 +766,7 @@ async function viewReservations(tripId) {
 
   if (error) return alert(error.message);
 
-  if (!data.length) return alert("Aucun réservant.");
+  if (!data || data.length === 0) return alert("Aucun réservant.");
 
   let msg = "Réservants :\n\n";
   data.forEach(r => {
@@ -577,6 +779,15 @@ async function viewReservations(tripId) {
 async function deleteTrip(id) {
   if (!confirm("Supprimer ce trajet ?")) return;
 
+  // ensure current user is owner
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Connecte-toi !");
+
+  const { data: trip, error: tripErr } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
+  if (tripErr) return alert("Erreur lecture trajet : " + tripErr.message);
+  if (!trip) return alert("Trajet introuvable.");
+  if (user.id !== trip.owner) return alert("Seul le publieur (ou une personne ayant les droits serveur) peut supprimer ce trajet.");
+
   const { error } = await supabase
     .from("trips")
     .delete()
@@ -588,26 +799,73 @@ async function deleteTrip(id) {
   loadTrips();
 }
 
+// Admin activation only toggles UI; actual DB admin requires Supabase service role (not included here)
 function activateAdmin(){
     adminMode = $('adminKey').value === ADMIN_PASS;
-    $('adminStatus').textContent = adminMode ? 'Accès admin' : 'Mot de passe incorrect';
+    $('adminStatus').textContent = adminMode ? 'Accès admin (UI seulement)' : 'Mot de passe incorrect';
     loadTrips();
 }
-	
+
+// Escape HTML for safety
 function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+
+// PROFILE HANDLING: ensure profile exists, if not prompt user to fill it. Also allow to edit.
+async function ensureProfilePresent(user){
+  if (!user) return;
+  // try to read profile
+  const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (error) {
+    console.error('profile read error', error);
+    return;
+  }
+  if (!profile) {
+    // create an empty profile entry placeholder? We prefer prompting the user to fill it.
+    $('profileEmail').textContent = user.email;
+    $('profile_nom').value = '';
+    $('profile_prenom').value = '';
+    $('profile_surns').value = '';
+    $('profile_fams').value = '';
+    $('profile_promo').value = '';
+    openProfile();
+  } else {
+    // fill local fields for editing
+    $('profile_nom').value = profile.nom || '';
+    $('profile_prenom').value = profile.prenom || '';
+    $('profile_surns').value = profile.surns || '';
+    $('profile_fams').value = profile.fams || '';
+    $('profile_promo').value = profile.promo || '';
+  }
+}
+
+// save profile (upsert)
+async function saveProfile(e){
+  if (e && e.preventDefault) e.preventDefault();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Connecte-toi !");
+  const nom = $('profile_nom').value.trim();
+  const prenom = $('profile_prenom').value.trim();
+  const surns = $('profile_surns').value.trim();
+  const fams = $('profile_fams').value.trim();
+  const promo = $('profile_promo').value;
+
+  if(!nom || !prenom) return alert("Nom et prénom requis.");
+
+  const { data, error } = await supabase.from('profiles').upsert({
+    id: user.id,
+    nom, prenom, surns, fams, promo
+  }, { returning: 'minimal' });
+
+  if (error) {
+    console.error(error);
+    return alert("Impossible d'enregistrer le profil.");
+  }
+
+  alert("Profil enregistré.");
+  closeProfile();
+  loadTrips();
+  loadMyReservation();
+}
 
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
