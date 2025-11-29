@@ -160,6 +160,10 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   justify-content:center;
   z-index:9999;
 }
+.profile-modal.show {
+  display: flex;
+  pointer-events: auto; /* <-- seulement quand visible */
+}
 .profile-modal .panel {
   width: min(560px, 95%);
   background: rgba(10,10,20,0.96);
@@ -359,10 +363,13 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 			// show/hide profile modal
 			function openProfile(){
-			  $('profileModal').style.display='flex';
+			  const modal = $('profileModal');
+			  modal.classList.add('show');
 			}
+			
 			function closeProfile(){
-			  $('profileModal').style.display='none';
+			  const modal = $('profileModal');
+			  modal.classList.remove('show');
 			}
 
 			// Update UI when auth state changes
@@ -1004,6 +1011,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
