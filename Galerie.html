@@ -373,7 +373,7 @@ async function login() {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: window.location.href // redirige vers la même page
+      emailRedirectTo: window.location.href
     }
   });
   $('loginBtn').disabled = false;
@@ -382,37 +382,10 @@ async function login() {
   else alert("Lien envoyé ! Vérifie ta boîte mail.");
 }
 
-// Logout
-async function logout() {
-  await supabase.auth.signOut();
-  location.reload();
-}
-
-// Mettre à jour l'UI quand l'état d'auth change
-supabase.auth.onAuthStateChange(async (event, session) => {
-  while (!window.__authReady) {
-    await new Promise(res => setTimeout(res, 10));
-  }
-
-  const user = session?.user ?? null;
-  if (user) {
-    $('loginArea').style.display = 'none';
-    $('publishArea').style.display = 'block';
-    $('userEmail').textContent = user.email;
-    $('profileEmail').textContent = user.email;
-
-    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
-    if (typeof loadTrips === "function") await loadTrips();
-    if (typeof loadMyReservation === "function") await loadMyReservation();
-  } else {
-    $('loginArea').style.display = 'block';
-    $('publishArea').style.display = 'none';
-  }
-});
-
-// Initialisation de l'app au chargement
+// Initialisation de l'app
 async function initApp() {
-  await handleMagicLinkRedirect(); // traite le magic link avant tout
+  // Pas besoin de handleMagicLinkRedirect pour v2
+  window.__authReady = true;
 
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
@@ -432,7 +405,24 @@ async function initApp() {
   if (typeof loadMyReservation === "function") await loadMyReservation();
 }
 
-// Lancer l'app
+// Met à jour automatiquement l'UI quand l'état change
+supabase.auth.onAuthStateChange(async (event, session) => {
+  window.__authReady = true;
+  const user = session?.user ?? null;
+  if (user) {
+    $('loginArea').style.display = 'none';
+    $('publishArea').style.display = 'block';
+    $('userEmail').textContent = user.email;
+    $('profileEmail').textContent = user.email;
+    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
+    if (typeof loadTrips === "function") await loadTrips();
+    if (typeof loadMyReservation === "function") await loadMyReservation();
+  } else {
+    $('loginArea').style.display = 'block';
+    $('publishArea').style.display = 'none';
+  }
+});
+
 window.addEventListener('DOMContentLoaded', initApp);
 	
 const ADMIN_PASS = "Error404trads";
@@ -1062,6 +1052,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
