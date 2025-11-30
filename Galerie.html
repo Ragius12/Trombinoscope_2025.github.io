@@ -334,759 +334,795 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <script>
-// Fix : garder l'alias $ sans écraser jQuery
-function $(id) { return document.getElementById(id); }
+/* ------------------------------
+   JS encapsulé (IIFE) - ne pollue pas global
+   Corrige les crashs bloquants et protège le $ global (jQuery)
+   ------------------------------ */
+(function(){
+  // alias local pour getElementById (n'écrase pas window.$)
+  const $ = (id) => document.getElementById(id);
 
-// Initialisation Supabase
-const supabase = window.supabase.createClient(
-  "https://wwjsqkktwxciyvzoisyz.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
-);
+  // Supabase client
+  const supabase = window.supabase.createClient(
+    "https://wwjsqkktwxciyvzoisyz.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+  );
 
-let adminMode = false;
-window.__authReady = false;
+  let adminMode = false;
+  window.__authReady = false;
 
-/* ---------------------------------------------------
-   AUTH STATE (UNIFIÉ ET RÉPARÉ)
---------------------------------------------------- */
-supabase.auth.onAuthStateChange(async (event, session) => {
-  const user = session?.user ?? null;
-  await updateUI(user);
-  window.__authReady = true;
-});
-
-/* ---------------------------------------------------
-   INITIALISATION PROPRE (corrige le bug principal)
---------------------------------------------------- */
-async function initApp() {
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-
-  await updateUI(user);
-
-  if (user) {
-    await ensureProfilePresent(user);
-    await loadTrips();
-    await loadMyReservation();
-  }
-
-  window.__authReady = true;
-}
-
-document.addEventListener("DOMContentLoaded", initApp);
-
-/* ---------------------------------------------------
-   LOGIN
---------------------------------------------------- */
-async function login() {
-  const email = $("email").value.trim().toLowerCase();
-  if (!email) return alert("Entre ton email.");
-  if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
-
-  $("loginBtn").disabled = true;
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href }
+  // Un seul listener unifié
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    try {
+      const user = session?.user ?? null;
+      await updateUI(user);
+      window.__authReady = true;
+    } catch (err) {
+      console.error("onAuthStateChange error:", err);
+    }
   });
 
-  $("loginBtn").disabled = false;
+  // init
+  async function initApp(){
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
+      await updateUI(user);
 
-  if (error) alert(error.message);
-  else alert("Lien envoyé ! Vérifie ta boîte mail.");
-}
-
-/* ---------------------------------------------------
-   LOGOUT
---------------------------------------------------- */
-async function logout() {
-  await supabase.auth.signOut();
-}
-
-/* ---------------------------------------------------
-   MISE À JOUR DE L'UI SELON L'UTILISATEUR
---------------------------------------------------- */
-async function updateUI(user) {
-  if (user) {
-    $("loginArea").style.display = "none";
-    $("publishArea").style.display = "block";
-
-    $("userEmail").textContent = user.email;
-    $("profileEmail").textContent = user.email;
-
-    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
-    if (typeof loadTrips === "function") await loadTrips();
-    if (typeof loadMyReservation === "function") await loadMyReservation();
-  } else {
-    $("loginArea").style.display = "block";
-    $("publishArea").style.display = "none";
-  }
-}
-
-/* ---------------------------------------------------
-   OUVRIR / FERMER PROFIL
---------------------------------------------------- */
-function openProfile() {
-  $("profileModal").style.display = "flex";
-}
-function closeProfile() {
-  $("profileModal").style.display = "none";
-}
-
-// Fermer si clic extérieur
-window.addEventListener("click", (e) => {
-  const modal = $("profileModal");
-  if (e.target === modal) modal.style.display = "none";
-});
-
-/* ---------------------------------------------------
-   TOGGLE FORMULAIRE
---------------------------------------------------- */
-function toggleForm(){
-  const f = $("form-container");
-  f.style.display = (f.style.display === "none") ? "block" : "none";
-}
-
-/* ---------------------------------------------------
-   CHAMP “AUTRE”
---------------------------------------------------- */
-["depart","arrivee","searchDest"].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  el.addEventListener("change", () => {
-    const inp = document.getElementById(id + "_autre");
-    if (!inp) return;
-
-    inp.style.display = (el.value === "Autre") ? "block" : "none";
-  });
-});
-
-/* ---------------------------------------------------
-   RECHERCHE DYNAMIQUE
---------------------------------------------------- */
-let searchDebounceTimer = null;
-
-$("searchText").addEventListener("input", () => {
-  clearTimeout(searchDebounceTimer);
-  searchDebounceTimer = setTimeout(() => loadTrips(), 300);
-});
-
-$("searchText").addEventListener("keyup", (e) => {
-  if (e.key === "Enter") loadTrips();
-});
-
-$("searchDest").addEventListener("change", loadTrips);
-$("searchOther").addEventListener("input", () => {
-  clearTimeout(searchDebounceTimer);
-  searchDebounceTimer = setTimeout(() => loadTrips(), 300);
-});
-
-function resetFilters() {
-  $("searchDest").value = "";
-  $("searchOther").value = "";
-  $("searchText").value = "";
-  loadTrips();
-}
-
-/* ---------------------------------------------------
-   FORMATAGE & DATES
---------------------------------------------------- */
-function formatFR(dateStr){
-  const d = new Date(dateStr);
-  if (isNaN(d)) return dateStr;
-
-  return d.toLocaleString("fr-FR", {
-    timeZone: "Europe/Paris",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).replace(",", "");
-}
-
-function isExpired(dateStr){
-  const d = new Date(dateStr);
-  if (isNaN(d)) return false;
-  return new Date() > new Date(d.getTime() + 3600*1000);
-}
-
-function isEnCours(dateStr){
-  const d = new Date(dateStr);
-  const now = new Date();
-  return now >= d && now <= new Date(d.getTime() + 3600*1000);
-}
-
-/* ---------------------------------------------------
-   CHARGEMENT DES TRAJETS (optimisé + réparé)
---------------------------------------------------- */
-async function loadTrips() {
-  const list = $("trajets");
-  list.innerHTML = "Chargement...";
-
-  const { data, error } = await supabase.from("trips").select("*");
-  if (error) {
-    list.innerHTML = "Erreur : " + error.message;
-    return;
-  }
-
-  let trips = data || [];
-
-  /* ----- FILTRAGE ----- */
-  const searchDest = $("searchDest").value;
-  const searchOther = $("searchOther").value.trim().toLowerCase();
-  const searchText = $("searchText").value.trim().toLowerCase();
-
-  trips = trips.filter(t => {
-    const depart = String(t.depart || "").toLowerCase();
-    const arrivee = String(t.arrivee || "").toLowerCase();
-    const nom = String(t.nom || "").toLowerCase();
-    const prenom = String(t.prenom || "").toLowerCase();
-    const desc = String(t.description || "").toLowerCase();
-
-    let okDest = true;
-    if (searchDest) {
-      if (searchDest === "Autre") {
-        okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
-      } else {
-        okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
+      if (user) {
+        await ensureProfilePresent(user);
+        await loadTrips();
+        await loadMyReservation();
       }
+      window.__authReady = true;
+    } catch (err) {
+      console.error("initApp error:", err);
+      window.__authReady = true;
     }
+  }
 
-    let okText = true;
-    if (searchText) {
-      okText =
-        nom.includes(searchText) ||
-        prenom.includes(searchText) ||
-        desc.includes(searchText) ||
-        depart.includes(searchText) ||
-        arrivee.includes(searchText);
+  document.addEventListener("DOMContentLoaded", initApp);
+
+  /* ---------- AUTH ---------- */
+  async function login() {
+    try {
+      const emailEl = $( "email" );
+      const email = emailEl ? emailEl.value.trim().toLowerCase() : "";
+      if (!email) return alert("Entre ton email.");
+      if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+
+      const btn = $("loginBtn");
+      if (btn) btn.disabled = true;
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.href }
+      });
+
+      if (btn) btn.disabled = false;
+      if (error) alert(error.message);
+      else alert("Lien envoyé ! Vérifie ta boîte mail.");
+    } catch (err) {
+      console.error("login error", err);
+      alert("Erreur lors de la tentative de connexion.");
     }
+  }
 
-    return okDest && okText;
+  async function logout() {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("logout error", err);
+    }
+  }
+
+  /* ---------- UI update ---------- */
+  async function updateUI(user) {
+    try {
+      if (user) {
+        if ($("loginArea")) $("loginArea").style.display = "none";
+        if ($("publishArea")) $("publishArea").style.display = "block";
+        if ($("userEmail")) $("userEmail").textContent = user.email;
+        if ($("profileEmail")) $("profileEmail").textContent = user.email;
+
+        if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
+        if (typeof loadTrips === "function") await loadTrips();
+        if (typeof loadMyReservation === "function") await loadMyReservation();
+      } else {
+        if ($("loginArea")) $("loginArea").style.display = "block";
+        if ($("publishArea")) $("publishArea").style.display = "none";
+      }
+    } catch (err) {
+      console.error("updateUI error:", err);
+    }
+  }
+
+  /* ---------- Profile modal ---------- */
+  function openProfile() {
+    if ($("profileModal")) $("profileModal").style.display = "flex";
+  }
+  function closeProfile() {
+    if ($("profileModal")) $("profileModal").style.display = "none";
+  }
+  window.addEventListener("click", (e) => {
+    const modal = $("profileModal");
+    if (modal && e.target === modal) modal.style.display = "none";
   });
 
-  /* ----- TRI par pertinence ----- */
-  const now = Date.now();
-
-  function score(t) {
-    let s = 0;
-    const q = searchText;
-    const dQ = searchDest.toLowerCase();
-
-    const depart = t.depart.toLowerCase();
-    const arrivee = t.arrivee.toLowerCase();
-    const nom = t.nom.toLowerCase();
-    const prenom = t.prenom.toLowerCase();
-    const desc = (t.description || "").toLowerCase();
-
-    if (q) {
-      if (nom === q || prenom === q) s += 50;
-      if (nom.includes(q) || prenom.includes(q)) s += 20;
-      if (desc.includes(q)) s += 10;
-      if (depart.includes(q) || arrivee.includes(q)) s += 15;
-    }
-
-    if (dQ) {
-      if (depart === dQ || arrivee === dQ) s += 40;
-      if ((depart + arrivee).includes(dQ)) s += 10;
-    }
-
-    const dt = new Date(t.datetime).getTime();
-    if (!isNaN(dt)) {
-      const diff = dt - now;
-      if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000*60*60)));
-    }
-
-    if (isExpired(t.datetime)) s -= 1000;
-    return s;
+  /* ---------- Toggle form ---------- */
+  function toggleForm(){
+    const f = $("form-container");
+    if (!f) return;
+    f.style.display = (f.style.display === "none" || f.style.display === "") ? "block" : "none";
   }
 
-  trips.sort((a, b) => {
-    const sa = score(a), sb = score(b);
-    if (sa !== sb) return sb - sa;
-
-    const da = new Date(a.datetime).getTime();
-    const db = new Date(b.datetime).getTime();
-    return da - db;
+  /* ---------- Champ 'Autre' ---------- */
+  ["depart","arrivee","searchDest"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("change", () => {
+      const inp = document.getElementById(id + "_autre");
+      if (!inp) return;
+      inp.style.display = (el.value === "Autre") ? "block" : "none";
+    });
   });
 
-  /* ----- AFFICHAGE ----- */
-  list.innerHTML = "";
-
-  for (const t of trips) {
-    const elem = await createTrajetElement(t, t.id);
-    list.appendChild(elem);
+  /* ---------- Recherche dynamique ---------- */
+  let searchDebounceTimer = null;
+  const searchTextEl = $("searchText");
+  if (searchTextEl) {
+    searchTextEl.addEventListener("input", () => {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => loadTrips(), 300);
+    });
+    searchTextEl.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") loadTrips();
+    });
   }
-}
+  const searchDestEl = $("searchDest");
+  if (searchDestEl) searchDestEl.addEventListener("change", loadTrips);
+  const searchOtherEl = $("searchOther");
+  if (searchOtherEl) searchOtherEl.addEventListener("input", () => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => loadTrips(), 300);
+  });
 
-/* ---------------------------------------------------
-   UTILITAIRES & ACTIONS (publication, réservation...)
---------------------------------------------------- */
-
-/* Convertit une valeur datetime-local (YYYY-MM-DDTHH:mm) en ISO UTC */
-function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
-  const d = new Date(datetimeLocalValue);
-  if (isNaN(d)) return datetimeLocalValue;
-  return d.toISOString();
-}
-
-/* Publication */
-let publishing = false;
-async function publishTrip(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (publishing) return;
-  publishing = true;
-  $("publishBtn").disabled = true;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    publishing = false;
-    $("publishBtn").disabled = false;
-    return alert("Connecte-toi !");
+  function resetFilters() {
+    if ($("searchDest")) $("searchDest").value = "";
+    if ($("searchOther")) $("searchOther").value = "";
+    if ($("searchText")) $("searchText").value = "";
+    loadTrips();
   }
 
-  const departEl = $("depart");
-  const arriveeEl = $("arrivee");
-  const depart_autreEl = $("depart_autre");
-  const arrivee_autreEl = $("arrivee_autre");
+  /* ---------- Dates & helpers ---------- */
+  function formatFR(dateStr){
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleString("fr-FR", {
+      timeZone: "Europe/Paris",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).replace(",", "");
+  }
 
-  const departValue = departEl.value === "Autre" ? depart_autreEl.value.trim() : departEl.value;
-  const arriveeValue = arriveeEl.value === "Autre" ? arrivee_autreEl.value.trim() : arriveeEl.value;
+  function isExpired(dateStr){
+    const d = new Date(dateStr);
+    if (isNaN(d)) return false;
+    return new Date() > new Date(d.getTime() + 3600*1000);
+  }
 
-  const datetimeVal = $("datetime").value;
-  if (!datetimeVal) { publishing = false; $("publishBtn").disabled = false; return alert("Choisis une date et heure."); }
+  function isEnCours(dateStr){
+    const d = new Date(dateStr);
+    if (isNaN(d)) return false;
+    const now = new Date();
+    return now >= d && now <= new Date(d.getTime() + 3600*1000);
+  }
 
-  const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
+  /* ---------- loadTrips (défensif) ---------- */
+  async function loadTrips() {
+    const list = $("trajets");
+    if (!list) return;
+    list.innerHTML = "Chargement...";
 
-  let publishNom = $("nom").value.trim();
-  let publishPrenom = $("prenom").value.trim();
-  let publishSurns = $("surns_pub").value.trim();
-  let publishFams = $("fams_pub").value.trim();
-  let publishPromo = $("promo").value;
+    try {
+      const { data, error } = await supabase.from("trips").select("*");
+      if (error) {
+        list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
+        return;
+      }
 
-  if (!publishNom || !publishPrenom || !publishSurns || !publishFams || !publishPromo) {
-    const { data: profilData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-    if (profilData) {
-      publishNom = publishNom || (profilData.nom || '');
-      publishPrenom = publishPrenom || (profilData.prenom || '');
-      publishSurns = publishSurns || (profilData.surns || '');
-      publishFams = publishFams || (profilData.fams || '');
-      publishPromo = publishPromo || (profilData.promo || '');
+      let trips = data || [];
+
+      // filtre UI
+      const searchDest = $("searchDest") ? $("searchDest").value : "";
+      const searchOther = $("searchOther") ? String($("searchOther").value).trim().toLowerCase() : "";
+      const searchText = $("searchText") ? String($("searchText").value).trim().toLowerCase() : "";
+
+      trips = trips.filter(t => {
+        const depart = String(t.depart || "").toLowerCase();
+        const arrivee = String(t.arrivee || "").toLowerCase();
+        const nom = String(t.nom || "").toLowerCase();
+        const prenom = String(t.prenom || "").toLowerCase();
+        const desc = String(t.description || "").toLowerCase();
+
+        let okDest = true;
+        if (searchDest) {
+          if (searchDest === "Autre") {
+            okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
+          } else {
+            okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
+          }
+        }
+
+        let okText = true;
+        if (searchText) {
+          okText =
+            nom.includes(searchText) ||
+            prenom.includes(searchText) ||
+            desc.includes(searchText) ||
+            depart.includes(searchText) ||
+            arrivee.includes(searchText);
+        }
+
+        return okDest && okText;
+      });
+
+      // tri: pertinence proche
+      const now = Date.now();
+      function score(t) {
+        let s = 0;
+        const q = (searchText || "");
+        const dQ = (searchDest || "").toLowerCase();
+
+        const depart = String(t.depart || "").toLowerCase();
+        const arrivee = String(t.arrivee || "").toLowerCase();
+        const nom = String(t.nom || "").toLowerCase();
+        const prenom = String(t.prenom || "").toLowerCase();
+        const desc = String(t.description || "").toLowerCase();
+
+        if (q) {
+          if (nom === q || prenom === q) s += 50;
+          if (nom.includes(q) || prenom.includes(q)) s += 20;
+          if (desc.includes(q)) s += 10;
+          if (depart.includes(q) || arrivee.includes(q)) s += 15;
+        }
+        if (dQ) {
+          if (depart === dQ || arrivee === dQ) s += 40;
+          if ((depart + arrivee).includes(dQ)) s += 10;
+        }
+        const dt = new Date(t.datetime).getTime();
+        if (!isNaN(dt)) {
+          const diff = dt - now;
+          if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000*60*60)));
+        }
+        if (isExpired(t.datetime)) s -= 1000;
+        return s;
+      }
+
+      trips.sort((a,b) => {
+        const sa = score(a), sb = score(b);
+        if (sa !== sb) return sb - sa;
+        const da = new Date(a.datetime).getTime() || 0;
+        const db = new Date(b.datetime).getTime() || 0;
+        return da - db;
+      });
+
+      // affichage
+      list.innerHTML = "";
+      for (const t of trips) {
+        // createTrajetElement est défini plus bas
+        const elem = await createTrajetElement(t, t.id);
+        list.appendChild(elem);
+      }
+    } catch (err) {
+      console.error("loadTrips error:", err);
+      list.innerHTML = "Erreur de chargement (voir console).";
     }
   }
 
-  const trip = {
-    owner: user.id,
-    nom: publishNom,
-    prenom: publishPrenom,
-    surns: publishSurns,
-    fams: publishFams,
-    promo: publishPromo,
-    depart: departValue,
-    arrivee: arriveeValue,
-    datetime: datetimeISO,
-    places: parseInt($("places").value) || 1,
-    description: $("desc").value.trim()
+  /* ---------- utilitaires & actions ---------- */
+  function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
+    const d = new Date(datetimeLocalValue);
+    if (isNaN(d)) return datetimeLocalValue;
+    return d.toISOString();
+  }
+
+  let publishing = false;
+  async function publishTrip(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (publishing) return;
+    publishing = true;
+    try {
+      const publishBtn = $("publishBtn");
+      if (publishBtn) publishBtn.disabled = true;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert("Connecte-toi !"); return; }
+
+      const departEl = $("depart");
+      const arriveeEl = $("arrivee");
+      const depart_autreEl = $("depart_autre");
+      const arrivee_autreEl = $("arrivee_autre");
+
+      const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
+      const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
+
+      const datetimeVal = $("datetime") ? $("datetime").value : "";
+      if (!datetimeVal) { alert("Choisis une date et heure."); return; }
+
+      const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
+
+      let publishNom = $("nom") ? $("nom").value.trim() : "";
+      let publishPrenom = $("prenom") ? $("prenom").value.trim() : "";
+      let publishSurns = $("surns_pub") ? $("surns_pub").value.trim() : "";
+      let publishFams = $("fams_pub") ? $("fams_pub").value.trim() : "";
+      let publishPromo = $("promo") ? $("promo").value : "";
+
+      if (!publishNom || !publishPrenom || !publishSurns || !publishFams || !publishPromo) {
+        const { data: profilData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+        if (profilData) {
+          publishNom = publishNom || (profilData.nom || '');
+          publishPrenom = publishPrenom || (profilData.prenom || '');
+          publishSurns = publishSurns || (profilData.surns || '');
+          publishFams = publishFams || (profilData.fams || '');
+          publishPromo = publishPromo || (profilData.promo || '');
+        }
+      }
+
+      const trip = {
+        owner: user.id,
+        nom: publishNom,
+        prenom: publishPrenom,
+        surns: publishSurns,
+        fams: publishFams,
+        promo: publishPromo,
+        depart: departValue,
+        arrivee: arriveeValue,
+        datetime: datetimeISO,
+        places: parseInt($("places") ? $("places").value : "1") || 1,
+        description: $("desc") ? $("desc").value.trim() : ""
+      };
+
+      try {
+        if ($("publishBtn")) $("publishBtn").textContent = "Publication...";
+        const { data, error } = await supabase.from("trips").insert(trip);
+        if (error) {
+          alert("Erreur publication : " + (error.message || JSON.stringify(error)));
+        } else {
+          alert("Trajet publié !");
+          if ($("publishForm")) $("publishForm").reset();
+          if ($("form-container")) $("form-container").style.display = "none";
+          await loadTrips();
+        }
+      } finally {
+        if ($("publishBtn")) { $("publishBtn").disabled = false; $("publishBtn").textContent = "Publier"; }
+      }
+    } catch (err) {
+      console.error("publishTrip error:", err);
+      alert("Erreur lors de la publication (voir console).");
+    } finally {
+      publishing = false;
+      if ($("publishBtn")) $("publishBtn").disabled = false;
+    }
+  }
+
+  /* ---------- Réservations (RPCs) ---------- */
+  async function confirmReserve(tripId){
+    if(!confirm("Confirmer la réservation de ce trajet ?")) return;
+    await reserve(tripId);
+  }
+
+  async function reserve(tripId) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return alert("Connecte-toi !");
+
+      const { data: profilData, error: profilError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
+      if (!profilData) {
+        alert("Complète ton profil avant de réserver.");
+        if ($("profile_nom")) $("profile_nom").value = "";
+        if ($("profile_prenom")) $("profile_prenom").value = "";
+        if ($("profile_surns")) $("profile_surns").value = "";
+        if ($("profile_fams")) $("profile_fams").value = "";
+        if ($("profile_promo")) $("profile_promo").value = "";
+        if ($("profileEmail")) $("profileEmail").textContent = user.email;
+        openProfile();
+        return;
+      }
+
+      const { data, error } = await supabase.rpc("reserve_trip", {
+        p_trip_id: tripId,
+        p_user_id: user.id,
+        p_nom: profilData.nom,
+        p_prenom: profilData.prenom,
+        p_surns: profilData.surns,
+        p_fams: profilData.fams,
+        p_promo: profilData.promo
+      });
+
+      if (error) return alert(error.details || error.message || JSON.stringify(error));
+      if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
+
+      alert("Réservation confirmée !");
+      await loadTrips();
+      await loadMyReservation();
+    } catch (err) {
+      console.error("reserve error:", err);
+      alert("Erreur lors de la réservation (voir console).");
+    }
+  }
+
+  async function loadMyReservation() {
+    try {
+      const zone = $("myReservationArea");
+      const content = $("myReservationContent");
+      if (!zone || !content) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        zone.style.display = "none";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("reservations")
+        .select("*, trips(*)")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      zone.style.display = "block";
+      if (!data) {
+        content.innerHTML = "Aucune réservation active.";
+        return;
+      }
+
+      const r = data;
+      content.innerHTML = `
+        <p><b>Trajet :</b> ${escapeHTML(r.trips.depart)} → ${escapeHTML(r.trips.arrivee)}</p>
+        <p><b>Date :</b> ${formatFR(r.trips.datetime)}</p>
+        <button class="btn" id="cancelResBtn">Annuler</button>
+      `;
+
+      const cancelBtn = $("cancelResBtn");
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", async () => {
+          await cancelReservation(r.id);
+        });
+      }
+    } catch (err) {
+      console.error("loadMyReservation error:", err);
+    }
+  }
+
+  async function cancelReservation(resId) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return alert("Connecte-toi !");
+
+      const { data, error } = await supabase.rpc("cancel_reservation", {
+        p_reservation_id: resId,
+        p_user_id: user.id
+      });
+
+      if (error || data?.ok === false)
+        return alert(error?.message || data?.error || "Erreur annulation.");
+
+      alert("Réservation annulée !");
+      await loadTrips();
+      await loadMyReservation();
+    } catch (err) {
+      console.error("cancelReservation error:", err);
+      alert("Erreur lors de l'annulation (voir console).");
+    }
+  }
+
+  async function canViewReservations(t) {
+    try {
+      if (adminMode) return true;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      return user.id === t.owner;
+    } catch (err) {
+      console.error("canViewReservations error:", err);
+      return false;
+    }
+  }
+
+  async function viewReservations(tripId) {
+    try {
+      const { data, error } = await supabase
+        .from("reservations")
+        .select("*")
+        .eq("trip_id", tripId);
+
+      if (error) return alert(error.message);
+      if (!data || data.length === 0) return alert("Aucun réservant.");
+
+      let msg = "Réservants :\n\n";
+      data.forEach(r => {
+        msg += `${r.prenom} ${r.nom} ${r.surns} ${r.fams} (${r.promo})\n`;
+      });
+
+      alert(msg);
+    } catch (err) {
+      console.error("viewReservations error:", err);
+      alert("Erreur (voir console).");
+    }
+  }
+
+  async function deleteTrip(id) {
+    if (!confirm("Supprimer ce trajet ?")) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user && !adminMode) return alert("Connecte-toi !");
+
+      const { data: trip, error: tripErr } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
+      if (tripErr) return alert("Erreur lecture trajet : " + tripErr.message);
+      if (!trip) return alert("Trajet introuvable.");
+
+      if (!adminMode && user.id !== trip.owner) return alert("Seul le publieur (ou une personne ayant les droits serveur) peut supprimer ce trajet.");
+
+      const { error } = await supabase
+        .from("trips")
+        .delete()
+        .eq("id", id);
+
+      if (error) return alert(error.message);
+
+      alert("Trajet supprimé !");
+      await loadTrips();
+    } catch (err) {
+      console.error("deleteTrip error:", err);
+      alert("Erreur suppression (voir console).");
+    }
+  }
+
+  /* ---------- createTrajetElement ---------- */
+  async function createTrajetElement(t, i) {
+    const d = document.createElement('div');
+    d.className = 'trajet';
+
+    try {
+      if (isEnCours(t.datetime)) {
+        const b = document.createElement('div');
+        b.className = 'bandeau';
+        b.textContent = 'EN COURS';
+        d.appendChild(b);
+      } else if ((t.places || 0) <= 0) {
+        const b = document.createElement('div');
+        b.className = 'bandeau';
+        b.textContent = 'PLEIN';
+        d.appendChild(b);
+      } else if (isExpired(t.datetime)) {
+        const b = document.createElement('div');
+        b.className = 'bandeau';
+        b.textContent = 'EXPIRÉ';
+        b.style.background = '#6c6c6c';
+        d.appendChild(b);
+      }
+
+      const info = document.createElement('div');
+      info.className = 'trajet-info';
+      info.innerHTML = `
+        <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
+        <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
+        <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
+        <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
+        <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
+      `;
+
+      if (t.description && String(t.description).trim() !== '') {
+        info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'action-buttons';
+
+      // user
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // check reservation for current user
+      let reserved = false;
+      let myRes = null;
+      if (user) {
+        const res = await supabase
+          .from("reservations")
+          .select("*")
+          .eq("trip_id", t.id)
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .maybeSingle();
+
+        myRes = res.data;
+        reserved = !!res.data;
+      }
+
+      // admin delete
+      if (adminMode) {
+        const del = document.createElement('button');
+        del.className = 'delete-btn';
+        del.textContent = 'Supprimer';
+        del.addEventListener('click', () => deleteTrip(t.id));
+        actions.appendChild(del);
+      }
+
+      // Annuler / Réserver
+      if (reserved) {
+        const un = document.createElement('button');
+        un.className = 'btn';
+        un.textContent = 'Annuler';
+        un.addEventListener('click', () => cancelReservation(myRes.id));
+        actions.appendChild(un);
+      } else if ((t.places || 0) > 0 && !isEnCours(t.datetime) && !isExpired(t.datetime)) {
+        const resBtn = document.createElement('button');
+        resBtn.className = 'btn';
+        resBtn.textContent = 'Réserver';
+        resBtn.addEventListener('click', () => confirmReserve(t.id));
+        actions.appendChild(resBtn);
+      } else {
+        const disabled = document.createElement('button');
+        disabled.className = 'btn btn-disabled';
+        disabled.textContent = 'Réserver';
+        disabled.setAttribute('aria-disabled','true');
+        actions.appendChild(disabled);
+      }
+
+      // Voir les réservations
+      const maySee = await canViewReservations(t);
+      if (maySee) {
+        const btnRes = document.createElement('button');
+        btnRes.className = 'btn';
+        btnRes.textContent = 'Réservations';
+        btnRes.addEventListener('click', () => viewReservations(t.id));
+        actions.appendChild(btnRes);
+      } else {
+        const btnRes = document.createElement('button');
+        btnRes.className = 'btn btn-disabled';
+        btnRes.textContent = 'Réservations';
+        btnRes.setAttribute('aria-disabled', 'true');
+        actions.appendChild(btnRes);
+      }
+
+      d.appendChild(info);
+      d.appendChild(actions);
+    } catch (err) {
+      console.error("createTrajetElement error for id", i, err);
+      const errDiv = document.createElement('div');
+      errDiv.textContent = "Erreur affichage trajet.";
+      d.appendChild(errDiv);
+    }
+
+    return d;
+  }
+
+  /* ---------- admin ---------- */
+  function activateAdmin(){
+    adminMode = $("adminKey") ? ($("adminKey").value === "Error404trads") : false;
+    if ($("adminStatus")) $("adminStatus").textContent = adminMode ? "Accès admin (UI seulement)" : "Mot de passe incorrect";
+    loadTrips();
+  }
+
+  /* ---------- escapeHTML ---------- */
+  function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+
+  /* ---------- profile ---------- */
+  async function ensureProfilePresent(user){
+    try {
+      if (!user) return;
+      const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      if (error) { console.error('profile read error', error); return; }
+      if (!profile) {
+        if ($("profileEmail")) $("profileEmail").textContent = user.email;
+        if ($("profile_nom")) $("profile_nom").value = '';
+        if ($("profile_prenom")) $("profile_prenom").value = '';
+        if ($("profile_surns")) $("profile_surns").value = '';
+        if ($("profile_fams")) $("profile_fams").value = '';
+        if ($("profile_promo")) $("profile_promo").value = '';
+        openProfile();
+      } else {
+        if ($("profile_nom")) $("profile_nom").value = profile.nom || '';
+        if ($("profile_prenom")) $("profile_prenom").value = profile.prenom || '';
+        if ($("profile_surns")) $("profile_surns").value = profile.surns || '';
+        if ($("profile_fams")) $("profile_fams").value = profile.fams || '';
+        if ($("profile_promo")) $("profile_promo").value = profile.promo || '';
+
+        if ($("nom") && !$("nom").value) $("nom").value = profile.nom || '';
+        if ($("prenom") && !$("prenom").value) $("prenom").value = profile.prenom || '';
+        if ($("surns_pub") && !$("surns_pub").value) $("surns_pub").value = profile.surns || '';
+        if ($("fams_pub") && !$("fams_pub").value) $("fams_pub").value = profile.fams || '';
+        if ($("promo") && !$("promo").value) $("promo").value = profile.promo || '';
+      }
+    } catch (err) {
+      console.error("ensureProfilePresent error:", err);
+    }
+  }
+
+  async function saveProfile(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      const getUser = await supabase.auth.getUser();
+      if (!getUser || !getUser.data || !getUser.data.user) {
+        return alert("Connecte-toi !");
+      }
+      const user = getUser.data.user;
+
+      const nom = $("profile_nom") ? $("profile_nom").value.trim() : "";
+      const prenom = $("profile_prenom") ? $("profile_prenom").value.trim() : "";
+      const surns = $("profile_surns") ? $("profile_surns").value.trim() : "";
+      const fams = $("profile_fams") ? $("profile_fams").value.trim() : "";
+      const promo = $("profile_promo") ? $("profile_promo").value : "";
+
+      if (!nom || !prenom) return alert("Nom et prénom requis.");
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          nom,
+          prenom,
+          surns,
+          fams,
+          promo
+        }, { returning: 'minimal' });
+
+      if (error) {
+        console.error("Erreur saveProfile:", error);
+        return alert("Impossible d'enregistrer le profil : " + error.message);
+      }
+
+      alert("Profil enregistré !");
+      closeProfile();
+
+      if ($("nom") && $("nom").value === '') $("nom").value = nom;
+      if ($("prenom") && $("prenom").value === '') $("prenom").value = prenom;
+      if ($("surns_pub") && $("surns_pub").value === '') $("surns_pub").value = surns;
+      if ($("fams_pub") && $("fams_pub").value === '') $("fams_pub").value = fams;
+      if ($("promo") && $("promo").value === '') $("promo").value = promo;
+
+      await loadTrips();
+      await loadMyReservation();
+    } catch (err) {
+      console.error("saveProfile error:", err);
+      alert("Erreur en sauvegardant le profil (voir console).");
+    }
+  }
+
+  /* ---------- Liaisons évènementielles - safe attach ---------- */
+  function safeOn(id, event, handler) {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener(event, handler);
+  }
+
+  safeOn("loginBtn", "click", login);
+  safeOn("logoutBtn", "click", logout);
+  safeOn("openProfileBtn", "click", openProfile);
+  safeOn("closeProfileBtn", "click", closeProfile);
+  safeOn("saveProfileBtn", "click", saveProfile);
+  safeOn("toggleFormBtn", "click", toggleForm);
+  safeOn("publishBtn", "click", publishTrip);
+  safeOn("searchBtn", "click", loadTrips);
+  safeOn("resetFiltersBtn", "click", resetFilters);
+  safeOn("activateAdminBtn", "click", activateAdmin);
+
+  // expose minimal debug helpers (optional)
+  window.__app_debug = {
+    supabaseSite: "https://wwjsqkktwxciyvzoisyz.supabase.co",
+    reloadTrips: loadTrips
   };
 
-  try {
-    $("publishBtn").textContent = "Publication...";
-    const { data, error } = await supabase.from("trips").insert(trip);
-    if (error) {
-      alert("Erreur publication : " + (error.message || JSON.stringify(error)));
-    } else {
-      alert("Trajet publié !");
-      $("publishForm").reset();
-      $("form-container").style.display = "none";
-      await loadTrips();
-    }
-  } finally {
-    publishing = false;
-    $("publishBtn").disabled = false;
-    $("publishBtn").textContent = "Publier";
-  }
-}
-
-/* Réservations */
-async function confirmReserve(tripId){
-  if(!confirm("Confirmer la réservation de ce trajet ?")) return;
-  await reserve(tripId);
-}
-
-async function reserve(tripId) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return alert("Connecte-toi !");
-
-  const { data: profilData, error: profilError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profilError) {
-    console.error(profilError);
-    return alert("Impossible de lire ton profil (erreur).");
-  }
-  if (!profilData) {
-    alert("Complète ton profil avant de réserver.");
-    $("profile_nom").value = "";
-    $("profile_prenom").value = "";
-    $("profile_surns").value = "";
-    $("profile_fams").value = "";
-    $("profile_promo").value = "";
-    $("profileEmail").textContent = user.email;
-    openProfile();
-    return;
-  }
-
-  const { data, error } = await supabase.rpc("reserve_trip", {
-    p_trip_id: tripId,
-    p_user_id: user.id,
-    p_nom: profilData.nom,
-    p_prenom: profilData.prenom,
-    p_surns: profilData.surns,
-    p_fams: profilData.fams,
-    p_promo: profilData.promo
-  });
-
-  if (error) return alert(error.details || error.message || JSON.stringify(error));
-  if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
-
-  alert("Réservation confirmée !");
-  loadTrips();
-  loadMyReservation();
-}
-
-/* Voir / annuler réservation */
-async function loadMyReservation() {
-  const zone = $("myReservationArea");
-  const content = $("myReservationContent");
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    zone.style.display = "none";
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from("reservations")
-    .select("*, trips(*)")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .maybeSingle();
-
-  zone.style.display = "block";
-
-  if (!data) {
-    content.innerHTML = "Aucune réservation active.";
-    return;
-  }
-
-  const r = data;
-
-  content.innerHTML = `
-    <p><b>Trajet :</b> ${escapeHTML(r.trips.depart)} → ${escapeHTML(r.trips.arrivee)}</p>
-    <p><b>Date :</b> ${formatFR(r.trips.datetime)}</p>
-    <button class="btn" id="cancelResBtn">Annuler</button>
-  `;
-
-  document.getElementById("cancelResBtn").addEventListener("click", async () => {
-    await cancelReservation(r.id);
-  });
-}
-
-async function cancelReservation(resId) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return alert("Connecte-toi !");
-
-  const { data, error } = await supabase.rpc("cancel_reservation", {
-    p_reservation_id: resId,
-    p_user_id: user.id
-  });
-
-  if (error || data?.ok === false)
-    return alert(error?.message || data?.error || "Erreur annulation.");
-
-  alert("Réservation annulée !");
-  loadTrips();
-  loadMyReservation();
-}
-
-/* Can view reservations (owner or admin) */
-async function canViewReservations(t) {
-  if (adminMode) return true;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-  return user.id === t.owner;
-}
-
-/* View reservations for a trip */
-async function viewReservations(tripId) {
-  const { data, error } = await supabase
-    .from("reservations")
-    .select("*")
-    .eq("trip_id", tripId);
-
-  if (error) return alert(error.message);
-  if (!data || data.length === 0) return alert("Aucun réservant.");
-
-  let msg = "Réservants :\n\n";
-  data.forEach(r => {
-    msg += `${r.prenom} ${r.nom} ${r.surns} ${r.fams} (${r.promo})\n`;
-  });
-
-  alert(msg);
-}
-
-/* Supprimer trajet (admin/ui) */
-async function deleteTrip(id) {
-  if (!confirm("Supprimer ce trajet ?")) return;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user && !adminMode) return alert("Connecte-toi !");
-
-  const { data: trip, error: tripErr } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
-  if (tripErr) return alert("Erreur lecture trajet : " + tripErr.message);
-  if (!trip) return alert("Trajet introuvable.");
-
-  if (!adminMode && user.id !== trip.owner) return alert("Seul le publieur (ou une personne ayant les droits serveur) peut supprimer ce trajet.");
-
-  const { error } = await supabase
-    .from("trips")
-    .delete()
-    .eq("id", id);
-
-  if (error) return alert(error.message);
-
-  alert("Trajet supprimé !");
-  loadTrips();
-}
-
-/* ---------------------------------------------------
-   Création d'un élément trajet (DOM)
---------------------------------------------------- */
-async function createTrajetElement(t, i) {
-  const d = document.createElement('div');
-  d.className = 'trajet';
-
-  // Bandeau
-  if (isEnCours(t.datetime)) {
-    const b = document.createElement('div');
-    b.className = 'bandeau';
-    b.textContent = 'EN COURS';
-    d.appendChild(b);
-  } else if (t.places <= 0) {
-    const b = document.createElement('div');
-    b.className = 'bandeau';
-    b.textContent = 'PLEIN';
-    d.appendChild(b);
-  } else if (isExpired(t.datetime)) {
-    const b = document.createElement('div');
-    b.className = 'bandeau';
-    b.textContent = 'EXPIRÉ';
-    b.style.background = '#6c6c6c';
-    d.appendChild(b);
-  }
-
-  // Info
-  const info = document.createElement('div');
-  info.className = 'trajet-info';
-  info.innerHTML = `
-    <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
-    <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
-    <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
-    <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
-    <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
-  `;
-
-  if (t.description && String(t.description).trim() !== '') {
-    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
-  }
-
-  const actions = document.createElement('div');
-  actions.className = 'action-buttons';
-
-  // user
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // check reservation for current user
-  let reserved = false;
-  let myRes = null;
-  if (user) {
-    const res = await supabase
-      .from("reservations")
-      .select("*")
-      .eq("trip_id", t.id)
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    myRes = res.data;
-    reserved = !!res.data;
-  }
-
-  // admin delete
-  if (adminMode) {
-    const del = document.createElement('button');
-    del.className = 'delete-btn';
-    del.textContent = 'Supprimer';
-    del.addEventListener('click', () => deleteTrip(t.id));
-    actions.appendChild(del);
-  }
-
-  // Annuler / Réserver
-  if (reserved) {
-    const un = document.createElement('button');
-    un.className = 'btn';
-    un.textContent = 'Annuler';
-    un.addEventListener('click', () => cancelReservation(myRes.id));
-    actions.appendChild(un);
-  } else if (t.places > 0 && !isEnCours(t.datetime) && !isExpired(t.datetime)) {
-    const resBtn = document.createElement('button');
-    resBtn.className = 'btn';
-    resBtn.textContent = 'Réserver';
-    resBtn.addEventListener('click', () => confirmReserve(t.id));
-    actions.appendChild(resBtn);
-  } else {
-    const disabled = document.createElement('button');
-    disabled.className = 'btn btn-disabled';
-    disabled.textContent = 'Réserver';
-    disabled.setAttribute('aria-disabled','true');
-    actions.appendChild(disabled);
-  }
-
-  // Voir les réservations
-  const maySee = await canViewReservations(t);
-  if (maySee) {
-    const btnRes = document.createElement('button');
-    btnRes.className = 'btn';
-    btnRes.textContent = 'Réservations';
-    btnRes.addEventListener('click', () => viewReservations(t.id));
-    actions.appendChild(btnRes);
-  } else {
-    const btnRes = document.createElement('button');
-    btnRes.className = 'btn btn-disabled';
-    btnRes.textContent = 'Réservations';
-    btnRes.setAttribute('aria-disabled', 'true');
-    actions.appendChild(btnRes);
-  }
-
-  d.appendChild(info);
-  d.appendChild(actions);
-
-  return d;
-}
-
-/* ---------------------------------------------------
-   ADMIN UI
---------------------------------------------------- */
-function activateAdmin(){
-  adminMode = $("adminKey").value === "Error404trads";
-  $("adminStatus").textContent = adminMode ? "Accès admin (UI seulement)" : "Mot de passe incorrect";
-  loadTrips();
-}
-
-/* ---------------------------------------------------
-   ESCAPE HTML
---------------------------------------------------- */
-function escapeHTML(str){ if(!str && str !== 0) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
-
-/* ---------------------------------------------------
-   PROFILE (ensure / save)
---------------------------------------------------- */
-async function ensureProfilePresent(user){
-  if (!user) return;
-  const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-  if (error) {
-    console.error('profile read error', error);
-    return;
-  }
-  if (!profile) {
-    $("profileEmail").textContent = user.email;
-    $("profile_nom").value = '';
-    $("profile_prenom").value = '';
-    $("profile_surns").value = '';
-    $("profile_fams").value = '';
-    $("profile_promo").value = '';
-    openProfile();
-  } else {
-    $("profile_nom").value = profile.nom || '';
-    $("profile_prenom").value = profile.prenom || '';
-    $("profile_surns").value = profile.surns || '';
-    $("profile_fams").value = profile.fams || '';
-    $("profile_promo").value = profile.promo || '';
-
-    if (!$("nom").value) $("nom").value = profile.nom || '';
-    if (!$("prenom").value) $("prenom").value = profile.prenom || '';
-    if (!$("surns_pub").value) $("surns_pub").value = profile.surns || '';
-    if (!$("fams_pub").value) $("fams_pub").value = profile.fams || '';
-    if (!$("promo").value) $("promo").value = profile.promo || '';
-  }
-}
-
-async function saveProfile(e) {
-  if (e && e.preventDefault) e.preventDefault();
-
-  const getUser = await supabase.auth.getUser();
-  if (!getUser || !getUser.data || !getUser.data.user) {
-    return alert("Connecte-toi !");
-  }
-  const user = getUser.data.user;
-
-  const nom = $("profile_nom").value.trim();
-  const prenom = $("profile_prenom").value.trim();
-  const surns = $("profile_surns").value.trim();
-  const fams = $("profile_fams").value.trim();
-  const promo = $("profile_promo").value;
-
-  if (!nom || !prenom) return alert("Nom et prénom requis.");
-
-  const { error } = await supabase
-    .from('profiles')
-    .upsert({
-      id: user.id,
-      nom,
-      prenom,
-      surns,
-      fams,
-      promo
-    }, { returning: 'minimal' });
-
-  if (error) {
-    console.error("Erreur saveProfile:", error);
-    return alert("Impossible d'enregistrer le profil : " + error.message);
-  }
-
-  alert("Profil enregistré !");
-  closeProfile();
-
-  if ($("nom").value === '') $("nom").value = nom;
-  if ($("prenom").value === '') $("prenom").value = prenom;
-  if ($("surns_pub").value === '') $("surns_pub").value = surns;
-  if ($("fams_pub").value === '') $("fams_pub").value = fams;
-  if ($("promo").value === '') $("promo").value = promo;
-
-  loadTrips();
-  loadMyReservation();
-}
-
-/* ---------------------------------------------------
-   LIAISONS ÉVÉNEMENTIELLES (boutons principaux)
---------------------------------------------------- */
-document.getElementById("loginBtn").addEventListener("click", login);
-document.getElementById("logoutBtn").addEventListener("click", logout);
-document.getElementById("openProfileBtn").addEventListener("click", openProfile);
-document.getElementById("closeProfileBtn").addEventListener("click", closeProfile);
-document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
-document.getElementById("toggleFormBtn").addEventListener("click", toggleForm);
-document.getElementById("publishBtn").addEventListener("click", publishTrip);
-document.getElementById("searchBtn").addEventListener("click", loadTrips);
-document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
-document.getElementById("activateAdminBtn").addEventListener("click", activateAdmin);
-
-/* ---------------------------------------------------
-   FIN DU SCRIPT
---------------------------------------------------- */
+})(); // fin IIFE
+</script>
+</body>
+</html>
