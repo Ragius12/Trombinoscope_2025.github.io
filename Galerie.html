@@ -340,13 +340,13 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 			  const $ = id => document.getElementById(id);
 
 (async function handleAuthCallback() {
-    try {
-      const hasHashTokens = window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('refresh_token'));
-      const hasQueryCode = window.location.search && (window.location.search.includes('type=') || window.location.search.includes('code='));
+  try {
+    const hasHashTokens = window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('refresh_token'));
+    const hasQueryCode = window.location.search && (window.location.search.includes('type=') || window.location.search.includes('code='));
 
-      if (!hasHashTokens && !hasQueryCode) return;
+    if (hasHashTokens || hasQueryCode) {
 
-      // Try SDK helper (supabase-js v2 may expose getSessionFromUrl)
+      // Try SDK helper
       if (typeof supabase.auth.getSessionFromUrl === 'function') {
         try {
           const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
@@ -356,9 +356,9 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
           console.warn('getSessionFromUrl threw', err);
         }
       } else {
-        // Fallback: parse fragment and set session manually
+        // Fallback manual parsing
         try {
-          const fragment = window.location.hash.replace('#', '?'); // transforme en query string
+          const fragment = window.location.hash.replace('#', '?');
           const params = Object.fromEntries(new URLSearchParams(fragment));
           if (params.access_token && params.refresh_token) {
             await supabase.auth.setSession({
@@ -366,28 +366,29 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
               refresh_token: params.refresh_token
             });
             console.info('Session définie via setSession (fallback).');
-          } else if (params.provider_token || params.refresh_token) {
-            console.info('Fragment présent mais tokens incomplets :', params);
           }
         } catch (err) {
           console.warn('Fallback parsing error', err);
         }
       }
 
-      // Nettoyer l'URL pour enlever token/hash (important pour refresh)
+      // Nettoyer URL
       try {
         const clean = location.pathname + location.search;
         history.replaceState(null, '', clean);
       } catch (err) {
         console.warn('Impossible de nettoyer l\'URL', err);
       }
-
-	window.__authReady = true;
-		
-    } catch (e) {
-      console.error('handleAuthCallback error', e);
     }
-  })();
+  } catch (e) {
+    console.error('handleAuthCallback error', e);
+  }
+
+  // IMPORTANT : toujours signaler que l’auth est prête,
+  // même si aucun token n'était présent.
+  window.__authReady = true;
+
+})();
 	
 			async function login() {
 			  const email = $('email').value.trim().toLowerCase();
@@ -1095,6 +1096,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
