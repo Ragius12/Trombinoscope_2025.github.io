@@ -229,7 +229,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
         <button type="button" class="btn" onclick="closeProfile()">Fermer</button>
-        <button class="btn" type="submit">Enregistrer</button>
+        <button onclick="saveProfile(event)">Enregistrer</button>
       </div>
     </form>
   </div>
@@ -289,7 +289,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     <textarea id="desc" maxlength="1000" placeholder="Infos utiles : fumeur/non-fumeur, bagages, arrêt(s) intermédiaire(s)..."></textarea>
 
     <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn" type="submit" id="publishBtn">Publier</button>
+      <button id="publishBtn" onclick="publishTrip(event)">Publier</button>
     </div>
 </form>
 </div>
@@ -1060,6 +1060,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
