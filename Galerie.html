@@ -347,14 +347,26 @@ window.__authReady = false;
 
 // Fonction de login par magic link
 async function initApp() {
-  // on laisse Supabase gérer la session via onAuthStateChange
-  // juste pour info, on peut vérifier s'il y a déjà un user
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    await updateUI(session.user);
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (!session || !session.user) {
+    // utilisateur non connecté
+    showLogin();
+    return;
   }
-  window.__authReady = true;
+
+  const user = session.user;
+
+  // Assurer que le profil existe
+  await ensureProfilePresent(user);
+
+  // Charger les trajets
+  await loadTrips();
+  await loadMyReservation();
 }
+
+// Appel au chargement de la page
+initApp();
 
 async function login() {
   const email = $('email').value.trim().toLowerCase();
@@ -1072,6 +1084,7 @@ async function saveProfile(e) {
 </script>
 </body>
 </html>
+
 
 
 
