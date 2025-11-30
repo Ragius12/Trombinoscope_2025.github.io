@@ -331,6 +331,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 </div> <!-- container -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 const supabase = window.supabase.createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
@@ -339,11 +340,10 @@ const supabase = window.supabase.createClient(
 
 (async () => {
   // IMPORTANT : gérer le retour du magic link
-  const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
-  if (!error) {
-    // nettoyer l’URL
-    history.replaceState({}, "", window.location.pathname);
-  }
+  const { data: { session }, error } = await supabase.auth.getSession();
+if(session) {
+    console.log("Utilisateur connecté :", session.user.email);
+}
 })();
 	
 			async function login() {
@@ -1052,6 +1052,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
