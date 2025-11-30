@@ -457,13 +457,22 @@ function toggleForm(){
 
 /* CHANGEMENT : recherche dynamique (debounce) */
 let searchDebounceTimer = null;
-$('searchText').addEventListener('input', (e)=>{
+
+document.getElementById('searchText').addEventListener('input', (e) => {
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-  searchDebounceTimer = setTimeout(()=> loadTrips(), 300);
+  searchDebounceTimer = setTimeout(() => loadTrips(), 300);
 });
-$('searchText').addEventListener('keyup', (e)=>{ if(e.key === 'Enter') loadTrips(); });
-$('searchDest').addEventListener('change', ()=> loadTrips());
-$('searchOther').addEventListener('input', ()=> { if (searchDebounceTimer) clearTimeout(searchDebounceTimer); searchDebounceTimer = setTimeout(()=> loadTrips(), 300); });
+
+document.getElementById('searchText').addEventListener('keyup', (e) => {
+  if (e.key === 'Enter') loadTrips();
+});
+
+document.getElementById('searchDest').addEventListener('change', () => loadTrips());
+
+document.getElementById('searchOther').addEventListener('input', () => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => loadTrips(), 300);
+});
 /* fin CHANGEMENT */
 
 function resetFilters(){
@@ -1053,6 +1062,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
