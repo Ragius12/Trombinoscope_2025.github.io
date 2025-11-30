@@ -330,8 +330,9 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 </div> <!-- container -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
 <script>
 // Alias pour récupérer rapidement les éléments
 function $(id) { return document.getElementById(id); }
@@ -342,28 +343,9 @@ const supabase = window.supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
 
-// Fonction pour gérer le magic link à l'arrivée
-async function handleMagicLinkRedirect() {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
-    if (error) {
-      console.error("Erreur magic link:", error.message);
-    } else if (session) {
-      console.log("Utilisateur connecté via magic link:", session.user.email);
-    }
-  } catch (e) {
-    console.error("Erreur lors du traitement du magic link:", e);
-  } finally {
-    // Nettoyer l'URL pour enlever les tokens
-    if (window.history.replaceState) {
-      const cleanUrl = window.location.origin + window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    }
-    window.__authReady = true;
-  }
-}
+window.__authReady = false;
 
-// Fonction de login
+// Fonction de login par magic link
 async function login() {
   const email = $('email').value.trim().toLowerCase();
   if (!email) return alert("Entre ton email.");
@@ -372,9 +354,7 @@ async function login() {
   $('loginBtn').disabled = true;
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: {
-      emailRedirectTo: window.location.href
-    }
+    options: { emailRedirectTo: window.location.href }
   });
   $('loginBtn').disabled = false;
 
@@ -382,33 +362,14 @@ async function login() {
   else alert("Lien envoyé ! Vérifie ta boîte mail.");
 }
 
-// Initialisation de l'app
-async function initApp() {
-  // Pas besoin de handleMagicLinkRedirect pour v2
-  window.__authReady = true;
-
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-
-  if (user) {
-    $('loginArea').style.display = 'none';
-    $('publishArea').style.display = 'block';
-    $('userEmail').textContent = user.email;
-    $('profileEmail').textContent = user.email;
-    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
-  } else {
-    $('loginArea').style.display = 'block';
-    $('publishArea').style.display = 'none';
-  }
-
-  if (typeof loadTrips === "function") await loadTrips();
-  if (typeof loadMyReservation === "function") await loadMyReservation();
+// Fonction logout
+async function logout() {
+  await supabase.auth.signOut();
+  // on ne fait pas reload, l'UI se met à jour via onAuthStateChange
 }
 
-// Met à jour automatiquement l'UI quand l'état change
-supabase.auth.onAuthStateChange(async (event, session) => {
-  window.__authReady = true;
-  const user = session?.user ?? null;
+// Gestion de l'état utilisateur
+async function updateUI(user) {
   if (user) {
     $('loginArea').style.display = 'none';
     $('publishArea').style.display = 'block';
@@ -421,7 +382,23 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     $('loginArea').style.display = 'block';
     $('publishArea').style.display = 'none';
   }
+}
+
+// Supabase écoute les changements de session
+supabase.auth.onAuthStateChange(async (event, session) => {
+  const user = session?.user ?? null;
+  await updateUI(user);
+  window.__authReady = true;
 });
+
+// Initialisation
+async function initApp() {
+  // Supabase v2 récupère la session automatiquement après magic link
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  await updateUI(user);
+  window.__authReady = true;
+}
 
 window.addEventListener('DOMContentLoaded', initApp);
 	
@@ -1052,6 +1029,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
