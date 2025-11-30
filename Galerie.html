@@ -379,13 +379,18 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       } catch (err) {
         console.warn('Impossible de nettoyer l\'URL', err);
       }
+
+      // 🔥 REDIRECTION UNIQUEMENT APRÈS AUTHENTIFICATION
+      if (!location.pathname.endsWith("Galerie.html")) {
+        window.location.replace("Galerie.html");
+        return;
+      }
     }
   } catch (e) {
     console.error('handleAuthCallback error', e);
   }
 
-  // IMPORTANT : toujours signaler que l’auth est prête,
-  // même si aucun token n'était présent.
+  // IMPORTANT
   window.__authReady = true;
 
 })();
@@ -1096,6 +1101,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
