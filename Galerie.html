@@ -343,17 +343,15 @@ const supabase = window.supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
 
+	supabase.auth.onAuthStateChange(async (event, session) => {
+  const user = session?.user ?? null;
+  await updateUI(user);
+  window.__authReady = true;
+});
+	
 window.__authReady = false;
 
 // Fonction de login par magic link
-async function initApp() {
-  const { data: { session }, error } = await supabase.auth.getSession();
-
-  if (!session || !session.user) {
-    // utilisateur non connecté
-    showLogin();
-    return;
-  }
 
   const user = session.user;
 
@@ -444,6 +442,12 @@ async function initApp() {
 }
 
 window.addEventListener('DOMContentLoaded', initApp);
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await updateUI(user); // pré-remplit le profil, charge trajets et réservations
+  }
+});
 	
 const ADMIN_PASS = "Error404trads";
 let adminMode = false;
@@ -1084,6 +1088,7 @@ async function saveProfile(e) {
 </script>
 </body>
 </html>
+
 
 
 
