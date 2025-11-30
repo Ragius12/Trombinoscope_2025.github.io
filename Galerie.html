@@ -1022,37 +1022,49 @@ async function ensureProfilePresent(user){
 }
 
 // save profile (upsert)
-async function saveProfile(e){
+async function saveProfile(e) {
   if (e && e.preventDefault) e.preventDefault();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return alert("Connecte-toi !");
+
+  const getUser = await supabase.auth.getUser();
+  if (!getUser || !getUser.data || !getUser.data.user) {
+    return alert("Connecte-toi !");
+  }
+  const user = getUser.data.user;
+
   const nom = $('profile_nom').value.trim();
   const prenom = $('profile_prenom').value.trim();
   const surns = $('profile_surns').value.trim();
   const fams = $('profile_fams').value.trim();
   const promo = $('profile_promo').value;
 
-  if(!nom || !prenom) return alert("Nom et prénom requis.");
+  if (!nom || !prenom) return alert("Nom et prénom requis.");
 
-  const { data, error } = await supabase.from('profiles').upsert({
-    id: user.id,
-    nom, prenom, surns, fams, promo
-  }, { returning: 'minimal' });
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      nom,
+      prenom,
+      surns,
+      fams,
+      promo
+    }, { returning: 'minimal' });
 
   if (error) {
-    console.error(error);
-    return alert("Impossible d'enregistrer le profil.");
+    console.error("Erreur saveProfile:", error);
+    return alert("Impossible d'enregistrer le profil : " + error.message);
   }
 
-  alert("Profil enregistré.");
+  alert("Profil enregistré !");
   closeProfile();
-  // CHANGEMENT: mettre à jour aussi formulaire de publication pour éviter retaper
-  if (!document.getElementById('nom').value) document.getElementById('nom').value = nom;
-  if (!document.getElementById('prenom').value) document.getElementById('prenom').value = prenom;
-  if (!document.getElementById('surns_pub').value) document.getElementById('surns_pub').value = surns;
-  if (!document.getElementById('fams_pub').value) document.getElementById('fams_pub').value = fams;
-  if (!document.getElementById('promo').value) document.getElementById('promo').value = promo;
-  /* fin CHANGEMENT */
+
+  // Mise à jour du formulaire de publication si vide
+  if ($('nom').value === '') $('nom').value = nom;
+  if ($('prenom').value === '') $('prenom').value = prenom;
+  if ($('surns_pub').value === '') $('surns_pub').value = surns;
+  if ($('fams_pub').value === '') $('fams_pub').value = fams;
+  if ($('promo').value === '') $('promo').value = promo;
+
   loadTrips();
   loadMyReservation();
 }
@@ -1060,6 +1072,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
