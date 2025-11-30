@@ -444,13 +444,14 @@ function toggleForm(){
 }
 
 // monitoring des selects 'Autre' et recherche
-["depart","arrivee","searchDest"].forEach(id=>{
-    const el = $(id);
+["depart","arrivee","searchDest"].forEach(id => {
+    const el = document.getElementById(id);
     if (!el) return;
-    el.addEventListener('change',()=>{
-        const inp = $(id+"_autre");
-        if(!inp) return;
-        if(el.value === 'Autre') inp.style.display='block'; else inp.style.display='none';
+    el.addEventListener('change', () => {
+        const inp = document.getElementById(id + "_autre");
+        if (!inp) return;
+        if (el.value === 'Autre') inp.style.display = 'block';
+        else inp.style.display = 'none';
     });
 });
 
@@ -1052,6 +1053,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
