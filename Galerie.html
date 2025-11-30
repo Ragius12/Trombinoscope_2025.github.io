@@ -346,6 +346,16 @@ const supabase = window.supabase.createClient(
 window.__authReady = false;
 
 // Fonction de login par magic link
+async function initApp() {
+  // on laisse Supabase gérer la session via onAuthStateChange
+  // juste pour info, on peut vérifier s'il y a déjà un user
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    await updateUI(session.user);
+  }
+  window.__authReady = true;
+}
+
 async function login() {
   const email = $('email').value.trim().toLowerCase();
   if (!email) return alert("Entre ton email.");
@@ -361,7 +371,7 @@ async function login() {
   if (error) alert(error.message);
   else alert("Lien envoyé ! Vérifie ta boîte mail.");
 }
-
+	
 // Fonction logout
 async function logout() {
   await supabase.auth.signOut();
@@ -1029,6 +1039,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
