@@ -366,24 +366,47 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   });
 
   // init
-  async function initApp(){
+ async function initApp(){
+  try {
+    // --- Si l'URL contient un "access_token" ou une erreur, laisse Supabase parser la session depuis l'URL ---
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-      await updateUI(user);
-
-      if (user) {
-        await ensureProfilePresent(user);
-        await loadTrips();
-        await loadMyReservation();
+      const hash = window.location.hash || "";
+      // Si requête de login via magic link (access_token présent) ou une erreur côté auth
+      if (hash.includes('access_token=') || hash.includes('error=')) {
+        // getSessionFromUrl va parser le fragment et stocker la session dans le storage
+        // IMPORTANT: storeSession: true permet d'enregistrer la session
+        await supabase.auth.getSessionFromUrl({ storeSession: true });
       }
-      window.__authReady = true;
-    } catch (err) {
-      console.error("initApp error:", err);
-      window.__authReady = true;
+    } catch (e) {
+      console.warn("getSessionFromUrl error (non bloquant) :", e);
+      // ne pas throw : on continue, mais on log l'erreur pour debug
     }
-  }
 
+    // Maintenant récupérer la session comme d'habitude
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
+    await updateUI(user);
+
+    if (user) {
+      await ensureProfilePresent(user);
+      await loadTrips();
+      await loadMyReservation();
+    }
+
+    // Nettoyer l'URL pour retirer le fragment contenant tokens / erreurs
+    // (utile pour UX et pour ne pas réutiliser le token)
+    if (window.location.hash) {
+      try {
+        const clean = window.location.pathname + window.location.search;
+        window.history.replaceState(null, "", clean);
+      } catch (e) { /* silent */ }
+    }
+
+    window.__authReady = true;
+  } catch (err) {
+    console.error("initApp error:", err);
+    window.__authReady = true;
+  }
   document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- AUTH ---------- */
@@ -1127,6 +1150,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 </script>
 </body>
 </html>
+
 
 
 
