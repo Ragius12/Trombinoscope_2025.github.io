@@ -339,11 +339,11 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     console.log("URL:", window.location.href);
 /* ------------------------------
    JS encapsulé (IIFE) - ne pollue pas global
-   Corrige les crashs bloquants et protège le $ global (jQuery)
+   Corrige les crashs bloquants et protège le el global (jQuery)
    ------------------------------ */
 (function(){
-  // alias local pour getElementById (n'écrase pas window.$)
-  const $ = (id) => document.getElementById(id);
+  // alias local pour getElementById (n'écrase pas window.el)
+  const el = (id) => document.getElementById(id);
 
   // Supabase client
   const supabase = window.supabase.createClient(
@@ -358,17 +358,17 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   async function updateUI(user) {
     try {
       if (user) {
-        if ($("loginArea")) $("loginArea").style.display = "none";
-        if ($("publishArea")) $("publishArea").style.display = "block";
-        if ($("userEmail")) $("userEmail").textContent = user.email;
-        if ($("profileEmail")) $("profileEmail").textContent = user.email;
+        if (el("loginArea")) el("loginArea").style.display = "none";
+        if (el("publishArea")) el("publishArea").style.display = "block";
+        if (el("userEmail")) el("userEmail").textContent = user.email;
+        if (el("profileEmail")) el("profileEmail").textContent = user.email;
 
         if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
         if (typeof loadTrips === "function") await loadTrips();
         if (typeof loadMyReservation === "function") await loadMyReservation();
       } else {
-        if ($("loginArea")) $("loginArea").style.display = "block";
-        if ($("publishArea")) $("publishArea").style.display = "none";
+        if (el("loginArea")) el("loginArea").style.display = "block";
+        if (el("publishArea")) el("publishArea").style.display = "none";
       }
     } catch (err) {
       console.error("updateUI error:", err);
@@ -387,26 +387,19 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   });
 
   // init
- async function initApp(){
+ // init
+async function initApp() {
   try {
-    // --- Si l'URL contient un "access_token" ou une erreur, laisse Supabase parser la session depuis l'URL ---
-    try {
-      const hash = window.location.hash || "";
-      // Si requête de login via magic link (access_token présent) ou une erreur côté auth
-      if (hash.includes('access_token=') || hash.includes('error=')) {
-        // getSessionFromUrl va parser le fragment et stocker la session dans le storage
-        // IMPORTANT: storeSession: true permet d'enregistrer la session
-        await supabase.auth.getSessionFromUrl({ storeSession: true });
-        window.location.hash = "";
-      }
-    } catch (e) {
-      console.warn("getSessionFromUrl error (non bloquant) :", e);
-      // ne pas throw : on continue, mais on log l'erreur pour debug
+
+    // GÈRE LE TOKEN DANS L’URL
+    const hash = window.location.hash || "";
+    if (hash.includes("access_token=") || hash.includes("error=")) {
+      await supabase.auth.getSessionFromUrl({ storeSession: true });
     }
 
-    // Maintenant récupérer la session comme d'habitude
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
+
     await updateUI(user);
 
     if (user) {
@@ -415,31 +408,28 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       await loadMyReservation();
     }
 
-    // Nettoyer l'URL pour retirer le fragment contenant tokens / erreurs
-    // (utile pour UX et pour ne pas réutiliser le token)
+    // Nettoie l'URL
     if (window.location.hash) {
-      try {
-        const clean = window.location.pathname + window.location.search;
-        window.history.replaceState(null, "", clean);
-      } catch (e) { /* silent */ }
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
 
-    window.__authReady = true;
-  } catch (err) {
-    console.error("initApp error:", err);
-    window.__authReady = true;
+  } catch(e) {
+    console.error("initApp error:", e);
   }
-  document.addEventListener("DOMContentLoaded", initApp);
+}
+
+// → LE BON ENDROIT
+document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- AUTH ---------- */
   async function login() {
     try {
-      const emailEl = $( "email" );
+      const emailEl = el( "email" );
       const email = emailEl ? emailEl.value.trim().toLowerCase() : "";
       if (!email) return alert("Entre ton email.");
       if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
 
-      const btn = $("loginBtn");
+      const btn = el("loginBtn");
       if (btn) btn.disabled = true;
 
       const { error } = await supabase.auth.signInWithOtp({
@@ -466,19 +456,19 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
   /* ---------- Profile modal ---------- */
   function openProfile() {
-    if ($("profileModal")) $("profileModal").style.display = "flex";
+    if (el("profileModal")) el("profileModal").style.display = "flex";
   }
   function closeProfile() {
-    if ($("profileModal")) $("profileModal").style.display = "none";
+    if (el("profileModal")) el("profileModal").style.display = "none";
   }
   window.addEventListener("click", (e) => {
-    const modal = $("profileModal");
+    const modal = el("profileModal");
     if (modal && e.target === modal) modal.style.display = "none";
   });
 
   /* ---------- Toggle form ---------- */
   function toggleForm(){
-    const f = $("form-container");
+    const f = el("form-container");
     if (!f) return;
     f.style.display = (f.style.display === "none" || f.style.display === "") ? "block" : "none";
   }
@@ -496,7 +486,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
   /* ---------- Recherche dynamique ---------- */
   let searchDebounceTimer = null;
-  const searchTextEl = $("searchText");
+  const searchTextEl = el("searchText");
   if (searchTextEl) {
     searchTextEl.addEventListener("input", () => {
       clearTimeout(searchDebounceTimer);
@@ -506,18 +496,18 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       if (e.key === "Enter") loadTrips();
     });
   }
-  const searchDestEl = $("searchDest");
+  const searchDestEl = el("searchDest");
   if (searchDestEl) searchDestEl.addEventListener("change", loadTrips);
-  const searchOtherEl = $("searchOther");
+  const searchOtherEl = el("searchOther");
   if (searchOtherEl) searchOtherEl.addEventListener("input", () => {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(() => loadTrips(), 300);
   });
 
   function resetFilters() {
-    if ($("searchDest")) $("searchDest").value = "";
-    if ($("searchOther")) $("searchOther").value = "";
-    if ($("searchText")) $("searchText").value = "";
+    if (el("searchDest")) el("searchDest").value = "";
+    if (el("searchOther")) el("searchOther").value = "";
+    if (el("searchText")) el("searchText").value = "";
     loadTrips();
   }
 
@@ -550,7 +540,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
   /* ---------- loadTrips (défensif) ---------- */
   async function loadTrips() {
-    const list = $("trajets");
+    const list = el("trajets");
     if (!list) return;
     list.innerHTML = "Chargement...";
 
@@ -564,9 +554,9 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       let trips = data || [];
 
       // filtre UI
-      const searchDest = $("searchDest") ? $("searchDest").value : "";
-      const searchOther = $("searchOther") ? String($("searchOther").value).trim().toLowerCase() : "";
-      const searchText = $("searchText") ? String($("searchText").value).trim().toLowerCase() : "";
+      const searchDest = el("searchDest") ? el("searchDest").value : "";
+      const searchOther = el("searchOther") ? String(el("searchOther").value).trim().toLowerCase() : "";
+      const searchText = el("searchText") ? String(el("searchText").value).trim().toLowerCase() : "";
 
       trips = trips.filter(t => {
         const depart = String(t.depart || "").toLowerCase();
@@ -663,30 +653,30 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     if (publishing) return;
     publishing = true;
     try {
-      const publishBtn = $("publishBtn");
+      const publishBtn = el("publishBtn");
       if (publishBtn) publishBtn.disabled = true;
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { alert("Connecte-toi !"); return; }
 
-      const departEl = $("depart");
-      const arriveeEl = $("arrivee");
-      const depart_autreEl = $("depart_autre");
-      const arrivee_autreEl = $("arrivee_autre");
+      const departEl = el("depart");
+      const arriveeEl = el("arrivee");
+      const depart_autreEl = el("depart_autre");
+      const arrivee_autreEl = el("arrivee_autre");
 
       const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
       const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
 
-      const datetimeVal = $("datetime") ? $("datetime").value : "";
+      const datetimeVal = el("datetime") ? el("datetime").value : "";
       if (!datetimeVal) { alert("Choisis une date et heure."); return; }
 
       const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
 
-      let publishNom = $("nom") ? $("nom").value.trim() : "";
-      let publishPrenom = $("prenom") ? $("prenom").value.trim() : "";
-      let publishSurns = $("surns_pub") ? $("surns_pub").value.trim() : "";
-      let publishFams = $("fams_pub") ? $("fams_pub").value.trim() : "";
-      let publishPromo = $("promo") ? $("promo").value : "";
+      let publishNom = el("nom") ? el("nom").value.trim() : "";
+      let publishPrenom = el("prenom") ? el("prenom").value.trim() : "";
+      let publishSurns = el("surns_pub") ? el("surns_pub").value.trim() : "";
+      let publishFams = el("fams_pub") ? el("fams_pub").value.trim() : "";
+      let publishPromo = el("promo") ? el("promo").value : "";
 
       if (!publishNom || !publishPrenom || !publishSurns || !publishFams || !publishPromo) {
         const { data: profilData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
@@ -709,30 +699,30 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
         depart: departValue,
         arrivee: arriveeValue,
         datetime: datetimeISO,
-        places: parseInt($("places") ? $("places").value : "1") || 1,
-        description: $("desc") ? $("desc").value.trim() : ""
+        places: parseInt(el("places") ? el("places").value : "1") || 1,
+        description: el("desc") ? el("desc").value.trim() : ""
       };
 
       try {
-        if ($("publishBtn")) $("publishBtn").textContent = "Publication...";
+        if (el("publishBtn")) el("publishBtn").textContent = "Publication...";
         const { data, error } = await supabase.from("trips").insert(trip);
         if (error) {
           alert("Erreur publication : " + (error.message || JSON.stringify(error)));
         } else {
           alert("Trajet publié !");
-          if ($("publishForm")) $("publishForm").reset();
-          if ($("form-container")) $("form-container").style.display = "none";
+          if (el("publishForm")) el("publishForm").reset();
+          if (el("form-container")) el("form-container").style.display = "none";
           await loadTrips();
         }
       } finally {
-        if ($("publishBtn")) { $("publishBtn").disabled = false; $("publishBtn").textContent = "Publier"; }
+        if (el("publishBtn")) { el("publishBtn").disabled = false; el("publishBtn").textContent = "Publier"; }
       }
     } catch (err) {
       console.error("publishTrip error:", err);
       alert("Erreur lors de la publication (voir console).");
     } finally {
       publishing = false;
-      if ($("publishBtn")) $("publishBtn").disabled = false;
+      if (el("publishBtn")) el("publishBtn").disabled = false;
     }
   }
 
@@ -756,12 +746,12 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
       if (!profilData) {
         alert("Complète ton profil avant de réserver.");
-        if ($("profile_nom")) $("profile_nom").value = "";
-        if ($("profile_prenom")) $("profile_prenom").value = "";
-        if ($("profile_surns")) $("profile_surns").value = "";
-        if ($("profile_fams")) $("profile_fams").value = "";
-        if ($("profile_promo")) $("profile_promo").value = "";
-        if ($("profileEmail")) $("profileEmail").textContent = user.email;
+        if (el("profile_nom")) el("profile_nom").value = "";
+        if (el("profile_prenom")) el("profile_prenom").value = "";
+        if (el("profile_surns")) el("profile_surns").value = "";
+        if (el("profile_fams")) el("profile_fams").value = "";
+        if (el("profile_promo")) el("profile_promo").value = "";
+        if (el("profileEmail")) el("profileEmail").textContent = user.email;
         openProfile();
         return;
       }
@@ -790,8 +780,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
   async function loadMyReservation() {
     try {
-      const zone = $("myReservationArea");
-      const content = $("myReservationContent");
+      const zone = el("myReservationArea");
+      const content = el("myReservationContent");
       if (!zone || !content) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -814,12 +804,12 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
       const r = data;
       content.innerHTML = `
-        <p><b>Trajet :</b> ${escapeHTML(r.trips.depart)} → ${escapeHTML(r.trips.arrivee)}</p>
-        <p><b>Date :</b> ${formatFR(r.trips.datetime)}</p>
+        <p><b>Trajet :</b> el{escapeHTML(r.trips.depart)} → el{escapeHTML(r.trips.arrivee)}</p>
+        <p><b>Date :</b> el{formatFR(r.trips.datetime)}</p>
         <button class="btn" id="cancelResBtn">Annuler</button>
       `;
 
-      const cancelBtn = $("cancelResBtn");
+      const cancelBtn = el("cancelResBtn");
       if (cancelBtn) {
         cancelBtn.addEventListener("click", async () => {
           await cancelReservation(r.id);
@@ -876,7 +866,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
       let msg = "Réservants :\n\n";
       data.forEach(r => {
-        msg += `${r.prenom} ${r.nom} ${r.surns} ${r.fams} (${r.promo})\n`;
+        msg += `el{r.prenom} el{r.nom} el{r.surns} el{r.fams} (el{r.promo})\n`;
       });
 
       alert(msg);
@@ -940,15 +930,15 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       const info = document.createElement('div');
       info.className = 'trajet-info';
       info.innerHTML = `
-        <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
-        <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
-        <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
-        <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
-        <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
+        <p><span class="label-fixed">Conducteur :</span> el{escapeHTML(t.nom)} el{escapeHTML(t.prenom)}</p>
+        <p><span class="label-fixed">Bucque :</span> el{escapeHTML(t.surns)} el{escapeHTML(t.fams)} el{escapeHTML(t.promo)}</p>
+        <p class="label-fixed">el{escapeHTML(t.depart)} ➤ el{escapeHTML(t.arrivee)}</p>
+        <p><span class="label-fixed">Date :</span> el{formatFR(t.datetime)}</p>
+        <p><span class="label-fixed">Places restantes :</span> el{t.places}</p>
       `;
 
       if (t.description && String(t.description).trim() !== '') {
-        info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
+        info.innerHTML += `<p><span class="label-fixed">Description :</span> el{escapeHTML(t.description)}</p>`;
       }
 
       const actions = document.createElement('div');
@@ -1033,8 +1023,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
   /* ---------- admin ---------- */
   function activateAdmin(){
-    adminMode = $("adminKey") ? ($("adminKey").value === "Error404trads") : false;
-    if ($("adminStatus")) $("adminStatus").textContent = adminMode ? "Accès admin (UI seulement)" : "Mot de passe incorrect";
+    adminMode = el("adminKey") ? (el("adminKey").value === "Error404trads") : false;
+    if (el("adminStatus")) el("adminStatus").textContent = adminMode ? "Accès admin (UI seulement)" : "Mot de passe incorrect";
     loadTrips();
   }
 
@@ -1048,25 +1038,25 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (error) { console.error('profile read error', error); return; }
       if (!profile) {
-        if ($("profileEmail")) $("profileEmail").textContent = user.email;
-        if ($("profile_nom")) $("profile_nom").value = '';
-        if ($("profile_prenom")) $("profile_prenom").value = '';
-        if ($("profile_surns")) $("profile_surns").value = '';
-        if ($("profile_fams")) $("profile_fams").value = '';
-        if ($("profile_promo")) $("profile_promo").value = '';
+        if (el("profileEmail")) el("profileEmail").textContent = user.email;
+        if (el("profile_nom")) el("profile_nom").value = '';
+        if (el("profile_prenom")) el("profile_prenom").value = '';
+        if (el("profile_surns")) el("profile_surns").value = '';
+        if (el("profile_fams")) el("profile_fams").value = '';
+        if (el("profile_promo")) el("profile_promo").value = '';
         openProfile();
       } else {
-        if ($("profile_nom")) $("profile_nom").value = profile.nom || '';
-        if ($("profile_prenom")) $("profile_prenom").value = profile.prenom || '';
-        if ($("profile_surns")) $("profile_surns").value = profile.surns || '';
-        if ($("profile_fams")) $("profile_fams").value = profile.fams || '';
-        if ($("profile_promo")) $("profile_promo").value = profile.promo || '';
+        if (el("profile_nom")) el("profile_nom").value = profile.nom || '';
+        if (el("profile_prenom")) el("profile_prenom").value = profile.prenom || '';
+        if (el("profile_surns")) el("profile_surns").value = profile.surns || '';
+        if (el("profile_fams")) el("profile_fams").value = profile.fams || '';
+        if (el("profile_promo")) el("profile_promo").value = profile.promo || '';
 
-        if ($("nom") && !$("nom").value) $("nom").value = profile.nom || '';
-        if ($("prenom") && !$("prenom").value) $("prenom").value = profile.prenom || '';
-        if ($("surns_pub") && !$("surns_pub").value) $("surns_pub").value = profile.surns || '';
-        if ($("fams_pub") && !$("fams_pub").value) $("fams_pub").value = profile.fams || '';
-        if ($("promo") && !$("promo").value) $("promo").value = profile.promo || '';
+        if (el("nom") && !el("nom").value) el("nom").value = profile.nom || '';
+        if (el("prenom") && !el("prenom").value) el("prenom").value = profile.prenom || '';
+        if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = profile.surns || '';
+        if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = profile.fams || '';
+        if (el("promo") && !el("promo").value) el("promo").value = profile.promo || '';
       }
     } catch (err) {
       console.error("ensureProfilePresent error:", err);
@@ -1082,11 +1072,11 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       }
       const user = getUser.data.user;
 
-      const nom = $("profile_nom") ? $("profile_nom").value.trim() : "";
-      const prenom = $("profile_prenom") ? $("profile_prenom").value.trim() : "";
-      const surns = $("profile_surns") ? $("profile_surns").value.trim() : "";
-      const fams = $("profile_fams") ? $("profile_fams").value.trim() : "";
-      const promo = $("profile_promo") ? $("profile_promo").value : "";
+      const nom = el("profile_nom") ? el("profile_nom").value.trim() : "";
+      const prenom = el("profile_prenom") ? el("profile_prenom").value.trim() : "";
+      const surns = el("profile_surns") ? el("profile_surns").value.trim() : "";
+      const fams = el("profile_fams") ? el("profile_fams").value.trim() : "";
+      const promo = el("profile_promo") ? el("profile_promo").value : "";
 
       if (!nom || !prenom) return alert("Nom et prénom requis.");
 
@@ -1109,11 +1099,11 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       alert("Profil enregistré !");
       closeProfile();
 
-      if ($("nom") && $("nom").value === '') $("nom").value = nom;
-      if ($("prenom") && $("prenom").value === '') $("prenom").value = prenom;
-      if ($("surns_pub") && $("surns_pub").value === '') $("surns_pub").value = surns;
-      if ($("fams_pub") && $("fams_pub").value === '') $("fams_pub").value = fams;
-      if ($("promo") && $("promo").value === '') $("promo").value = promo;
+      if (el("nom") && el("nom").value === '') el("nom").value = nom;
+      if (el("prenom") && el("prenom").value === '') el("prenom").value = prenom;
+      if (el("surns_pub") && el("surns_pub").value === '') el("surns_pub").value = surns;
+      if (el("fams_pub") && el("fams_pub").value === '') el("fams_pub").value = fams;
+      if (el("promo") && el("promo").value === '') el("promo").value = promo;
 
       await loadTrips();
       await loadMyReservation();
@@ -1125,7 +1115,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
   /* ---------- Liaisons évènementielles - safe attach ---------- */
   function safeOn(id, event, handler) {
-    const el = $(id);
+    const el = el(id);
     if (!el) return;
     el.addEventListener(event, handler);
   }
@@ -1147,10 +1137,11 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     reloadTrips: loadTrips
   };
 
-}})(); // fin IIFE
+})(); // fin IIFE
 </script>
 </body>
 </html>
+
 
 
 
