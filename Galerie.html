@@ -333,6 +333,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+function $(id) { return document.getElementById(id); }
 const supabase = window.supabase.createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
@@ -1062,6 +1063,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
