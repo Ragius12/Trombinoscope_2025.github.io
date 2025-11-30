@@ -342,19 +342,21 @@ const supabase = window.supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
 
-// Récupérer session depuis l'URL si redirection magic link
-(async () => {
-  const { data: { session }, error } = await supabase.auth.getSessionFromUrl();
-  window.__authReady = true; // auth prête
-
-  if (error) {
-    console.error("Erreur magic link:", error.message);
+// Fonction pour gérer le magic link à l'arrivée
+async function handleMagicLinkRedirect() {
+  const url = new URL(window.location.href);
+  const accessToken = url.searchParams.get('access_token');
+  if (accessToken) {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+      if (error) console.error("Erreur magic link:", error.message);
+      else console.log("Utilisateur connecté via magic link:", session.user.email);
+    } catch(e) {
+      console.error("Erreur lors du traitement du magic link:", e);
+    }
   }
-
-  if (session) {
-    console.log("Utilisateur connecté via magic link:", session.user.email);
-  }
-})();
+  window.__authReady = true;
+}
 
 // Fonction de login
 async function login() {
@@ -375,7 +377,7 @@ async function login() {
   else alert("Lien envoyé ! Vérifie ta boîte mail.");
 }
 
-// Fonction de logout
+// Logout
 async function logout() {
   await supabase.auth.signOut();
   location.reload();
@@ -394,10 +396,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     $('userEmail').textContent = user.email;
     $('profileEmail').textContent = user.email;
 
-    if (typeof ensureProfilePresent === "function") {
-      await ensureProfilePresent(user);
-    }
-
+    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
     if (typeof loadTrips === "function") await loadTrips();
     if (typeof loadMyReservation === "function") await loadMyReservation();
   } else {
@@ -408,9 +407,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
 // Initialisation de l'app au chargement
 async function initApp() {
-  while (!window.__authReady) {
-    await new Promise(res => setTimeout(res, 10));
-  }
+  await handleMagicLinkRedirect(); // traite le magic link avant tout
 
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
@@ -420,10 +417,7 @@ async function initApp() {
     $('publishArea').style.display = 'block';
     $('userEmail').textContent = user.email;
     $('profileEmail').textContent = user.email;
-
-    if (typeof ensureProfilePresent === "function") {
-      await ensureProfilePresent(user);
-    }
+    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
   } else {
     $('loginArea').style.display = 'block';
     $('publishArea').style.display = 'none';
@@ -433,7 +427,9 @@ async function initApp() {
   if (typeof loadMyReservation === "function") await loadMyReservation();
 }
 
+// Lancer l'app
 window.addEventListener('DOMContentLoaded', initApp);
+	
 const ADMIN_PASS = "Error404trads";
 let adminMode = false;
 
@@ -1061,6 +1057,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
