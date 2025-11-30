@@ -333,109 +333,107 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+// Alias pour récupérer rapidement les éléments
 function $(id) { return document.getElementById(id); }
+
+// Supabase client
 const supabase = window.supabase.createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
 
+// Récupérer session depuis l'URL si redirection magic link
 (async () => {
-  // IMPORTANT : gérer le retour du magic link
-  const { data: { session }, error } = await supabase.auth.getSession();
-if(session) {
-    console.log("Utilisateur connecté :", session.user.email);
-}
+  const { data: { session }, error } = await supabase.auth.getSessionFromUrl();
+  window.__authReady = true; // auth prête
+
+  if (error) {
+    console.error("Erreur magic link:", error.message);
+  }
+
+  if (session) {
+    console.log("Utilisateur connecté via magic link:", session.user.email);
+  }
 })();
-	
-			async function login() {
-			  const email = $('email').value.trim().toLowerCase();
-			  if (!email) return alert("Entre ton email.");
-			  if (!email.endsWith('@ensam.eu')) return alert("Utilise une adresse se terminant par @ensam.eu");
-			
-			  $('loginBtn').disabled = true;
-			  const { error } = await supabase.auth.signInWithOtp({
-			    email,
-			    options: {
-			      emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html#"
-			    }
-			  });
-			  $('loginBtn').disabled = false;
-			
-			  if (error) alert(error.message);
-			  else alert("Lien envoyé ! Vérifie ta boîte mail.");
-			}
-			async function logout() {
-			  await supabase.auth.signOut();
-			  location.reload();
-			}
 
-			// show/hide profile modal
-			function openProfile(){
-			  const modal = $('profileModal');
-			  modal.classList.add('show');
-			}
-			
-			function closeProfile(){
-			  const modal = $('profileModal');
-			  modal.classList.remove('show');
-			}
+// Fonction de login
+async function login() {
+  const email = $('email').value.trim().toLowerCase();
+  if (!email) return alert("Entre ton email.");
+  if (!email.endsWith('@ensam.eu')) return alert("Utilise une adresse se terminant par @ensam.eu");
 
-			// Update UI when auth state changes
-			supabase.auth.onAuthStateChange(async (event, session) => {
-			
-			  // Attend que handleAuthCallback ait fini
-			  while (!window.__authReady) {
-			    await new Promise(res => setTimeout(res, 10));
-			  }
-			
-			  const s = session?.user ?? null;
-			  if (s) {
-				// connecté
-				document.getElementById("loginArea").style.display = "none";
-				document.getElementById("publishArea").style.display = "block";
-				document.getElementById("userEmail").textContent = s.email;
-				$('profileEmail').textContent = s.email;
+  $('loginBtn').disabled = true;
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: window.location.href // redirige vers la même page
+    }
+  });
+  $('loginBtn').disabled = false;
 
-				// Load or create profile: if no profile, prompt user to fill it
-				await ensureProfilePresent(s);
+  if (error) alert(error.message);
+  else alert("Lien envoyé ! Vérifie ta boîte mail.");
+}
 
-				await loadTrips();
-				await loadMyReservation();
-			  } else {
-				// déconnecté
-				document.getElementById("loginArea").style.display = "block";
-				document.getElementById("publishArea").style.display = "none";
-			  }
-			});
+// Fonction de logout
+async function logout() {
+  await supabase.auth.signOut();
+  location.reload();
+}
 
+// Mettre à jour l'UI quand l'état d'auth change
+supabase.auth.onAuthStateChange(async (event, session) => {
+  while (!window.__authReady) {
+    await new Promise(res => setTimeout(res, 10));
+  }
+
+  const user = session?.user ?? null;
+  if (user) {
+    $('loginArea').style.display = 'none';
+    $('publishArea').style.display = 'block';
+    $('userEmail').textContent = user.email;
+    $('profileEmail').textContent = user.email;
+
+    if (typeof ensureProfilePresent === "function") {
+      await ensureProfilePresent(user);
+    }
+
+    if (typeof loadTrips === "function") await loadTrips();
+    if (typeof loadMyReservation === "function") await loadMyReservation();
+  } else {
+    $('loginArea').style.display = 'block';
+    $('publishArea').style.display = 'none';
+  }
+});
+
+// Initialisation de l'app au chargement
 async function initApp() {
-
-  // Attend que handleAuthCallback ait fini
   while (!window.__authReady) {
     await new Promise(res => setTimeout(res, 10));
   }
 
   const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
-  if (session && session.user) {
-    const user = session.user;
-    $('userEmail').textContent = user.email;
+  if (user) {
     $('loginArea').style.display = 'none';
     $('publishArea').style.display = 'block';
-    await ensureProfilePresent(user);
+    $('userEmail').textContent = user.email;
+    $('profileEmail').textContent = user.email;
+
+    if (typeof ensureProfilePresent === "function") {
+      await ensureProfilePresent(user);
+    }
   } else {
     $('loginArea').style.display = 'block';
     $('publishArea').style.display = 'none';
   }
 
-  // Charge les trajets et réservation, que tu sois connecté ou non
-  await loadTrips();
-  await loadMyReservation();
+  if (typeof loadTrips === "function") await loadTrips();
+  if (typeof loadMyReservation === "function") await loadMyReservation();
 }
 
-// Appel au chargement de la page
 window.addEventListener('DOMContentLoaded', initApp);
-	
 const ADMIN_PASS = "Error404trads";
 let adminMode = false;
 
@@ -1063,6 +1061,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
