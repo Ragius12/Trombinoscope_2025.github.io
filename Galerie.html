@@ -354,6 +354,27 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   let adminMode = false;
   window.__authReady = false;
 
+      /* ---------- UI update ---------- */
+  async function updateUI(user) {
+    try {
+      if (user) {
+        if ($("loginArea")) $("loginArea").style.display = "none";
+        if ($("publishArea")) $("publishArea").style.display = "block";
+        if ($("userEmail")) $("userEmail").textContent = user.email;
+        if ($("profileEmail")) $("profileEmail").textContent = user.email;
+
+        if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
+        if (typeof loadTrips === "function") await loadTrips();
+        if (typeof loadMyReservation === "function") await loadMyReservation();
+      } else {
+        if ($("loginArea")) $("loginArea").style.display = "block";
+        if ($("publishArea")) $("publishArea").style.display = "none";
+      }
+    } catch (err) {
+      console.error("updateUI error:", err);
+    }
+  }
+    
   // Un seul listener unifié
   supabase.auth.onAuthStateChange(async (event, session) => {
     try {
@@ -376,6 +397,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
         // getSessionFromUrl va parser le fragment et stocker la session dans le storage
         // IMPORTANT: storeSession: true permet d'enregistrer la session
         await supabase.auth.getSessionFromUrl({ storeSession: true });
+        window.location.hash = "";
       }
     } catch (e) {
       console.warn("getSessionFromUrl error (non bloquant) :", e);
@@ -439,27 +461,6 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       await supabase.auth.signOut();
     } catch (err) {
       console.error("logout error", err);
-    }
-  }
-
-  /* ---------- UI update ---------- */
-  async function updateUI(user) {
-    try {
-      if (user) {
-        if ($("loginArea")) $("loginArea").style.display = "none";
-        if ($("publishArea")) $("publishArea").style.display = "block";
-        if ($("userEmail")) $("userEmail").textContent = user.email;
-        if ($("profileEmail")) $("profileEmail").textContent = user.email;
-
-        if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
-        if (typeof loadTrips === "function") await loadTrips();
-        if (typeof loadMyReservation === "function") await loadMyReservation();
-      } else {
-        if ($("loginArea")) $("loginArea").style.display = "block";
-        if ($("publishArea")) $("publishArea").style.display = "none";
-      }
-    } catch (err) {
-      console.error("updateUI error:", err);
     }
   }
 
@@ -1150,6 +1151,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 </script>
 </body>
 </html>
+
 
 
 
