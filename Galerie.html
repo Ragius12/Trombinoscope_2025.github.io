@@ -339,10 +339,10 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     console.log("URL:", window.location.href);
 /* ------------------------------
    JS encapsulé (IIFE) - ne pollue pas global
-   Corrige les crashs bloquants et protège le el global (jQuery)
+   Corrige les crashs bloquants et protège le $ global (jQuery)
    ------------------------------ */
 (function(){
-  // alias local pour getElementById (n'écrase pas window.el)
+  // alias local pour getElementById (n'écrase pas window.$ / jQuery)
   const el = (id) => document.getElementById(id);
 
   // Supabase client
@@ -354,7 +354,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   let adminMode = false;
   window.__authReady = false;
 
-      /* ---------- UI update ---------- */
+  /* ---------- UI update ---------- */
   async function updateUI(user) {
     try {
       if (user) {
@@ -374,8 +374,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       console.error("updateUI error:", err);
     }
   }
-    
-  // Un seul listener unifié
+
+  // Un seul listener unifié (après updateUI déclaré)
   supabase.auth.onAuthStateChange(async (event, session) => {
     try {
       const user = session?.user ?? null;
@@ -387,19 +387,25 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   });
 
   // init
- // init
-async function initApp() {
+ async function initApp(){
   try {
-
-    // GÈRE LE TOKEN DANS L’URL
-    const hash = window.location.hash || "";
-    if (hash.includes("access_token=") || hash.includes("error=")) {
-      await supabase.auth.getSessionFromUrl({ storeSession: true });
+    // --- Si l'URL contient un "access_token" ou une erreur, laisse Supabase parser la session depuis l'URL ---
+    try {
+      const hash = window.location.hash || "";
+      // Si requête de login via magic link (access_token présent) ou une erreur côté auth
+      if (hash.includes('access_token=') || hash.includes('error=')) {
+        // getSessionFromUrl va parser le fragment et stocker la session dans le storage
+        // IMPORTANT: storeSession: true permet d'enregistrer la session
+        await supabase.auth.getSessionFromUrl({ storeSession: true });
+      }
+    } catch (e) {
+      console.warn("getSessionFromUrl error (non bloquant) :", e);
+      // ne pas throw : on continue, mais on log l'erreur pour debug
     }
 
+    // Maintenant récupérer la session comme d'habitude
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
-
     await updateUI(user);
 
     if (user) {
@@ -408,23 +414,29 @@ async function initApp() {
       await loadMyReservation();
     }
 
-    // Nettoie l'URL
+    // Nettoyer l'URL pour retirer le fragment contenant tokens / erreurs
+    // (utile pour UX et pour ne pas réutiliser le token)
     if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      try {
+        const clean = window.location.pathname + window.location.search;
+        window.history.replaceState(null, "", clean);
+      } catch (e) { /* silent */ }
     }
 
-  } catch(e) {
-    console.error("initApp error:", e);
+    window.__authReady = true;
+  } catch (err) {
+    console.error("initApp error:", err);
+    window.__authReady = true;
   }
-}
+ } // fin initApp
 
-// → LE BON ENDROIT
-document.addEventListener("DOMContentLoaded", initApp);
+ // → LE BON PLACEMENT : en dehors de initApp
+ document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- AUTH ---------- */
   async function login() {
     try {
-      const emailEl = el( "email" );
+      const emailEl = el("email");
       const email = emailEl ? emailEl.value.trim().toLowerCase() : "";
       if (!email) return alert("Entre ton email.");
       if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
@@ -475,12 +487,12 @@ document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- Champ 'Autre' ---------- */
   ["depart","arrivee","searchDest"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("change", () => {
+    const el2 = document.getElementById(id);
+    if (!el2) return;
+    el2.addEventListener("change", () => {
       const inp = document.getElementById(id + "_autre");
       if (!inp) return;
-      inp.style.display = (el.value === "Autre") ? "block" : "none";
+      inp.style.display = (el2.value === "Autre") ? "block" : "none";
     });
   });
 
@@ -804,8 +816,8 @@ document.addEventListener("DOMContentLoaded", initApp);
 
       const r = data;
       content.innerHTML = `
-        <p><b>Trajet :</b> el{escapeHTML(r.trips.depart)} → el{escapeHTML(r.trips.arrivee)}</p>
-        <p><b>Date :</b> el{formatFR(r.trips.datetime)}</p>
+        <p><b>Trajet :</b> ${escapeHTML(r.trips.depart)} → ${escapeHTML(r.trips.arrivee)}</p>
+        <p><b>Date :</b> ${formatFR(r.trips.datetime)}</p>
         <button class="btn" id="cancelResBtn">Annuler</button>
       `;
 
@@ -866,7 +878,7 @@ document.addEventListener("DOMContentLoaded", initApp);
 
       let msg = "Réservants :\n\n";
       data.forEach(r => {
-        msg += `el{r.prenom} el{r.nom} el{r.surns} el{r.fams} (el{r.promo})\n`;
+        msg += `${r.prenom} ${r.nom} ${r.surns} ${r.fams} (${r.promo})\n`;
       });
 
       alert(msg);
@@ -930,15 +942,15 @@ document.addEventListener("DOMContentLoaded", initApp);
       const info = document.createElement('div');
       info.className = 'trajet-info';
       info.innerHTML = `
-        <p><span class="label-fixed">Conducteur :</span> el{escapeHTML(t.nom)} el{escapeHTML(t.prenom)}</p>
-        <p><span class="label-fixed">Bucque :</span> el{escapeHTML(t.surns)} el{escapeHTML(t.fams)} el{escapeHTML(t.promo)}</p>
-        <p class="label-fixed">el{escapeHTML(t.depart)} ➤ el{escapeHTML(t.arrivee)}</p>
-        <p><span class="label-fixed">Date :</span> el{formatFR(t.datetime)}</p>
-        <p><span class="label-fixed">Places restantes :</span> el{t.places}</p>
+        <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
+        <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
+        <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
+        <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
+        <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
       `;
 
       if (t.description && String(t.description).trim() !== '') {
-        info.innerHTML += `<p><span class="label-fixed">Description :</span> el{escapeHTML(t.description)}</p>`;
+        info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
       }
 
       const actions = document.createElement('div');
@@ -1115,9 +1127,9 @@ document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- Liaisons évènementielles - safe attach ---------- */
   function safeOn(id, event, handler) {
-    const el = el(id);
-    if (!el) return;
-    el.addEventListener(event, handler);
+    const node = el(id);
+    if (!node) return;
+    node.addEventListener(event, handler);
   }
 
   safeOn("loginBtn", "click", login);
@@ -1139,8 +1151,8 @@ document.addEventListener("DOMContentLoaded", initApp);
 
 })(); // fin IIFE
 </script>
-</body>
-</html>
+
+
 
 
 
