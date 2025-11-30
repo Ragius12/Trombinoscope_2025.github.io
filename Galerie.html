@@ -344,18 +344,23 @@ const supabase = window.supabase.createClient(
 
 // Fonction pour gérer le magic link à l'arrivée
 async function handleMagicLinkRedirect() {
-  const url = new URL(window.location.href);
-  const accessToken = url.searchParams.get('access_token');
-  if (accessToken) {
-    try {
-      const { data: { session }, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
-      if (error) console.error("Erreur magic link:", error.message);
-      else console.log("Utilisateur connecté via magic link:", session.user.email);
-    } catch(e) {
-      console.error("Erreur lors du traitement du magic link:", e);
+  try {
+    const { data: { session }, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+    if (error) {
+      console.error("Erreur magic link:", error.message);
+    } else if (session) {
+      console.log("Utilisateur connecté via magic link:", session.user.email);
     }
+  } catch (e) {
+    console.error("Erreur lors du traitement du magic link:", e);
+  } finally {
+    // Nettoyer l'URL pour enlever les tokens
+    if (window.history.replaceState) {
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+    window.__authReady = true;
   }
-  window.__authReady = true;
 }
 
 // Fonction de login
@@ -1057,6 +1062,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
