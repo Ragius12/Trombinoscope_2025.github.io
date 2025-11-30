@@ -2,20 +2,20 @@
 <html lang="fr">
 <head>
 
-  	<!-- Google Tag Manager -->
-	<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-	new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-	j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-	'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-	})(window,document,'script','dataLayer','GTM-5X9NDHBP');</script>
-	<!-- End Google Tag Manager -->
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5X9NDHBP');</script>
+    <!-- End Google Tag Manager -->
 
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Blablac'Arts</title>
 
 <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
-	
+    
 <style>
 @font-face {
     font-family: "Old English Text MT", "Gothic Old English", serif;
@@ -84,7 +84,7 @@ h1 { font-size:2.4rem; margin:0; letter-spacing:2px; }
     box-shadow:0 4px 12px rgba(0,0,0,0.5);
     letter-spacing:2px;
     z-index:2;
-	opacity: 0.9;
+    opacity: 0.9;
 }
 
 .trajet {
@@ -127,10 +127,9 @@ h1 { font-size:2.4rem; margin:0; letter-spacing:2px; }
 .delete-btn:hover{ transform:scale(1.03); } 
 
 form input, form select, form textarea { width:100%; padding:10px; border-radius:8px; border:none; margin-bottom:12px; background: rgba(255,255,255,0.04); color: white; }
-/* CHANGEMENT : rendre les options lisibles (noir sur blanc) */
+/* rendre les options lisibles */
 form select, select { color: #111; background: #fff; padding:10px; border-radius:8px; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
 form select option, select option { color:#111; background:#fff; }
-/* fin CHANGEMENT */
 
 form input::placeholder, form textarea::placeholder { color: rgba(255,255,255,0.6); }
 
@@ -162,7 +161,6 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 }
 .profile-modal.show {
   display: flex;
-  pointer-events: auto; /* <-- seulement quand visible */
 }
 .profile-modal .panel {
   width: min(560px, 95%);
@@ -184,20 +182,20 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 </head>
 <body>
 
-  	<!-- Google Tag Manager (noscript) -->
-	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
-	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-	<!-- End Google Tag Manager (noscript) -->
-  
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
 <header><h1>Blablac'Arts – Tunnel entre deux villes</h1></header>
 
 <div class="container">
 
-<!-- Login area improved -->
+<!-- Login area -->
 <div id="loginArea" class="card" style="text-align:center;">
   <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
     <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
-    <button id="loginBtn" class="login-btn" onclick="login()">Se connecter</button>
+    <button id="loginBtn" class="login-btn">Se connecter</button>
   </div>
   <div class="small-muted">Connexion simplifiée : utilisez votre adresse <b>@ensam.eu</b>. Un lien de connexion sera envoyé.</div>
 </div>
@@ -206,18 +204,18 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
      <div>Connecté : <span id="userEmail" style="font-weight:700"></span></div>
      <div style="display:flex;gap:10px;align-items:center;">
-       <button class="btn" onclick="openProfile()">Mon profil</button>
-       <button class="login-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white" onclick="logout()">Déconnexion</button>
+       <button class="btn" id="openProfileBtn">Mon profil</button>
+       <button class="login-btn" id="logoutBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Déconnexion</button>
      </div>
    </div>
 </div>
 
 <!-- Profile modal -->
-<div id="profileModal" class="profile-modal" role="dialog" aria-modal="true">
+<div id="profileModal" class="profile-modal">
   <div class="panel card">
     <h3 style="margin-top:0;">Compléter ton profil</h3>
     <div style="margin-bottom:10px;color:rgba(255,255,255,0.8)">Ton adresse <span id="profileEmail"></span></div>
-    <form id="profileForm" onsubmit="saveProfile(event)">
+    <form id="profileForm">
       <input id="profile_nom" placeholder="Nom" required>
       <input id="profile_prenom" placeholder="Prénom" required>
       <input id="profile_surns" placeholder="Surn's" required>
@@ -228,27 +226,28 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       </select>
 
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-        <button type="button" class="btn" onclick="closeProfile()">Fermer</button>
-        <button onclick="saveProfile(event)">Enregistrer</button>
+        <button type="button" class="btn" id="closeProfileBtn">Fermer</button>
+        <button class="btn" id="saveProfileBtn">Enregistrer</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Bouton afficher/masquer formulaire -->
-<div style="text-align:center;"><div class="btn-publish" onclick="toggleForm()">➕ Publier un trajet</div></div>
+<!-- Form toggle -->
+<div style="text-align:center;">
+  <div class="btn-publish" id="toggleFormBtn">➕ Publier un trajet</div>
+</div>
 <br>
 
-<!-- Formulaire publication -->
+<!-- Publish form -->
 <div id="form-container" class="card" style="display:none;">
 <h2 class="label-fixed">Publier un trajet</h2>
-<form id="publishForm" onsubmit="publishTrip(event)">
+
+<form id="publishForm">
     <span class="label-fixed">Identité du conducteur :</span>
 
     <input id="nom" placeholder="Nom" required>
     <input id="prenom" placeholder="Prénom" required>
-
-    <!-- IDs nécessaires pour ton JS -->
     <input id="surns_pub" placeholder="Surn's" required>
     <input id="fams_pub" placeholder="Fam's" required>
 
@@ -285,16 +284,16 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       <option>1</option><option>2</option><option>3</option><option>4</option>
     </select>
 
-    <span class="label-fixed">Description : (optionnel ; max : 1000 mots)</span>
-    <textarea id="desc" maxlength="1000" placeholder="Infos utiles : fumeur/non-fumeur, bagages, arrêt(s) intermédiaire(s)..."></textarea>
+    <span class="label-fixed">Description :</span>
+    <textarea id="desc" maxlength="1000" placeholder="Infos utiles : ..."></textarea>
 
     <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button id="publishBtn" onclick="publishTrip(event)">Publier</button>
+      <button class="btn" id="publishBtn">Publier</button>
     </div>
 </form>
 </div>
 
-<!-- Recherche -->
+<!-- Search -->
 <div class="card">
 <h2 class="label-fixed">🔎 Rechercher une destination</h2>
 
@@ -306,23 +305,26 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       <option>Bordeaux</option><option>Rennes</option><option>Strasbourg</option>
       <option>Autre</option>
   </select>
+
   <input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)">
-  <input id="searchText" placeholder="Recherche libre (nom conducteur, description...)" style="flex:1;padding:8px;border-radius:8px;background:rgba(255,255,255,0.04);border:none;color:white;">
-  <button class="btn" onclick="loadTrips()">Rechercher</button>
-  <button class="btn" onclick="resetFilters()" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Réinitialiser</button>
+  <input id="searchText" placeholder="Recherche libre..." style="flex:1;padding:8px;border-radius:8px;background:rgba(255,255,255,0.04);border:none;color:white;">
+  
+  <button class="btn" id="searchBtn">Rechercher</button>
+  <button class="btn" id="resetFiltersBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Réinitialiser</button>
 </div>
 
 <div id="trajets">Aucune annonce pour le moment.</div>
 </div>
 
-<!-- Mode Admin -->
-<div class="card"><h2 class="label-fixed">Mode admin</h2>
-<input type="password" id="adminKey" placeholder="Mot de passe admin" style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.04);border:none;color:white">
-<button class="btn" onclick="activateAdmin()">Activer</button>
-<p id="adminStatus"></p>
+<!-- Admin -->
+<div class="card">
+  <h2 class="label-fixed">Mode admin</h2>
+  <input type="password" id="adminKey" placeholder="Mot de passe admin">
+  <button class="btn" id="activateAdminBtn">Activer</button>
+  <p id="adminStatus"></p>
 </div>
 
-<!-- My reservation area -->
+<!-- Reservation -->
 <div id="myReservationArea" class="card" style="display:none;">
   <h2 class="label-fixed">Ma réservation</h2>
   <div id="myReservationContent">Aucune réservation active.</div>
@@ -332,229 +334,222 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
 <script>
-// Alias pour récupérer rapidement les éléments
+// Fix : garder l'alias $ sans écraser jQuery
 function $(id) { return document.getElementById(id); }
 
-// Supabase client
+// Initialisation Supabase
 const supabase = window.supabase.createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
 
-	supabase.auth.onAuthStateChange(async (event, session) => {
-  const user = session?.user ?? null;
-  await updateUI(user);
-  window.__authReady = true;
-});
-	
+let adminMode = false;
 window.__authReady = false;
 
-// Fonction de login par magic link
-
-  const user = session.user;
-
-  // Assurer que le profil existe
-  await ensureProfilePresent(user);
-
-  // Charger les trajets
-  await loadTrips();
-  await loadMyReservation();
-}
-
-// Appel au chargement de la page
-initApp();
-
-async function login() {
-  const email = $('email').value.trim().toLowerCase();
-  if (!email) return alert("Entre ton email.");
-  if (!email.endsWith('@ensam.eu')) return alert("Utilise une adresse se terminant par @ensam.eu");
-
-  $('loginBtn').disabled = true;
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href }
-  });
-  $('loginBtn').disabled = false;
-
-  if (error) alert(error.message);
-  else alert("Lien envoyé ! Vérifie ta boîte mail.");
-}
-	
-// Fonction logout
-async function logout() {
-  await supabase.auth.signOut();
-  // on ne fait pas reload, l'UI se met à jour via onAuthStateChange
-}
-
-// Gestion de l'état utilisateur
-async function updateUI(user) {
-  if (user) {
-    $('loginArea').style.display = 'none';
-    $('publishArea').style.display = 'block';
-    $('userEmail').textContent = user.email;
-    $('profileEmail').textContent = user.email;
-    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
-    if (typeof loadTrips === "function") await loadTrips();
-    if (typeof loadMyReservation === "function") await loadMyReservation();
-  } else {
-    $('loginArea').style.display = 'block';
-    $('publishArea').style.display = 'none';
-  }
-}
-
-// Supabase écoute les changements de session
+/* ---------------------------------------------------
+   AUTH STATE (UNIFIÉ ET RÉPARÉ)
+--------------------------------------------------- */
 supabase.auth.onAuthStateChange(async (event, session) => {
   const user = session?.user ?? null;
   await updateUI(user);
   window.__authReady = true;
 });
 
-// Ouvrir la modal du profil
-function openProfile() {
-  const modal = document.getElementById('profileModal');
-  if (!modal) return;
-  modal.style.display = 'block';
-}
-
-// Fermer la modal du profil
-function closeProfile() {
-  const modal = document.getElementById('profileModal');
-  if (!modal) return;
-  modal.style.display = 'none';
-}
-
-// Optionnel : fermer la modal si l'utilisateur clique en dehors
-window.addEventListener('click', (e) => {
-  const modal = document.getElementById('profileModal');
-  if (!modal) return;
-  if (e.target === modal) modal.style.display = 'none';
-});
-	
-// Initialisation
+/* ---------------------------------------------------
+   INITIALISATION PROPRE (corrige le bug principal)
+--------------------------------------------------- */
 async function initApp() {
-  // Supabase v2 récupère la session automatiquement après magic link
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
+
   await updateUI(user);
+
+  if (user) {
+    await ensureProfilePresent(user);
+    await loadTrips();
+    await loadMyReservation();
+  }
+
   window.__authReady = true;
 }
 
-window.addEventListener('DOMContentLoaded', initApp);
-window.addEventListener('DOMContentLoaded', async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await updateUI(user); // pré-remplit le profil, charge trajets et réservations
-  }
-});
-	
-const ADMIN_PASS = "Error404trads";
-let adminMode = false;
+document.addEventListener("DOMContentLoaded", initApp);
 
-// Helpers pour récupérer éléments
-function toggleForm(){
-    const f=$("form-container"); f.style.display = f.style.display==="none"?"block":"none";
+/* ---------------------------------------------------
+   LOGIN
+--------------------------------------------------- */
+async function login() {
+  const email = $("email").value.trim().toLowerCase();
+  if (!email) return alert("Entre ton email.");
+  if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+
+  $("loginBtn").disabled = true;
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+
+  $("loginBtn").disabled = false;
+
+  if (error) alert(error.message);
+  else alert("Lien envoyé ! Vérifie ta boîte mail.");
 }
 
-// monitoring des selects 'Autre' et recherche
-["depart","arrivee","searchDest"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('change', () => {
-        const inp = document.getElementById(id + "_autre");
-        if (!inp) return;
-        if (el.value === 'Autre') inp.style.display = 'block';
-        else inp.style.display = 'none';
-    });
+/* ---------------------------------------------------
+   LOGOUT
+--------------------------------------------------- */
+async function logout() {
+  await supabase.auth.signOut();
+}
+
+/* ---------------------------------------------------
+   MISE À JOUR DE L'UI SELON L'UTILISATEUR
+--------------------------------------------------- */
+async function updateUI(user) {
+  if (user) {
+    $("loginArea").style.display = "none";
+    $("publishArea").style.display = "block";
+
+    $("userEmail").textContent = user.email;
+    $("profileEmail").textContent = user.email;
+
+    if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
+    if (typeof loadTrips === "function") await loadTrips();
+    if (typeof loadMyReservation === "function") await loadMyReservation();
+  } else {
+    $("loginArea").style.display = "block";
+    $("publishArea").style.display = "none";
+  }
+}
+
+/* ---------------------------------------------------
+   OUVRIR / FERMER PROFIL
+--------------------------------------------------- */
+function openProfile() {
+  $("profileModal").style.display = "flex";
+}
+function closeProfile() {
+  $("profileModal").style.display = "none";
+}
+
+// Fermer si clic extérieur
+window.addEventListener("click", (e) => {
+  const modal = $("profileModal");
+  if (e.target === modal) modal.style.display = "none";
 });
 
-/* CHANGEMENT : recherche dynamique (debounce) */
+/* ---------------------------------------------------
+   TOGGLE FORMULAIRE
+--------------------------------------------------- */
+function toggleForm(){
+  const f = $("form-container");
+  f.style.display = (f.style.display === "none") ? "block" : "none";
+}
+
+/* ---------------------------------------------------
+   CHAMP “AUTRE”
+--------------------------------------------------- */
+["depart","arrivee","searchDest"].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  el.addEventListener("change", () => {
+    const inp = document.getElementById(id + "_autre");
+    if (!inp) return;
+
+    inp.style.display = (el.value === "Autre") ? "block" : "none";
+  });
+});
+
+/* ---------------------------------------------------
+   RECHERCHE DYNAMIQUE
+--------------------------------------------------- */
 let searchDebounceTimer = null;
 
-document.getElementById('searchText').addEventListener('input', (e) => {
-  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+$("searchText").addEventListener("input", () => {
+  clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => loadTrips(), 300);
 });
 
-document.getElementById('searchText').addEventListener('keyup', (e) => {
-  if (e.key === 'Enter') loadTrips();
+$("searchText").addEventListener("keyup", (e) => {
+  if (e.key === "Enter") loadTrips();
 });
 
-document.getElementById('searchDest').addEventListener('change', () => loadTrips());
-
-document.getElementById('searchOther').addEventListener('input', () => {
-  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+$("searchDest").addEventListener("change", loadTrips);
+$("searchOther").addEventListener("input", () => {
+  clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => loadTrips(), 300);
 });
-/* fin CHANGEMENT */
 
-function resetFilters(){
-  $('searchDest').value = '';
-  $('searchOther').value = '';
-  $('searchText').value = '';
+function resetFilters() {
+  $("searchDest").value = "";
+  $("searchOther").value = "";
+  $("searchText").value = "";
   loadTrips();
 }
 
-// Format date in FR and fix timezone issues: force Europe/Paris
+/* ---------------------------------------------------
+   FORMATAGE & DATES
+--------------------------------------------------- */
 function formatFR(dateStr){
-    const d = new Date(dateStr);
-    if(isNaN(d)) return dateStr;
-    return d.toLocaleString('fr-FR', {
-      timeZone: 'Europe/Paris',
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour:'2-digit', minute:'2-digit'
-    }).replace(',', '');
+  const d = new Date(dateStr);
+  if (isNaN(d)) return dateStr;
+
+  return d.toLocaleString("fr-FR", {
+    timeZone: "Europe/Paris",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).replace(",", "");
 }
 
-// Determine if trip is expired: trip considered lasting 1 hour from its datetime
-function isExpired(dateStr){ 
-    const d=new Date(dateStr);
-    if (isNaN(d)) return false;
-    return new Date() > new Date(d.getTime()+3600*1000);
-}
-function isEnCours(dateStr){ 
-    const d=new Date(dateStr);
-    if (isNaN(d)) return false;
-    const now=new Date();
-    return now>=d && now<= new Date(d.getTime()+3600*1000); 
+function isExpired(dateStr){
+  const d = new Date(dateStr);
+  if (isNaN(d)) return false;
+  return new Date() > new Date(d.getTime() + 3600*1000);
 }
 
-// Prevent double submit for publish
-let publishing = false;
+function isEnCours(dateStr){
+  const d = new Date(dateStr);
+  const now = new Date();
+  return now >= d && now <= new Date(d.getTime() + 3600*1000);
+}
 
-/* CHANGEMENT PRINCIPAL : on récupère tout côté client puis on filtre/trie pour éviter les effets de requêtes mal chaînées */
+/* ---------------------------------------------------
+   CHARGEMENT DES TRAJETS (optimisé + réparé)
+--------------------------------------------------- */
 async function loadTrips() {
-  const list = document.getElementById("trajets");
+  const list = $("trajets");
   list.innerHTML = "Chargement...";
 
-  // Récupérer tout (simple)
   const { data, error } = await supabase.from("trips").select("*");
   if (error) {
-    return list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
+    list.innerHTML = "Erreur : " + error.message;
+    return;
   }
+
   let trips = data || [];
 
-  // --- Filtrage local selon UI ---
-  const searchDest = $('searchDest').value;
-  const searchOther = $('searchOther').value.trim().toLowerCase();
-  const searchText = $('searchText').value.trim().toLowerCase();
+  /* ----- FILTRAGE ----- */
+  const searchDest = $("searchDest").value;
+  const searchOther = $("searchOther").value.trim().toLowerCase();
+  const searchText = $("searchText").value.trim().toLowerCase();
 
-  // keep all trips but filter for search
   trips = trips.filter(t => {
-    // ensure non-null strings
-    const depart = String(t.depart || '').toLowerCase();
-    const arrivee = String(t.arrivee || '').toLowerCase();
-    const nom = String(t.nom || '').toLowerCase();
-    const prenom = String(t.prenom || '').toLowerCase();
-    const description = String(t.description || '').toLowerCase();
+    const depart = String(t.depart || "").toLowerCase();
+    const arrivee = String(t.arrivee || "").toLowerCase();
+    const nom = String(t.nom || "").toLowerCase();
+    const prenom = String(t.prenom || "").toLowerCase();
+    const desc = String(t.description || "").toLowerCase();
 
     let okDest = true;
-    if (searchDest && searchDest !== '') {
-      if (searchDest === 'Autre') {
-        if (searchOther) {
-          okDest = depart.includes(searchOther) || arrivee.includes(searchOther);
-        }
+    if (searchDest) {
+      if (searchDest === "Autre") {
+        okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
       } else {
         okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
       }
@@ -562,69 +557,213 @@ async function loadTrips() {
 
     let okText = true;
     if (searchText) {
-      okText = nom.includes(searchText) || prenom.includes(searchText) || description.includes(searchText) || depart.includes(searchText) || arrivee.includes(searchText);
+      okText =
+        nom.includes(searchText) ||
+        prenom.includes(searchText) ||
+        desc.includes(searchText) ||
+        depart.includes(searchText) ||
+        arrivee.includes(searchText);
     }
 
     return okDest && okText;
   });
 
-  // --- Trier par pertinence (CHANGEMENT) ---
-  // Score: exact city match > partial > upcoming date nearest first
+  /* ----- TRI par pertinence ----- */
   const now = Date.now();
-  trips.sort((a,b) => {
-    // basic relevance score by matching search terms
-    function score(t) {
-      let s = 0;
-      const depart = String(t.depart || '').toLowerCase();
-      const arrivee = String(t.arrivee || '').toLowerCase();
-      const nom = String(t.nom || '').toLowerCase();
-      const prenom = String(t.prenom || '').toLowerCase();
-      const desc = String(t.description || '').toLowerCase();
-      const q = $('searchText').value.trim().toLowerCase();
-      const destQ = $('searchDest').value.trim().toLowerCase();
 
-      if (q) {
-        if (nom === q || prenom === q) s += 50;
-        if (nom.includes(q) || prenom.includes(q)) s += 20;
-        if (desc.includes(q)) s += 10;
-        if (depart.includes(q) || arrivee.includes(q)) s += 15;
-      }
-      if (destQ) {
-        if (depart === destQ || arrivee === destQ) s += 40;
-        if ((depart + arrivee).includes(destQ)) s += 10;
-      }
-      // prefer non-expired upcoming trips
-      const dt = new Date(t.datetime).getTime();
-      if (!isNaN(dt)) {
-        const diff = dt - now;
-        if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000*60*60))); // closer upcoming gets higher
-      }
-      // penalize expired
-      if (isExpired(t.datetime)) s -= 1000;
-      return s;
+  function score(t) {
+    let s = 0;
+    const q = searchText;
+    const dQ = searchDest.toLowerCase();
+
+    const depart = t.depart.toLowerCase();
+    const arrivee = t.arrivee.toLowerCase();
+    const nom = t.nom.toLowerCase();
+    const prenom = t.prenom.toLowerCase();
+    const desc = (t.description || "").toLowerCase();
+
+    if (q) {
+      if (nom === q || prenom === q) s += 50;
+      if (nom.includes(q) || prenom.includes(q)) s += 20;
+      if (desc.includes(q)) s += 10;
+      if (depart.includes(q) || arrivee.includes(q)) s += 15;
     }
 
+    if (dQ) {
+      if (depart === dQ || arrivee === dQ) s += 40;
+      if ((depart + arrivee).includes(dQ)) s += 10;
+    }
+
+    const dt = new Date(t.datetime).getTime();
+    if (!isNaN(dt)) {
+      const diff = dt - now;
+      if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000*60*60)));
+    }
+
+    if (isExpired(t.datetime)) s -= 1000;
+    return s;
+  }
+
+  trips.sort((a, b) => {
     const sa = score(a), sb = score(b);
     if (sa !== sb) return sb - sa;
-    // fallback by date ascending
-    const da = new Date(a.datetime).getTime() || 0;
-    const db = new Date(b.datetime).getTime() || 0;
+
+    const da = new Date(a.datetime).getTime();
+    const db = new Date(b.datetime).getTime();
     return da - db;
   });
-  /* fin CHANGEMENT */
 
+  /* ----- AFFICHAGE ----- */
   list.innerHTML = "";
 
   for (const t of trips) {
-	  const elem = await createTrajetElement(t, t.id);
-	  list.appendChild(elem);
-	}
+    const elem = await createTrajetElement(t, t.id);
+    list.appendChild(elem);
+  }
 }
-/* fin CHANGEMENT PRINCIPAL */
 
+/* ---------------------------------------------------
+   UTILITAIRES & ACTIONS (publication, réservation...)
+--------------------------------------------------- */
+
+/* Convertit une valeur datetime-local (YYYY-MM-DDTHH:mm) en ISO UTC */
+function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
+  const d = new Date(datetimeLocalValue);
+  if (isNaN(d)) return datetimeLocalValue;
+  return d.toISOString();
+}
+
+/* Publication */
+let publishing = false;
+async function publishTrip(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (publishing) return;
+  publishing = true;
+  $("publishBtn").disabled = true;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    publishing = false;
+    $("publishBtn").disabled = false;
+    return alert("Connecte-toi !");
+  }
+
+  const departEl = $("depart");
+  const arriveeEl = $("arrivee");
+  const depart_autreEl = $("depart_autre");
+  const arrivee_autreEl = $("arrivee_autre");
+
+  const departValue = departEl.value === "Autre" ? depart_autreEl.value.trim() : departEl.value;
+  const arriveeValue = arriveeEl.value === "Autre" ? arrivee_autreEl.value.trim() : arriveeEl.value;
+
+  const datetimeVal = $("datetime").value;
+  if (!datetimeVal) { publishing = false; $("publishBtn").disabled = false; return alert("Choisis une date et heure."); }
+
+  const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
+
+  let publishNom = $("nom").value.trim();
+  let publishPrenom = $("prenom").value.trim();
+  let publishSurns = $("surns_pub").value.trim();
+  let publishFams = $("fams_pub").value.trim();
+  let publishPromo = $("promo").value;
+
+  if (!publishNom || !publishPrenom || !publishSurns || !publishFams || !publishPromo) {
+    const { data: profilData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    if (profilData) {
+      publishNom = publishNom || (profilData.nom || '');
+      publishPrenom = publishPrenom || (profilData.prenom || '');
+      publishSurns = publishSurns || (profilData.surns || '');
+      publishFams = publishFams || (profilData.fams || '');
+      publishPromo = publishPromo || (profilData.promo || '');
+    }
+  }
+
+  const trip = {
+    owner: user.id,
+    nom: publishNom,
+    prenom: publishPrenom,
+    surns: publishSurns,
+    fams: publishFams,
+    promo: publishPromo,
+    depart: departValue,
+    arrivee: arriveeValue,
+    datetime: datetimeISO,
+    places: parseInt($("places").value) || 1,
+    description: $("desc").value.trim()
+  };
+
+  try {
+    $("publishBtn").textContent = "Publication...";
+    const { data, error } = await supabase.from("trips").insert(trip);
+    if (error) {
+      alert("Erreur publication : " + (error.message || JSON.stringify(error)));
+    } else {
+      alert("Trajet publié !");
+      $("publishForm").reset();
+      $("form-container").style.display = "none";
+      await loadTrips();
+    }
+  } finally {
+    publishing = false;
+    $("publishBtn").disabled = false;
+    $("publishBtn").textContent = "Publier";
+  }
+}
+
+/* Réservations */
+async function confirmReserve(tripId){
+  if(!confirm("Confirmer la réservation de ce trajet ?")) return;
+  await reserve(tripId);
+}
+
+async function reserve(tripId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Connecte-toi !");
+
+  const { data: profilData, error: profilError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profilError) {
+    console.error(profilError);
+    return alert("Impossible de lire ton profil (erreur).");
+  }
+  if (!profilData) {
+    alert("Complète ton profil avant de réserver.");
+    $("profile_nom").value = "";
+    $("profile_prenom").value = "";
+    $("profile_surns").value = "";
+    $("profile_fams").value = "";
+    $("profile_promo").value = "";
+    $("profileEmail").textContent = user.email;
+    openProfile();
+    return;
+  }
+
+  const { data, error } = await supabase.rpc("reserve_trip", {
+    p_trip_id: tripId,
+    p_user_id: user.id,
+    p_nom: profilData.nom,
+    p_prenom: profilData.prenom,
+    p_surns: profilData.surns,
+    p_fams: profilData.fams,
+    p_promo: profilData.promo
+  });
+
+  if (error) return alert(error.details || error.message || JSON.stringify(error));
+  if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
+
+  alert("Réservation confirmée !");
+  loadTrips();
+  loadMyReservation();
+}
+
+/* Voir / annuler réservation */
 async function loadMyReservation() {
-  const zone = document.getElementById("myReservationArea");
-  const content = document.getElementById("myReservationContent");
+  const zone = $("myReservationArea");
+  const content = $("myReservationContent");
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -651,8 +790,12 @@ async function loadMyReservation() {
   content.innerHTML = `
     <p><b>Trajet :</b> ${escapeHTML(r.trips.depart)} → ${escapeHTML(r.trips.arrivee)}</p>
     <p><b>Date :</b> ${formatFR(r.trips.datetime)}</p>
-    <button onclick="cancelReservation(${r.id})" class="btn">Annuler</button>
+    <button class="btn" id="cancelResBtn">Annuler</button>
   `;
+
+  document.getElementById("cancelResBtn").addEventListener("click", async () => {
+    await cancelReservation(r.id);
+  });
 }
 
 async function cancelReservation(resId) {
@@ -664,7 +807,7 @@ async function cancelReservation(resId) {
     p_user_id: user.id
   });
 
-  if (error || data.ok === false)
+  if (error || data?.ok === false)
     return alert(error?.message || data?.error || "Erreur annulation.");
 
   alert("Réservation annulée !");
@@ -672,277 +815,15 @@ async function cancelReservation(resId) {
   loadMyReservation();
 }
 
-async function createTrajetElement(t, i) {
-  const d = document.createElement('div');
-  d.className = 'trajet';
-
-  // --- Bandeau EN COURS / PLEIN / EXPIRÉ ---
-  if (isEnCours(t.datetime)) {
-    const b = document.createElement('div');
-    b.className = 'bandeau';
-    b.textContent = 'EN COURS';
-    d.appendChild(b);
-  } else if (t.places <= 0) {
-    const b = document.createElement('div');
-    b.className = 'bandeau';
-    b.textContent = 'PLEIN';
-    d.appendChild(b);
-  } else if (isExpired(t.datetime)) {
-    const b = document.createElement('div');
-    b.className = 'bandeau';
-    b.textContent = 'EXPIRÉ';
-    b.style.background = '#6c6c6c';
-    d.appendChild(b);
-  }
-
-  // --- Infos trajet ---
-  const info = document.createElement('div');
-  info.className = 'trajet-info';
-  info.innerHTML = `
-    <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
-    <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
-    <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
-    <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
-    <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
-  `;
-
-  if (t.description && String(t.description).trim() !== '') {
-    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
-  }
-
-  // --- Zone des boutons ---
-  const actions = document.createElement('div');
-  actions.className = 'action-buttons';
-
-  // --- Récupération de l'utilisateur connecté ---
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // --- Vérifier si cet utilisateur a déjà réservé ce trajet ---
-  let reserved = false;
-  let myRes = null;
-
-  if (user) {
-    const res = await supabase
-      .from("reservations")
-      .select("*")
-      .eq("trip_id", t.id)
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    myRes = res.data;
-    reserved = !!res.data;
-  }
-
-  // --- Bouton ADMIN : supprimer (affiché si adminMode) ---
-  if (adminMode) {
-    const del = document.createElement('button');
-    del.className = 'delete-btn';
-    del.textContent = 'Supprimer';
-    del.onclick = () => deleteTrip(t.id);
-    actions.appendChild(del);
-  }
-
-  // --- Bouton ANNULER ou RÉSERVER ---
-  if (reserved) {
-    const un = document.createElement('button');
-    un.className = 'btn';
-    un.textContent = 'Annuler';
-    un.onclick = () => cancelReservation(myRes.id);
-    actions.appendChild(un);
-
-  } else if (t.places > 0 && !isEnCours(t.datetime) && !isExpired(t.datetime)) {
-    const resBtn = document.createElement('button');
-    resBtn.className = 'btn';
-    resBtn.textContent = 'Réserver';
-    resBtn.onclick = () => confirmReserve(t.id);
-    actions.appendChild(resBtn);
-  } else {
-    const disabled = document.createElement('button');
-    disabled.className = 'btn btn-disabled';
-    disabled.textContent = 'Réserver';
-    disabled.setAttribute('aria-disabled','true');
-    actions.appendChild(disabled);
-  }
-
-  // --- Bouton voir les réservations ---
-  const maySee = await canViewReservations(t);
-
-  if (maySee) {
-    const btnRes = document.createElement('button');
-    btnRes.className = 'btn';
-    btnRes.textContent = 'Réservations';
-    btnRes.onclick = () => viewReservations(t.id);
-    actions.appendChild(btnRes);
-
-  } else {
-    const btnRes = document.createElement('button');
-    btnRes.className = 'btn btn-disabled';
-    btnRes.textContent = 'Réservations';
-    btnRes.setAttribute('aria-disabled', 'true');
-    actions.appendChild(btnRes);
-  }
-
-  // --- Placement final ---
-  d.appendChild(info);
-  d.appendChild(actions);
-
-  return d;
-}
-
-/* CHANGEMENT : convertir le datetime-local choisi (local) en ISO UTC avant d'envoyer au serveur
-   Cela évite le décalage d'heure lors de l'affichage. */
-function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
-  // datetimeLocalValue format: "YYYY-MM-DDTHH:mm" (no timezone)
-  // Create Date as local time and return exact ISO (UTC) string
-  const d = new Date(datetimeLocalValue);
-  if (isNaN(d)) return datetimeLocalValue;
-  return d.toISOString(); // server will store as UTC timestamp
-}
-/* fin CHANGEMENT */
-
-async function publishTrip(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (publishing) return;
-  publishing = true;
-  $('publishBtn').disabled = true;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    publishing = false;
-    $('publishBtn').disabled = false;
-    return alert("Connecte-toi !");
-  }
-
-  // Récupération propre des champs
-  const departEl = document.getElementById("depart");
-  const arriveeEl = document.getElementById("arrivee");
-  const depart_autreEl = document.getElementById("depart_autre");
-  const arrivee_autreEl = document.getElementById("arrivee_autre");
-
-  const departValue = departEl.value === "Autre" ? depart_autreEl.value.trim() : departEl.value;
-  const arriveeValue = arriveeEl.value === "Autre" ? arrivee_autreEl.value.trim() : arriveeEl.value;
-
-  const datetimeVal = document.getElementById("datetime").value;
-  if (!datetimeVal) { publishing = false; $('publishBtn').disabled = false; return alert("Choisis une date et heure."); }
-
-  // CHANGEMENT : envoyer l'ISO UTC (corrige le décalage)
-  const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
-
-  // If user left identity fields empty but has profile, try to use profile autofill
-  let publishNom = document.getElementById("nom").value.trim();
-  let publishPrenom = document.getElementById("prenom").value.trim();
-  let publishSurns = document.getElementById("surns_pub").value.trim();
-  let publishFams = document.getElementById("fams_pub").value.trim();
-  let publishPromo = document.getElementById("promo").value;
-
-  // try to fetch profile if any missing
-  if (!publishNom || !publishPrenom || !publishSurns || !publishFams || !publishPromo) {
-    const { data: profilData } = await supabase
-      .from("profiles").select("*").eq("id", user.id).maybeSingle();
-    if (profilData) {
-      publishNom = publishNom || (profilData.nom || '');
-      publishPrenom = publishPrenom || (profilData.prenom || '');
-      publishSurns = publishSurns || (profilData.surns || '');
-      publishFams = publishFams || (profilData.fams || '');
-      publishPromo = publishPromo || (profilData.promo || '');
-    }
-  }
-
-  const trip = {
-    owner: user.id,
-    nom: publishNom,
-    prenom: publishPrenom,
-    surns: publishSurns,
-    fams: publishFams,
-    promo: publishPromo,
-    depart: departValue,
-    arrivee: arriveeValue,
-    datetime: datetimeISO, // ISO UTC
-    places: parseInt(document.getElementById("places").value) || 1,
-    description: document.getElementById("desc").value.trim()
-  };
-
-  try {
-    // disable to avoid duplicate clicks
-    $('publishBtn').textContent = 'Publication...';
-    const { data, error } = await supabase.from("trips").insert(trip);
-    if (error) {
-      alert("Erreur publication : " + (error.message || JSON.stringify(error)));
-    } else {
-      alert("Trajet publié !");
-      document.getElementById("publishForm").reset();
-      document.getElementById("form-container").style.display = "none";
-      await loadTrips();
-    }
-  } finally {
-    publishing = false;
-    $('publishBtn').disabled = false;
-    $('publishBtn').textContent = 'Publier';
-  }
-}
-
-// Confirm reserve (simple confirm then reserve)
-async function confirmReserve(tripId){
-  if(!confirm("Confirmer la réservation de ce trajet ?")) return;
-  await reserve(tripId);
-}
-
-async function reserve(tripId) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return alert("Connecte-toi !");
-
-  // get profile properly
-  const { data: profilData, error: profilError } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profilError) {
-    console.error(profilError);
-    return alert("Impossible de lire ton profil (erreur).");
-  }
-  if (!profilData) {
-    // prompt user to fill profile first
-    alert("Complète ton profil avant de réserver.");
-    $('profile_nom').value = '';
-    $('profile_prenom').value = '';
-    $('profile_surns').value = '';
-    $('profile_fams').value = '';
-    $('profile_promo').value = '';
-    $('profileEmail').textContent = user.email;
-    openProfile();
-    return;
-  }
-
-  const { data, error } = await supabase.rpc("reserve_trip", {
-    p_trip_id: tripId,
-    p_user_id: user.id,
-    p_nom: profilData.nom,
-    p_prenom: profilData.prenom,
-    p_surns: profilData.surns,
-    p_fams: profilData.fams,
-    p_promo: profilData.promo
-  });
-
-  if (error) return alert(error.details || error.message || JSON.stringify(error));
-  if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
-
-  alert("Réservation confirmée !");
-  loadTrips();
-  loadMyReservation();
-}
-
+/* Can view reservations (owner or admin) */
 async function canViewReservations(t) {
   if (adminMode) return true;
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-
   return user.id === t.owner;
 }
 
+/* View reservations for a trip */
 async function viewReservations(tripId) {
   const { data, error } = await supabase
     .from("reservations")
@@ -950,7 +831,6 @@ async function viewReservations(tripId) {
     .eq("trip_id", tripId);
 
   if (error) return alert(error.message);
-
   if (!data || data.length === 0) return alert("Aucun réservant.");
 
   let msg = "Réservants :\n\n";
@@ -961,13 +841,10 @@ async function viewReservations(tripId) {
   alert(msg);
 }
 
-/* CHANGEMENT ADMIN : permettre à un admin (mode activé) de supprimer n'importe quel trajet.
-   Toujours vérifier côté serveur / RLS dans la base pour la sécurité : ici c'est UI + suppression DB.
-*/
+/* Supprimer trajet (admin/ui) */
 async function deleteTrip(id) {
   if (!confirm("Supprimer ce trajet ?")) return;
 
-  // ensure current user is owner OR adminMode is true
   const { data: { user } } = await supabase.auth.getUser();
   if (!user && !adminMode) return alert("Connecte-toi !");
 
@@ -987,57 +864,169 @@ async function deleteTrip(id) {
   alert("Trajet supprimé !");
   loadTrips();
 }
-/* fin CHANGEMENT ADMIN */
 
-// Admin activation only toggles UI; actual DB admin requires Supabase service role (not included here)
-function activateAdmin(){
-    adminMode = $('adminKey').value === ADMIN_PASS;
-    $('adminStatus').textContent = adminMode ? 'Accès admin (UI seulement)' : 'Mot de passe incorrect';
-    loadTrips();
+/* ---------------------------------------------------
+   Création d'un élément trajet (DOM)
+--------------------------------------------------- */
+async function createTrajetElement(t, i) {
+  const d = document.createElement('div');
+  d.className = 'trajet';
+
+  // Bandeau
+  if (isEnCours(t.datetime)) {
+    const b = document.createElement('div');
+    b.className = 'bandeau';
+    b.textContent = 'EN COURS';
+    d.appendChild(b);
+  } else if (t.places <= 0) {
+    const b = document.createElement('div');
+    b.className = 'bandeau';
+    b.textContent = 'PLEIN';
+    d.appendChild(b);
+  } else if (isExpired(t.datetime)) {
+    const b = document.createElement('div');
+    b.className = 'bandeau';
+    b.textContent = 'EXPIRÉ';
+    b.style.background = '#6c6c6c';
+    d.appendChild(b);
+  }
+
+  // Info
+  const info = document.createElement('div');
+  info.className = 'trajet-info';
+  info.innerHTML = `
+    <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
+    <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
+    <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
+    <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
+    <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
+  `;
+
+  if (t.description && String(t.description).trim() !== '') {
+    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'action-buttons';
+
+  // user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // check reservation for current user
+  let reserved = false;
+  let myRes = null;
+  if (user) {
+    const res = await supabase
+      .from("reservations")
+      .select("*")
+      .eq("trip_id", t.id)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    myRes = res.data;
+    reserved = !!res.data;
+  }
+
+  // admin delete
+  if (adminMode) {
+    const del = document.createElement('button');
+    del.className = 'delete-btn';
+    del.textContent = 'Supprimer';
+    del.addEventListener('click', () => deleteTrip(t.id));
+    actions.appendChild(del);
+  }
+
+  // Annuler / Réserver
+  if (reserved) {
+    const un = document.createElement('button');
+    un.className = 'btn';
+    un.textContent = 'Annuler';
+    un.addEventListener('click', () => cancelReservation(myRes.id));
+    actions.appendChild(un);
+  } else if (t.places > 0 && !isEnCours(t.datetime) && !isExpired(t.datetime)) {
+    const resBtn = document.createElement('button');
+    resBtn.className = 'btn';
+    resBtn.textContent = 'Réserver';
+    resBtn.addEventListener('click', () => confirmReserve(t.id));
+    actions.appendChild(resBtn);
+  } else {
+    const disabled = document.createElement('button');
+    disabled.className = 'btn btn-disabled';
+    disabled.textContent = 'Réserver';
+    disabled.setAttribute('aria-disabled','true');
+    actions.appendChild(disabled);
+  }
+
+  // Voir les réservations
+  const maySee = await canViewReservations(t);
+  if (maySee) {
+    const btnRes = document.createElement('button');
+    btnRes.className = 'btn';
+    btnRes.textContent = 'Réservations';
+    btnRes.addEventListener('click', () => viewReservations(t.id));
+    actions.appendChild(btnRes);
+  } else {
+    const btnRes = document.createElement('button');
+    btnRes.className = 'btn btn-disabled';
+    btnRes.textContent = 'Réservations';
+    btnRes.setAttribute('aria-disabled', 'true');
+    actions.appendChild(btnRes);
+  }
+
+  d.appendChild(info);
+  d.appendChild(actions);
+
+  return d;
 }
 
-// Escape HTML for safety
-function escapeHTML(str){ if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+/* ---------------------------------------------------
+   ADMIN UI
+--------------------------------------------------- */
+function activateAdmin(){
+  adminMode = $("adminKey").value === "Error404trads";
+  $("adminStatus").textContent = adminMode ? "Accès admin (UI seulement)" : "Mot de passe incorrect";
+  loadTrips();
+}
 
-/* PROFILE HANDLING: ensure profile exists, if not prompt user to fill it. Also allow to edit.
-   CHANGEMENT : on préremplit aussi le formulaire de publication si le profil existe.
-*/
+/* ---------------------------------------------------
+   ESCAPE HTML
+--------------------------------------------------- */
+function escapeHTML(str){ if(!str && str !== 0) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+
+/* ---------------------------------------------------
+   PROFILE (ensure / save)
+--------------------------------------------------- */
 async function ensureProfilePresent(user){
   if (!user) return;
-  // try to read profile
   const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
   if (error) {
     console.error('profile read error', error);
     return;
   }
   if (!profile) {
-    // prompt the user to fill it
-    $('profileEmail').textContent = user.email;
-    $('profile_nom').value = '';
-    $('profile_prenom').value = '';
-    $('profile_surns').value = '';
-    $('profile_fams').value = '';
-    $('profile_promo').value = '';
+    $("profileEmail").textContent = user.email;
+    $("profile_nom").value = '';
+    $("profile_prenom").value = '';
+    $("profile_surns").value = '';
+    $("profile_fams").value = '';
+    $("profile_promo").value = '';
     openProfile();
   } else {
-    // fill local fields for editing
-    $('profile_nom').value = profile.nom || '';
-    $('profile_prenom').value = profile.prenom || '';
-    $('profile_surns').value = profile.surns || '';
-    $('profile_fams').value = profile.fams || '';
-    $('profile_promo').value = profile.promo || '';
+    $("profile_nom").value = profile.nom || '';
+    $("profile_prenom").value = profile.prenom || '';
+    $("profile_surns").value = profile.surns || '';
+    $("profile_fams").value = profile.fams || '';
+    $("profile_promo").value = profile.promo || '';
 
-    // CHANGEMENT: préremplissage du formulaire de publication
-    if (!document.getElementById('nom').value) document.getElementById('nom').value = profile.nom || '';
-    if (!document.getElementById('prenom').value) document.getElementById('prenom').value = profile.prenom || '';
-    if (!document.getElementById('surns_pub').value) document.getElementById('surns_pub').value = profile.surns || '';
-    if (!document.getElementById('fams_pub').value) document.getElementById('fams_pub').value = profile.fams || '';
-    if (!document.getElementById('promo').value) document.getElementById('promo').value = profile.promo || '';
-    /* fin CHANGEMENT */
+    if (!$("nom").value) $("nom").value = profile.nom || '';
+    if (!$("prenom").value) $("prenom").value = profile.prenom || '';
+    if (!$("surns_pub").value) $("surns_pub").value = profile.surns || '';
+    if (!$("fams_pub").value) $("fams_pub").value = profile.fams || '';
+    if (!$("promo").value) $("promo").value = profile.promo || '';
   }
 }
 
-// save profile (upsert)
 async function saveProfile(e) {
   if (e && e.preventDefault) e.preventDefault();
 
@@ -1047,11 +1036,11 @@ async function saveProfile(e) {
   }
   const user = getUser.data.user;
 
-  const nom = $('profile_nom').value.trim();
-  const prenom = $('profile_prenom').value.trim();
-  const surns = $('profile_surns').value.trim();
-  const fams = $('profile_fams').value.trim();
-  const promo = $('profile_promo').value;
+  const nom = $("profile_nom").value.trim();
+  const prenom = $("profile_prenom").value.trim();
+  const surns = $("profile_surns").value.trim();
+  const fams = $("profile_fams").value.trim();
+  const promo = $("profile_promo").value;
 
   if (!nom || !prenom) return alert("Nom et prénom requis.");
 
@@ -1074,50 +1063,30 @@ async function saveProfile(e) {
   alert("Profil enregistré !");
   closeProfile();
 
-  // Mise à jour du formulaire de publication si vide
-  if ($('nom').value === '') $('nom').value = nom;
-  if ($('prenom').value === '') $('prenom').value = prenom;
-  if ($('surns_pub').value === '') $('surns_pub').value = surns;
-  if ($('fams_pub').value === '') $('fams_pub').value = fams;
-  if ($('promo').value === '') $('promo').value = promo;
+  if ($("nom").value === '') $("nom").value = nom;
+  if ($("prenom").value === '') $("prenom").value = prenom;
+  if ($("surns_pub").value === '') $("surns_pub").value = surns;
+  if ($("fams_pub").value === '') $("fams_pub").value = fams;
+  if ($("promo").value === '') $("promo").value = promo;
 
   loadTrips();
   loadMyReservation();
 }
 
-</script>
-</body>
-</html>
+/* ---------------------------------------------------
+   LIAISONS ÉVÉNEMENTIELLES (boutons principaux)
+--------------------------------------------------- */
+document.getElementById("loginBtn").addEventListener("click", login);
+document.getElementById("logoutBtn").addEventListener("click", logout);
+document.getElementById("openProfileBtn").addEventListener("click", openProfile);
+document.getElementById("closeProfileBtn").addEventListener("click", closeProfile);
+document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
+document.getElementById("toggleFormBtn").addEventListener("click", toggleForm);
+document.getElementById("publishBtn").addEventListener("click", publishTrip);
+document.getElementById("searchBtn").addEventListener("click", loadTrips);
+document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
+document.getElementById("activateAdminBtn").addEventListener("click", activateAdmin);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* ---------------------------------------------------
+   FIN DU SCRIPT
+--------------------------------------------------- */
