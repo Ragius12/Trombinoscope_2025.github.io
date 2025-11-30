@@ -330,63 +330,20 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 </div> <!-- container -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-			  const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
-			  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"; 
-			  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(
+  "https://wwjsqkktwxciyvzoisyz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+);
 
-			  // small helpers
-			  const $ = id => document.getElementById(id);
-
-(async function handleAuthCallback() {
-  try {
-    const hasHashTokens = window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('refresh_token'));
-    const hasQueryCode = window.location.search && (window.location.search.includes('type=') || window.location.search.includes('code='));
-
-    if (hasHashTokens || hasQueryCode) {
-
-      // Try SDK helper
-      if (typeof supabase.auth.getSessionFromUrl === 'function') {
-        try {
-          const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
-          if (error) console.warn('getSessionFromUrl error', error);
-          else console.info('Session récupérée via getSessionFromUrl', data);
-        } catch (err) {
-          console.warn('getSessionFromUrl threw', err);
-        }
-      } else {
-        // Fallback manual parsing
-        try {
-          const fragment = window.location.hash.replace('#', '?');
-          const params = Object.fromEntries(new URLSearchParams(fragment));
-          if (params.access_token && params.refresh_token) {
-            await supabase.auth.setSession({
-              access_token: params.access_token,
-              refresh_token: params.refresh_token
-            });
-            console.info('Session définie via setSession (fallback).');
-          }
-        } catch (err) {
-          console.warn('Fallback parsing error', err);
-        }
-      }
-
-      // Nettoyer URL
-      try {
-        const clean = location.pathname + location.search;
-        history.replaceState(null, '', clean);
-      } catch (err) {
-        console.warn('Impossible de nettoyer l\'URL', err);
-      }
-    }
-  } catch (e) {
-    console.error('handleAuthCallback error', e);
+(async () => {
+  // IMPORTANT : gérer le retour du magic link
+  const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+  if (!error) {
+    // nettoyer l’URL
+    history.replaceState({}, "", window.location.pathname);
   }
-
-  // IMPORTANT
-  window.__authReady = true;
-
 })();
 	
 			async function login() {
@@ -1095,6 +1052,7 @@ async function saveProfile(e){
 </script>
 </body>
 </html>
+
 
 
 
