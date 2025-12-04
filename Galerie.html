@@ -193,14 +193,11 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 <!-- Login area -->
 <div id="loginArea" class="card" style="text-align:center;">
-  <div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:auto;">
-  <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
-  <input id="password" class="login-input" placeholder="Mot de passe" type="password" aria-label="password">
-  <div style="display:flex;justify-content:space-between;gap:10px;">
-    <button id="loginBtn" class="login-btn" style="flex:1">Se connecter</button>
-    <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
+  <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
+    <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
+    <button id="loginBtn" class="login-btn">Se connecter</button>
   </div>
-  <div class="small-muted">Connexion simplifiée : utilisez votre adresse <b>@ensam.eu</b></div>
+  <div class="small-muted">Connexion simplifiée : utilisez votre adresse <b>@ensam.eu</b>. Un lien de connexion sera envoyé.</div>
 </div>
 
 <div id="publishArea" class="card" style="display:none;">
@@ -430,38 +427,37 @@ async function initApp() {
  document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- AUTH ---------- */
-  // --- LOGIN EXISTANT ---
-async function login() {
-  const email = el("email").value.trim().toLowerCase();
-  const password = el("password") ? el("password").value : "";
+  async function login() {
+    try {
+      const emailEl = el("email");
+      const email = emailEl ? emailEl.value.trim().toLowerCase() : "";
+      if (!email) return alert("Entre ton email.");
+      if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
 
-  if (!email) return alert("Entre ton email.");
-  if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+      const btn = el("loginBtn");
+      if (btn) btn.disabled = true;
 
-  if (!password) return alert("Merci d’entrer le mot de passe.");
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html" }
+      });
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    alert("Connexion impossible : " + error.message);
-  } else {
-    alert("Connecté !");
-    await initApp(); // recharge l'UI
+      if (btn) btn.disabled = false;
+      if (error) alert(error.message);
+      else alert("Lien envoyé ! Vérifie ta boîte mail.");
+    } catch (err) {
+      console.error("login error", err);
+      alert("Erreur lors de la tentative de connexion.");
+    }
   }
-}
 
-// --- SIGNUP ---
-async function signup() {
-  const email = el("email").value.trim().toLowerCase();
-  const password = el("password") ? el("password").value : "";
-
-  if (!email || !password) return alert("Entre ton email et un mot de passe.");
-  if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
-
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return alert("Inscription impossible : " + error.message);
-  alert("Inscription réussie ! Tu peux maintenant te connecter.");
-}
-
+  async function logout() {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error("logout error", err);
+    }
+  }
 
   /* ---------- Profile modal ---------- */
   function openProfile() {
@@ -1041,38 +1037,115 @@ async function signup() {
   function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
   /* ---------- profile ---------- */
- async function ensureProfilePresent(user) {
+  async function ensureProfilePresent(user) {
   if (!user) return;
 
   try {
+    // Lecture ultra-sécurisée du profil
     const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
       .maybeSingle();
 
-    if (error) { console.error("Erreur profiles :", error); return; }
-
-    if (profile) {
-      // Profil existant → remplir formulaire publication
-      autofillPublishForm(profile);
-      // Afficher email connecté
-      if (el("userEmail")) el("userEmail").textContent = user.email;
+    // En cas d'erreur SQL → fallback propre
+    if (error) {
+      console.error("Erreur Supabase profiles:", error);
       return;
     }
 
-    // Profil inexistant → création minimale et ouverture modal
-    const newProfile = { id: user.id, nom:"", prenom:"", surns:"", fams:"", promo:"", password_hash:null };
-    const { error: insertErr } = await supabase.from("profiles").insert(newProfile);
-    if (insertErr) { console.error("Erreur création profil :", insertErr); return; }
+    // 👍 Profil trouvé → on remplit les champs + on connecte
+    if (profile) {
+      autofillPublishForm(profile);
+      return;
+    }
 
-    // ouvrir le modal pour compléter profil
+    // ❗ Profil manquant → création automatique minimale
+    const newProfile = {
+      id: user.id,
+      nom: "",
+      prenom: "",
+      surns: "",
+      fams: "",
+      promo: ""
+    };
+
+    const { error: insertErr } = await supabase
+      .from('profiles')
+      .insert(newProfile);
+
+    if (insertErr) {
+      console.error("Erreur création auto profil :", insertErr);
+      return;
+    }
+
+    // Afficher le modal pour compléter les infos
     openProfile();
-    if (el("userEmail")) el("userEmail").textContent = user.email;
 
-  } catch (err) { console.error("ensureProfilePresent fatal:", err); }
+  } catch (err) {
+    console.error("ensureProfilePresent - fatal error:", err);
+  }
 }
 
+// Remplit automatiquement le formulaire de publication
+function autofillPublishForm(profile) {
+  if (el("nom") && !el("nom").value) el("nom").value = profile.nom || "";
+  if (el("prenom") && !el("prenom").value) el("prenom").value = profile.prenom || "";
+  if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = profile.surns || "";
+  if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = profile.fams || "";
+  if (el("promo") && !el("promo").value) el("promo").value = profile.promo || "";
+}
+
+
+  async function saveProfile(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    try {
+      const getUser = await supabase.auth.getUser();
+      if (!getUser || !getUser.data || !getUser.data.user) {
+        return alert("Connecte-toi !");
+      }
+      const user = getUser.data.user;
+
+      const nom = el("profile_nom") ? el("profile_nom").value.trim() : "";
+      const prenom = el("profile_prenom") ? el("profile_prenom").value.trim() : "";
+      const surns = el("profile_surns") ? el("profile_surns").value.trim() : "";
+      const fams = el("profile_fams") ? el("profile_fams").value.trim() : "";
+      const promo = el("profile_promo") ? el("profile_promo").value : "";
+
+      if (!nom || !prenom) return alert("Nom et prénom requis.");
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          nom,
+          prenom,
+          surns,
+          fams,
+          promo
+        }, { returning: 'minimal' });
+
+      if (error) {
+        console.error("Erreur saveProfile:", error);
+        return alert("Impossible d'enregistrer le profil : " + error.message);
+      }
+
+      alert("Profil enregistré !");
+      closeProfile();
+
+      if (el("nom") && el("nom").value === '') el("nom").value = nom;
+      if (el("prenom") && el("prenom").value === '') el("prenom").value = prenom;
+      if (el("surns_pub") && el("surns_pub").value === '') el("surns_pub").value = surns;
+      if (el("fams_pub") && el("fams_pub").value === '') el("fams_pub").value = fams;
+      if (el("promo") && el("promo").value === '') el("promo").value = promo;
+
+      await loadTrips();
+      await loadMyReservation();
+    } catch (err) {
+      console.error("saveProfile error:", err);
+      alert("Erreur en sauvegardant le profil (voir console).");
+    }
+  }
 
   /* ---------- Liaisons évènementielles - safe attach ---------- */
   function safeOn(id, event, handler) {
@@ -1082,12 +1155,15 @@ async function signup() {
   }
 
   safeOn("loginBtn", "click", login);
-safeOn("signupBtn", "click", signup);
-safeOn("logoutBtn", "click", logout);
-safeOn("openProfileBtn", "click", openProfile);
-safeOn("closeProfileBtn", "click", closeProfile);
-safeOn("saveProfileBtn", "click", saveProfile);
-
+  safeOn("logoutBtn", "click", logout);
+  safeOn("openProfileBtn", "click", openProfile);
+  safeOn("closeProfileBtn", "click", closeProfile);
+  safeOn("saveProfileBtn", "click", saveProfile);
+  safeOn("toggleFormBtn", "click", toggleForm);
+  safeOn("publishBtn", "click", publishTrip);
+  safeOn("searchBtn", "click", loadTrips);
+  safeOn("resetFiltersBtn", "click", resetFilters);
+  safeOn("activateAdminBtn", "click", activateAdmin);
 
   // expose minimal debug helpers (optional)
   window.__app_debug = {
@@ -1097,8 +1173,6 @@ safeOn("saveProfileBtn", "click", saveProfile);
 
 })(); // fin IIFE
 </script>
-
-
 
 
 
