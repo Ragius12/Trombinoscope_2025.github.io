@@ -193,12 +193,14 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 <!-- Login area -->
 <div id="loginArea" class="card" style="text-align:center;">
-  <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
-    <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
-    <input id="profile_password" placeholder="Mot de passe" type="password" required>
-    <button id="loginBtn" class="login-btn">Se connecter</button>
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:auto;">
+  <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
+  <input id="password" class="login-input" placeholder="Mot de passe" type="password" aria-label="password">
+  <div style="display:flex;justify-content:space-between;gap:10px;">
+    <button id="loginBtn" class="login-btn" style="flex:1">Se connecter</button>
+    <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
   </div>
-  <div class="small-muted">Connexion simplifiée : utilisez votre adresse <b>@ensam.eu</b>. Un lien de connexion sera envoyé.</div>
+  <div class="small-muted">Connexion simplifiée : utilisez votre adresse <b>@ensam.eu</b></div>
 </div>
 
 <div id="publishArea" class="card" style="display:none;">
@@ -428,54 +430,38 @@ async function initApp() {
  document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- AUTH ---------- */
-  async function login() {
-  const email = el("email").value.toLowerCase().trim();
+  // --- LOGIN EXISTANT ---
+async function login() {
+  const email = el("email").value.trim().toLowerCase();
   const password = el("password") ? el("password").value : "";
 
-  if (!email) {
-    alert("Merci d’entrer votre email.");
-    return;
-  }
+  if (!email) return alert("Entre ton email.");
+  if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
 
-  // 1) TENTATIVE CONNEXION MOT DE PASSE
-  if (password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+  if (!password) return alert("Merci d’entrer le mot de passe.");
 
-    if (!error) {
-      console.log("Connexion réussie via mot de passe");
-      return;
-    } else {
-      console.warn("Mot de passe incorrect :", error.message);
-      alert("Mot de passe incorrect. Essaie le lien envoyé par email.");
-    }
-  }
-
-  // 2) SINON → fallback OTP (1ère connexion)
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: window.location.href
-    }
-  });
-
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    alert("Erreur OTP : " + error.message);
+    alert("Connexion impossible : " + error.message);
   } else {
-    alert("Lien envoyé par email !");
+    alert("Connecté !");
+    await initApp(); // recharge l'UI
   }
 }
 
+// --- SIGNUP ---
+async function signup() {
+  const email = el("email").value.trim().toLowerCase();
+  const password = el("password") ? el("password").value : "";
 
-  async function logout() {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error("logout error", err);
-    }
-  }
+  if (!email || !password) return alert("Entre ton email et un mot de passe.");
+  if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) return alert("Inscription impossible : " + error.message);
+  alert("Inscription réussie ! Tu peux maintenant te connecter.");
+}
+
 
   /* ---------- Profile modal ---------- */
   function openProfile() {
@@ -1055,7 +1041,7 @@ async function initApp() {
   function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
   /* ---------- profile ---------- */
-  async function ensureProfilePresent(user) {
+ async function ensureProfilePresent(user) {
   if (!user) return;
 
   try {
@@ -1065,108 +1051,28 @@ async function initApp() {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (error) {
-      console.error("Erreur profiles :", error);
-      return;
-    }
+    if (error) { console.error("Erreur profiles :", error); return; }
 
-    // PROFIL EXISTANT → remplir les champs automatiquement
     if (profile) {
+      // Profil existant → remplir formulaire publication
       autofillPublishForm(profile);
+      // Afficher email connecté
+      if (el("userEmail")) el("userEmail").textContent = user.email;
       return;
     }
 
-    // PROFIL MANQUANT → création automatique minimale
-    const newProfile = {
-      id: user.id,
-      nom: "",
-      prenom: "",
-      surns: "",
-      fams: "",
-      promo: "",
-      password_hash: null
-    };
+    // Profil inexistant → création minimale et ouverture modal
+    const newProfile = { id: user.id, nom:"", prenom:"", surns:"", fams:"", promo:"", password_hash:null };
+    const { error: insertErr } = await supabase.from("profiles").insert(newProfile);
+    if (insertErr) { console.error("Erreur création profil :", insertErr); return; }
 
-    const { error: insertErr } = await supabase
-      .from("profiles")
-      .insert(newProfile);
-
-    if (insertErr) {
-      console.error("Erreur création profil :", insertErr);
-      return;
-    }
-
-    // Ouvrir le modal pour compléter
+    // ouvrir le modal pour compléter profil
     openProfile();
+    if (el("userEmail")) el("userEmail").textContent = user.email;
 
-  } catch (err) {
-    console.error("ensureProfilePresent - fatal:", err);
-  }
+  } catch (err) { console.error("ensureProfilePresent fatal:", err); }
 }
 
-
-// Remplit automatiquement le formulaire de publication
-function autofillPublishForm(profile) {
-  if (el("nom") && !el("nom").value) el("nom").value = profile.nom || "";
-  if (el("prenom") && !el("prenom").value) el("prenom").value = profile.prenom || "";
-  if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = profile.surns || "";
-  if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = profile.fams || "";
-  if (el("promo") && !el("promo").value) el("promo").value = profile.promo || "";
-}
-
-
-  async function saveProfile() {
-  const user = (await supabase.auth.getUser()).data.user;
-  if (!user) {
-    alert("Non connecté.");
-    return;
-  }
-
-  const nom = el("profile_nom").value.trim();
-  const prenom = el("profile_prenom").value.trim();
-  const surns = el("profile_surns").value.trim();
-  const fams = el("profile_fams").value.trim();
-  const promo = el("profile_promo").value.trim();
-  const password = el("profile_password") ? el("profile_password").value : "";
-
-  if (!nom || !prenom) {
-    alert("Merci de remplir nom + prénom.");
-    return;
-  }
-
-  // 1) ENREGISTRER PROFIL DANS "profiles"
-  const { error: saveErr } = await supabase
-    .from("profiles")
-    .upsert({
-      id: user.id,
-      nom,
-      prenom,
-      surns,
-      fams,
-      promo,
-      password_hash: password ? password : null
-    });
-
-  if (saveErr) {
-    alert("Erreur lors de la sauvegarde du profil : " + saveErr.message);
-    return;
-  }
-
-  // 2) SI L'UTILISATEUR A CHOISI UN MOT DE PASSE → on met à jour Auth
-  if (password) {
-    const { error: passErr } = await supabase.auth.updateUser({
-      password: password
-    });
-
-    if (passErr) {
-      alert("Erreur enregistrement du mot de passe Auth : " + passErr.message);
-      return;
-    }
-  }
-
-  alert("Profil enregistré !");
-  closeProfile();
-}
 
   /* ---------- Liaisons évènementielles - safe attach ---------- */
   function safeOn(id, event, handler) {
@@ -1176,15 +1082,12 @@ function autofillPublishForm(profile) {
   }
 
   safeOn("loginBtn", "click", login);
-  safeOn("logoutBtn", "click", logout);
-  safeOn("openProfileBtn", "click", openProfile);
-  safeOn("closeProfileBtn", "click", closeProfile);
-  safeOn("saveProfileBtn", "click", saveProfile);
-  safeOn("toggleFormBtn", "click", toggleForm);
-  safeOn("publishBtn", "click", publishTrip);
-  safeOn("searchBtn", "click", loadTrips);
-  safeOn("resetFiltersBtn", "click", resetFilters);
-  safeOn("activateAdminBtn", "click", activateAdmin);
+safeOn("signupBtn", "click", signup);
+safeOn("logoutBtn", "click", logout);
+safeOn("openProfileBtn", "click", openProfile);
+safeOn("closeProfileBtn", "click", closeProfile);
+safeOn("saveProfileBtn", "click", saveProfile);
+
 
   // expose minimal debug helpers (optional)
   window.__app_debug = {
@@ -1194,6 +1097,7 @@ function autofillPublishForm(profile) {
 
 })(); // fin IIFE
 </script>
+
 
 
 
