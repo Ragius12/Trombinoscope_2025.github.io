@@ -342,8 +342,9 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 </script>
 
 <script>
+    console.log("FULL URL BEFORE:", window.location.href);
+    /* ------------------------------
     console.log("URL:", window.location.href);
-/* ------------------------------
    JS encapsulé (IIFE) - ne pollue pas global
    Corrige les crashs bloquants et protège le $ global (jQuery)
    ------------------------------ */
@@ -1143,6 +1144,7 @@ async function initApp() {
 
 })(); // fin IIFE
 </script>
+
 
 
 
