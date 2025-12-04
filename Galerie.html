@@ -1037,36 +1037,65 @@ async function initApp() {
   function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
   /* ---------- profile ---------- */
-  async function ensureProfilePresent(user){
-    try {
-      if (!user) return;
-      const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-      if (error) { console.error('profile read error', error); return; }
-      if (!profile) {
-        if (el("profileEmail")) el("profileEmail").textContent = user.email;
-        if (el("profile_nom")) el("profile_nom").value = '';
-        if (el("profile_prenom")) el("profile_prenom").value = '';
-        if (el("profile_surns")) el("profile_surns").value = '';
-        if (el("profile_fams")) el("profile_fams").value = '';
-        if (el("profile_promo")) el("profile_promo").value = '';
-        openProfile();
-      } else {
-        if (el("profile_nom")) el("profile_nom").value = profile.nom || '';
-        if (el("profile_prenom")) el("profile_prenom").value = profile.prenom || '';
-        if (el("profile_surns")) el("profile_surns").value = profile.surns || '';
-        if (el("profile_fams")) el("profile_fams").value = profile.fams || '';
-        if (el("profile_promo")) el("profile_promo").value = profile.promo || '';
+  async function ensureProfilePresent(user) {
+  if (!user) return;
 
-        if (el("nom") && !el("nom").value) el("nom").value = profile.nom || '';
-        if (el("prenom") && !el("prenom").value) el("prenom").value = profile.prenom || '';
-        if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = profile.surns || '';
-        if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = profile.fams || '';
-        if (el("promo") && !el("promo").value) el("promo").value = profile.promo || '';
-      }
-    } catch (err) {
-      console.error("ensureProfilePresent error:", err);
+  try {
+    // Lecture ultra-sécurisée du profil
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    // En cas d'erreur SQL → fallback propre
+    if (error) {
+      console.error("Erreur Supabase profiles:", error);
+      return;
     }
+
+    // 👍 Profil trouvé → on remplit les champs + on connecte
+    if (profile) {
+      autofillPublishForm(profile);
+      return;
+    }
+
+    // ❗ Profil manquant → création automatique minimale
+    const newProfile = {
+      id: user.id,
+      nom: "",
+      prenom: "",
+      surns: "",
+      fams: "",
+      promo: ""
+    };
+
+    const { error: insertErr } = await supabase
+      .from('profiles')
+      .insert(newProfile);
+
+    if (insertErr) {
+      console.error("Erreur création auto profil :", insertErr);
+      return;
+    }
+
+    // Afficher le modal pour compléter les infos
+    openProfile();
+
+  } catch (err) {
+    console.error("ensureProfilePresent - fatal error:", err);
   }
+}
+
+// Remplit automatiquement le formulaire de publication
+function autofillPublishForm(profile) {
+  if (el("nom") && !el("nom").value) el("nom").value = profile.nom || "";
+  if (el("prenom") && !el("prenom").value) el("prenom").value = profile.prenom || "";
+  if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = profile.surns || "";
+  if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = profile.fams || "";
+  if (el("promo") && !el("promo").value) el("promo").value = profile.promo || "";
+}
+
 
   async function saveProfile(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -1144,6 +1173,7 @@ async function initApp() {
 
 })(); // fin IIFE
 </script>
+
 
 
 
