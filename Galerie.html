@@ -347,7 +347,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
    JS encapsulé (IIFE) - ne pollue pas global
    Corrige les crashs bloquants et protège le $ global (jQuery)
    ------------------------------ */
-(function(){
+(async function(){
   const el = (id) => document.getElementById(id);
 
   // Attendre que Supabase module soit chargé
@@ -1143,6 +1143,7 @@ async function initApp() {
 
 })(); // fin IIFE
 </script>
+
 
 
 
