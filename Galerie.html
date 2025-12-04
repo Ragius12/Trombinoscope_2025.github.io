@@ -348,17 +348,22 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
    Corrige les crashs bloquants et protège le $ global (jQuery)
    ------------------------------ */
 (function(){
-  // alias local pour getElementById (n'écrase pas window.$ / jQuery)
   const el = (id) => document.getElementById(id);
 
-/* ----------
-  const supabase = window.supabase.createClient(
-    "https://wwjsqkktwxciyvzoisyz.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
-  );
- ---------- */
+  // Attendre que Supabase module soit chargé
+  async function waitForSupabase() {
+    return new Promise(resolve => {
+      const check = () => {
+        if (window.supabase && window.supabase.auth) resolve();
+        else setTimeout(check, 30);
+      };
+      check();
+    });
+  }
 
-const supabase = window.supabase;
+  // IMPORTANT : attendre AVANT d'utiliser supabase
+  await waitForSupabase();
+  const supabase = window.supabase;
     
   let adminMode = false;
   window.__authReady = false;
@@ -1138,6 +1143,7 @@ async function initApp() {
 
 })(); // fin IIFE
 </script>
+
 
 
 
