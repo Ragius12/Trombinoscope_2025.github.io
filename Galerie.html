@@ -195,8 +195,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <!-- Login area (remplacé : email + password + login/signup distincts) -->
 <div id="loginArea" class="card" style="text-align:center;">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:420px;margin:auto;">
-    <input id="email" name="email" autocomplete="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
-    <input id="password" name="password" autocomplete="current-password" class="login-input" placeholder="Mot de passe (pour Connexion / Inscription)" type="password" aria-label="password">
+    <input id="email" name="email" autocomplete="email" class="login-input" placeholder="prénom.nom@ensam.eu" type="email" aria-label="email">
+    <input id="password" name="password" autocomplete="current-password" class="login-input" placeholder="Mot de passe" type="password" aria-label="password">
     <div style="display:flex;gap:10px;width:100%;">
       <button id="loginBtn" class="login-btn" style="flex:1">Se connecter</button>
       <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
@@ -212,7 +212,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   </div>
 </div>
   </div>
-  <div class="small-muted">Utilise ton adresse <b>@ensam.eu</b>. Si tu n’as pas de mot de passe, utilise S'inscrire.</div>
+  <div class="small-muted">Utilise ton adresse <b>@ensam.eu</b>. Inscrit toi si cela n'est pas déjà fait. N'oublies pas ton Mot de Passe siteup's, sinon c'est une enlise.</div>
 </div>
 
 
@@ -313,7 +313,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 <!-- Search -->
 <div class="card">
-<h2 class="label-fixed">🔎 Rechercher une destination</h2>
+<h2 class="label-fixed">Rechercher une destination</h2>
 
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px;">
   <select id="searchDest" style="min-width:220px;padding:8px;border-radius:8px;" autocomplete="off">
@@ -473,10 +473,10 @@ async function initApp() {
     if (error) {
       const msg = error.message.toLowerCase();
       if (msg.includes("invalid") || msg.includes("credentials")) {
-        return alert("Identifiant ou mot de passe incorrect.\nEn cas de souci, embrasser à Vespula 84 An225");
+        return alert("Identifiant ou mot de passe incorrect.\nEn cas de soüci, en brasser à Vespula 84 An225 (06 31 49 57 22)");
       }
       if (msg.includes("not found") || msg.includes("user")) {
-        return alert("Adresse non inscrite.\nEn cas de souci, embrasser à Vespula 84 An225");
+        return alert("Adresse non inscrite ! Tu dois d'abord t'inscrire avec ton mail @ensam.eu.\nEn cas de soüci, en brasser à Vespula 84 An225 (06 31 49 57 22)");
       }
       return alert("Erreur : " + error.message);
     }
@@ -1089,23 +1089,14 @@ async function signup() {
         myRes = res.data;
         reserved = !!res.data;
       }
-
-      // admin delete
-      if (adminMode) {
-        const del = document.createElement('button');
-        del.className = 'delete-btn';
-        del.textContent = 'Supprimer';
-        del.addEventListener('click', () => deleteTrip(t.id));
-        actions.appendChild(del);
-      }
-
-        // Suppression par propriétaire
-        if (user && user.id === t.owner) {
-          const delOwner = document.createElement('button');
-          delOwner.className = 'delete-btn';
-          delOwner.textContent = 'Supprimer';
-          delOwner.addEventListener('click', () => deleteTrip(t.id));
-          actions.appendChild(delOwner);
+        
+        // Bouton supprimer fusionné (admin OU propriétaire)
+        if (adminMode || (user && user.id === t.owner)) {
+          const del = document.createElement('button');
+          del.className = 'delete-btn';
+          del.textContent = 'Supprimer';
+          del.addEventListener('click', () => deleteTrip(t.id));
+          actions.appendChild(del);
         }
 
       // Annuler / Réserver
@@ -1492,6 +1483,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
