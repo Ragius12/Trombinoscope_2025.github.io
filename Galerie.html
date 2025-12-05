@@ -41,7 +41,8 @@ body {
 
 header {
     text-align:center; padding:28px 12px 8px;
-    font-family: "Old English Text MT", "Gothic Old English", serif;
+    /* ensure the Old English look on mobile too by using the Google font as fallback */
+    font-family: 'MedievalSharp', "Old English Text MT", "Gothic Old English", serif;
 }
 h1 { font-size:2.4rem; margin:0; letter-spacing:2px; }
 
@@ -194,15 +195,16 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <!-- Login area (remplacé : email + password + login/signup distincts) -->
 <div id="loginArea" class="card" style="text-align:center;">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:420px;margin:auto;">
-    <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
-    <input id="password" class="login-input" placeholder="Mot de passe (pour Connexion / Inscription)" type="password" aria-label="password">
+    <input id="email" name="email" autocomplete="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
+    <input id="password" name="password" autocomplete="current-password" class="login-input" placeholder="Mot de passe (pour Connexion / Inscription)" type="password" aria-label="password">
     <div style="display:flex;gap:10px;width:100%;">
       <button id="loginBtn" class="login-btn" style="flex:1">Se connecter</button>
       <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
     </div>
     <div id="authArea" style="text-align:center; margin-bottom:20px;">
-  <button id="openLoginBtn" class="login-btn">Se connecter</button>
-  <button id="openSignupBtn" class="login-btn">S'inscrire</button>
+  <!-- duplicate UI elements hidden to keep only one logical login/signup in the main flow -->
+  <button id="openLoginBtn" class="login-btn" style="display:none">Se connecter</button>
+  <button id="openSignupBtn" class="login-btn" style="display:none">S'inscrire</button>
   <div id="connectedInfo" style="display:none; margin-top:10px;">
     Connecté comme : <b id="connectedEmail"></b><br>
     <button id="editProfileBtn" class="login-btn">Modifier le profil</button>
@@ -220,7 +222,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
      <div>Connecté : <span id="userEmail" style="font-weight:700"></span></div>
      <div style="display:flex;gap:10px;align-items:center;">
        <button class="btn" id="openProfileBtn">Mon profil</button>
-       <button class="login-btn" id="logoutBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Déconnexion</button>
+       <!-- second logout button kept but unique id so both work -->
+       <button class="login-btn" id="logoutBtnSmall" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Déconnexion</button>
      </div>
    </div>
 </div>
@@ -313,7 +316,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <h2 class="label-fixed">🔎 Rechercher une destination</h2>
 
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px;">
-  <select id="searchDest" style="min-width:220px;padding:8px;border-radius:8px;">
+  <select id="searchDest" style="min-width:220px;padding:8px;border-radius:8px;" autocomplete="off">
       <option value="">Toutes les destinations</option>
       <option>Angers</option><option>Nantes</option><option>Tours</option>
       <option>Paris</option><option>Marseille</option><option>Lyon</option>
@@ -321,8 +324,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       <option>Autre</option>
   </select>
 
-  <input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)">
-  <input id="searchText" placeholder="Recherche libre..." style="flex:1;padding:8px;border-radius:8px;background:rgba(255,255,255,0.04);border:none;color:white;">
+  <input id="searchOther" class="autre-input" placeholder="Autre ville (recherche)" autocomplete="off">
+  <input id="searchText" name="searchText" autocomplete="off" placeholder="Recherche libre..." style="flex:1;padding:8px;border-radius:8px;background:rgba(255,255,255,0.04);border:none;color:white;">
   
   <button class="btn" id="searchBtn">Rechercher</button>
   <button class="btn" id="resetFiltersBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Réinitialiser</button>
@@ -334,7 +337,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <!-- Admin -->
 <div class="card">
   <h2 class="label-fixed">Mode admin</h2>
-  <input type="password" id="adminKey" placeholder="Mot de passe admin">
+  <input type="password" id="adminKey" autocomplete="off" placeholder="Mot de passe admin">
   <button class="btn" id="activateAdminBtn">Activer</button>
   <p id="adminStatus"></p>
 </div>
@@ -352,12 +355,12 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
   window.supabase = createClient(
     "https://wwjsqkktwxciyvzoisyz.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
   );
 </script>
 
 <script>
-    const APP_MAGIC_REDIRECT = "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html";
+    const APP_MAGIC_REDIRECT = window.location.origin + window.location.pathname;
     console.log("FULL URL BEFORE:", window.location.href);
     /* ------------------------------
     console.log("URL:", window.location.href);
@@ -475,7 +478,12 @@ async function initApp() {
       return;
     }
 
-    // 2) sinon, envoyer magic link (OTP)
+    // 2) sinon, demander confirmation AVANT d'envoyer le magic link
+    if (!confirm("Tu n'as pas entré de mot de passe. Souhaites-tu recevoir un lien de connexion par email ?")) {
+      if (btn) btn.disabled = false;
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: APP_MAGIC_REDIRECT } });
     if (btn) btn.disabled = false;
     if (error) alert("Erreur envoi lien : " + error.message);
@@ -511,10 +519,13 @@ async function signup() {
     if (error) {
       console.error("signup error:", error);
 
-      // Si le compte existe déjà, demander de se connecter
+      // Si le compte existe déjà, proposer d'ouvrir la modal de connexion
       const msg = String(error.message || "").toLowerCase();
       if (msg.includes("already") || msg.includes("registered") || msg.includes("user already exists")) {
-        alert("Ce compte existe déjà — connecte-toi (ou utilise \"Mot de passe oublié\").");
+        if (confirm("Ce compte existe déjà — veux-tu te connecter ?")) {
+          const loginModal = el('loginModal');
+          if (loginModal) loginModal.style.display = 'block';
+        }
       } else {
         alert("Inscription impossible : " + error.message);
       }
@@ -1151,7 +1162,7 @@ async function signup() {
   }
 
   /* ---------- escapeHTML ---------- */
-  function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
+  function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>\"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
   /* ---------- profile ---------- */
   async function ensureProfilePresent(user) {
@@ -1277,9 +1288,7 @@ function autofillPublishForm(profile) {
 
   safeOn("loginBtn", "click", login);
   safeOn("logoutBtn", "click", logout);
-  safeOn("logoutBtnSmall", "click", async () => {
-      if (confirm("Confirmer la déconnexion ?")) await logout();
-    });
+  safeOn("logoutBtnSmall", "click", async () => { if (confirm("Confirmer la déconnexion ?")) await logout(); });
   safeOn("openProfileBtn", "click", openProfile);
   safeOn("closeProfileBtn", "click", closeProfile);
   safeOn("openProfileBtnSmall", "click", openProfile);
@@ -1301,14 +1310,14 @@ function autofillPublishForm(profile) {
 /* === AUTH PASSWORD ONLY === */
 
 // MODALS
-function show(id){ document.getElementById(id).style.display = "block"; }
-function hide(id){ document.getElementById(id).style.display = "none"; }
+function show(id){ const n = el(id); if(n) n.style.display = "block"; }
+function hide(id){ const n = el(id); if(n) n.style.display = "none"; }
 
 // LOGIN
 async function loginPassword() {
   try {
-    const email = (document.getElementById("login_email")?.value || "").trim().toLowerCase();
-    const password = document.getElementById("login_password")?.value || "";
+    const email = (el("login_email")?.value || "").trim().toLowerCase();
+    const password = el("login_password")?.value || "";
 
     if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
 
@@ -1326,8 +1335,8 @@ async function loginPassword() {
 // SIGNUP
 async function signupPassword() {
   try {
-    const email = (document.getElementById("signup_email")?.value || "").trim().toLowerCase();
-    const password = document.getElementById("signup_password")?.value || "";
+    const email = (el("signup_email")?.value || "").trim().toLowerCase();
+    const password = el("signup_password")?.value || "";
 
     if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
 
@@ -1354,11 +1363,11 @@ async function signupPassword() {
     if (user && isConfirmed) {
       await supabase.from("profiles").upsert({
         id: user.id,
-        nom: (document.getElementById("signup_nom")?.value || "").trim(),
-        prenom: (document.getElementById("signup_prenom")?.value || "").trim(),
-        surns: (document.getElementById("signup_surns")?.value || "").trim(),
-        fams: (document.getElementById("signup_fams")?.value || "").trim(),
-        promo: (document.getElementById("signup_promo")?.value || "")
+        nom: (el("signup_nom")?.value || "").trim(),
+        prenom: (el("signup_prenom")?.value || "").trim(),
+        surns: (el("signup_surns")?.value || "").trim(),
+        fams: (el("signup_fams")?.value || "").trim(),
+        promo: (el("signup_promo")?.value || "")
       }, { returning: 'minimal' });
     } else {
       console.log("signupPassword: profil non créé (email non confirmé ou pas de user immédiat).");
@@ -1379,11 +1388,11 @@ async function updateProfile() {
     const user = (await supabase.auth.getUser()).data.user;
     if (!user) return alert("Connecte-toi !");
 
-    const nom = (document.getElementById("signup_nom")?.value || "").trim();
-    const prenom = (document.getElementById("signup_prenom")?.value || "").trim();
-    const surns = (document.getElementById("signup_surns")?.value || "").trim();
-    const fams = (document.getElementById("signup_fams")?.value || "").trim();
-    const promo = (document.getElementById("signup_promo")?.value || "");
+    const nom = (el("signup_nom")?.value || "").trim();
+    const prenom = (el("signup_prenom")?.value || "").trim();
+    const surns = (el("signup_surns")?.value || "").trim();
+    const fams = (el("signup_fams")?.value || "").trim();
+    const promo = (el("signup_promo")?.value || "");
 
     const { error } = await supabase
       .from("profiles")
@@ -1424,17 +1433,17 @@ async function initAuthUI() {
   }
 }
 
-// LISTENERS
-openLoginBtn.onclick = () => show("loginModal");
-closeLogin.onclick = () => hide("loginModal");
-doLogin.onclick = loginPassword;
+// LISTENERS (safe) for modal open/close using element lookup
+safeOn('openLoginBtn','click',()=>{ const m = el('loginModal'); if(m) m.style.display='block'; });
+safeOn('closeLogin','click',()=>{ const m = el('loginModal'); if(m) m.style.display='none'; });
+safeOn('doLogin','click', loginPassword);
 
-openSignupBtn.onclick = () => show("signupModal");
-closeSignup.onclick = () => hide("signupModal");
-doSignup.onclick = signupPassword;
+safeOn('openSignupBtn','click',()=>{ const m = el('signupModal'); if(m) m.style.display='block'; });
+safeOn('closeSignup','click',()=>{ const m = el('signupModal'); if(m) m.style.display='none'; });
+safeOn('doSignup','click', signupPassword);
 
-logoutBtn.onclick = logout;
-editProfileBtn.onclick = () => show("signupModal");
+// Make edit profile open the profile modal (was opening signup modal)
+safeOn('editProfileBtn','click', openProfile);
 
 initAuthUI();
 })(); // fin IIFE
@@ -1479,4 +1488,3 @@ initAuthUI();
 
 </body>
 </html>
-
