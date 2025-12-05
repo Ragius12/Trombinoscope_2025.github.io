@@ -486,7 +486,7 @@ async function initApp() {
   } catch (err) {
     console.error("login fatal:", err);
     alert("Erreur lors de la connexion.");
-    el("loginBtn")?.disabled = false;
+    if (el("loginBtn")) el("loginBtn").disabled = false;
   }
 }
 
@@ -1492,5 +1492,6 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
