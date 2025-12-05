@@ -200,10 +200,15 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       <button id="loginBtn" class="login-btn" style="flex:1">Se connecter</button>
       <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
     </div>
-    <div style="display:flex;gap:8px;width:100%;justify-content:center;margin-top:6px;">
-      <button id="openProfileBtnSmall" class="btn" style="display:none">Modifier le profil</button>
-      <button id="logoutBtnSmall" class="login-btn" style="display:none;background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Se déconnecter</button>
-    </div>
+    <div id="authArea" style="text-align:center; margin-bottom:20px;">
+  <button id="openLoginBtn" class="login-btn">Se connecter</button>
+  <button id="openSignupBtn" class="login-btn">S'inscrire</button>
+  <div id="connectedInfo" style="display:none; margin-top:10px;">
+    Connecté comme : <b id="connectedEmail"></b><br>
+    <button id="editProfileBtn" class="login-btn">Modifier le profil</button>
+    <button id="logoutBtn" class="login-btn">Se déconnecter</button>
+  </div>
+</div>
   </div>
   <div class="small-muted">Utilise ton adresse <b>@ensam.eu</b>. Si tu n’as pas de mot de passe, utilise S'inscrire.</div>
 </div>
@@ -1256,28 +1261,144 @@ function autofillPublishForm(profile) {
     reloadTrips: loadTrips
   };
 
+    
+/* === AUTH PASSWORD ONLY === */
+
+// MODALS
+function show(id){ document.getElementById(id).style.display = "block"; }
+function hide(id){ document.getElementById(id).style.display = "none"; }
+
+// LOGIN
+async function loginPassword() {
+  const email = login_email.value.trim().toLowerCase();
+  const password = login_password.value;
+
+  if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return alert("Erreur : " + error.message);
+
+  hide("loginModal");
+  await initAuthUI();
+}
+
+// SIGNUP
+async function signupPassword() {
+  const email = signup_email.value.trim().toLowerCase();
+  const password = signup_password.value;
+
+  if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
+
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) return alert("Erreur : " + error.message);
+
+  await supabase.from("profiles").insert({
+    id: data.user.id,
+    nom: signup_nom.value,
+    prenom: signup_prenom.value,
+    surns: signup_surns.value,
+    fams: signup_fams.value,
+    promo: signup_promo.value
+  });
+
+  alert("Compte créé ! Vérifie ton email.");
+  hide("signupModal");
+}
+
+// EDIT PROFILE
+async function updateProfile() {
+  const user = (await supabase.auth.getUser()).data.user;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      nom: signup_nom.value,
+      prenom: signup_prenom.value,
+      surns: signup_surns.value,
+      fams: signup_fams.value,
+      promo: signup_promo.value
+    })
+    .eq("id", user.id);
+
+  if (error) alert("Erreur profil : " + error.message);
+  else alert("Profil mis à jour !");
+}
+
+// LOGOUT
+async function logout() {
+  if (!confirm("Se déconnecter ?")) return;
+  await supabase.auth.signOut();
+  await initAuthUI();
+}
+
+// UI SELON SESSION
+async function initAuthUI() {
+  const session = (await supabase.auth.getSession()).data.session;
+
+  if (!session) {
+    authArea.style.display = "block";
+    connectedInfo.style.display = "none";
+    return;
+  }
+
+  connectedEmail.textContent = session.user.email;
+
+  authArea.style.display = "none";
+  connectedInfo.style.display = "block";
+}
+
+// LISTENERS
+openLoginBtn.onclick = () => show("loginModal");
+closeLogin.onclick = () => hide("loginModal");
+doLogin.onclick = loginPassword;
+
+openSignupBtn.onclick = () => show("signupModal");
+closeSignup.onclick = () => hide("signupModal");
+doSignup.onclick = signupPassword;
+
+logoutBtn.onclick = logout;
+editProfileBtn.onclick = () => show("signupModal");
+
+initAuthUI();
 })(); // fin IIFE
 </script>
 
+<!-- MODAL LOGIN -->
+<div id="loginModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Connexion</h3>
+    <input id="login_email" class="login-input" type="email" placeholder="email@ensam.eu">
+    <input id="login_password" class="login-input" type="password" placeholder="Mot de passe">
+    <button id="doLogin" class="login-btn">Se connecter</button>
+    <button id="closeLogin" class="login-btn">Fermer</button>
+  </div>
+</div>
 
+<!-- MODAL SIGNUP -->
+<div id="signupModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Inscription</h3>
 
+    <input id="signup_email" class="login-input" type="email" placeholder="email@ensam.eu">
+    <input id="signup_password" class="login-input" type="password" placeholder="Mot de passe">
 
+    <input id="signup_nom" class="login-input" placeholder="Nom">
+    <input id="signup_prenom" class="login-input" placeholder="Prénom">
+    <input id="signup_surns" class="login-input" placeholder="Surnom">
+    <input id="signup_fams" class="login-input" placeholder="Famille">
 
+    <select id="signup_promo" class="login-input">
+      <option value="">Promotion</option>
+      <option value="A1">A1</option>
+      <option value="A2">A2</option>
+      <option value="A3">A3</option>
+      <option value="A4">A4</option>
+    </select>
 
+    <button id="doSignup" class="login-btn">Créer mon compte</button>
+    <button id="closeSignup" class="login-btn">Fermer</button>
+  </div>
+</div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+</body>
+</html>
