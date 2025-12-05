@@ -334,18 +334,18 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 <div id="trajets">Aucune annonce pour le moment.</div>
 </div>
 
+<!-- Reservation -->
+<div id="myReservationArea" class="card" style="display:none;">
+  <h2 class="label-fixed">Ma réservation</h2>
+  <div id="myReservationContent">Aucune réservation active.</div>
+</div>
+    
 <!-- Admin -->
 <div class="card">
   <h2 class="label-fixed">Mode admin</h2>
   <input type="password" id="adminKey" autocomplete="off" placeholder="Mot de passe admin">
   <button class="btn" id="activateAdminBtn">Activer</button>
   <p id="adminStatus"></p>
-</div>
-
-<!-- Reservation -->
-<div id="myReservationArea" class="card" style="display:none;">
-  <h2 class="label-fixed">Ma réservation</h2>
-  <div id="myReservationContent">Aucune réservation active.</div>
 </div>
 
 </div> <!-- container -->
@@ -1159,10 +1159,13 @@ async function signup() {
   function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>\"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
   /* ---------- profile ---------- */
-  async function ensureProfilePresent(user) {
+ async function ensureProfilePresent(user) {
   if (!user) return;
 
   try {
+    // Attendre un peu que Supabase propage le user (évite bug juste après inscription)
+    await new Promise(res => setTimeout(res, 250));
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
@@ -1174,40 +1177,45 @@ async function signup() {
       return;
     }
 
-    // afficher email connecté dans la UI
+    // afficher email connecté
     if (el("userEmail")) el("userEmail").textContent = user.email;
     if (el("profileEmail")) el("profileEmail").textContent = user.email;
 
+    //Cas 1 : profil déjà existant → on remplit le formulaire
     if (profile) {
-      // Remplit le formulaire de publication sans écraser les valeurs existantes
       autofillPublishForm(profile);
       return;
     }
 
-    // Si pas de profil, vérifier si l'email est confirmé AVANT de créer un profil vide
-    // (évite que les profils vides écrasent les infos après refresh)
-    const isConfirmed = !!(user.email_confirmed_at || user.confirmed_at || user.email_confirmed);
+    //Cas 2 : pas de profil → créer un profil vide PUIS ouvrir automatiquement le popup
+    const newProfile = {
+      id: user.id,
+      nom: "",
+      prenom: "",
+      surns: "",
+      fams: "",
+      promo: ""
+    };
 
-    if (!isConfirmed) {
-      // Ne pas créer de profil - demander à l'utilisateur de confirmer son email
-      console.log("Profil absent mais email non confirmé. Demander confirmation avant création du profil.");
-      // Optionnel : afficher un petit message non intrusif
-      // (ne change pas le DOM existant si tu veux garder le style)
+    const { error: insertErr } = await supabase
+      .from('profiles')
+      .insert(newProfile);
+
+    if (insertErr) {
+      console.error("Erreur création profil :", insertErr);
       return;
     }
 
-    // Email confirmé -> créer un profil minimal et ouvrir modal pour compléter
-    const newProfile = { id: user.id, nom: "", prenom: "", surns: "", fams: "", promo: "" };
-    const { error: insertErr } = await supabase.from('profiles').insert(newProfile);
-    if (insertErr) { console.error("Erreur création profil :", insertErr); return; }
+    // ➤ Important : Attendre que les données existent avant d’ouvrir le popup
+    await new Promise(res => setTimeout(res, 150));
 
-    if (el("profileEmail")) el("profileEmail").textContent = user.email;
+    // ➤ On ouvre AUTOMATIQUEMENT la popup profil
     openProfile();
+
   } catch (err) {
     console.error("ensureProfilePresent - fatal error:", err);
   }
 }
-
 
 
 // Remplit automatiquement le formulaire de publication
@@ -1483,6 +1491,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
