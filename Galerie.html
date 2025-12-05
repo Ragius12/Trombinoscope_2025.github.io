@@ -208,7 +208,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   <div id="connectedInfo" style="display:none; margin-top:10px;">
     Connecté comme : <b id="connectedEmail"></b><br>
     <button id="editProfileBtn" class="login-btn">Modifier le profil</button>
-    <button id="logoutBtn" class="login-btn">Se déconnecter</button>
+    <button id="logoutBtnMain" class="login-btn">Se déconnecter</button>
   </div>
 </div>
   </div>
@@ -448,8 +448,8 @@ async function initApp() {
   /* ---------- AUTH ---------- */
  async function login() {
   try {
-    const email = el("email") ? el("email").value.trim().toLowerCase() : "";
-    const password = el("password") ? el("password").value : "";
+    const email = el("email")?.value.trim().toLowerCase() || "";
+    const password = el("password")?.value || "";
 
     if (!email) return alert("Entre ton email.");
     if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
@@ -457,42 +457,36 @@ async function initApp() {
     const btn = el("loginBtn");
     if (btn) btn.disabled = true;
 
-    // 1) si mot de passe fourni -> signInWithPassword
-    if (password) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (btn) btn.disabled = false;
-      if (error) {
-        console.warn("signInWithPassword err:", error);
-
-        // Si l'erreur indique que l'utilisateur n'existe pas ou n'a pas de mot de passe,
-        // proposer un magic link (fallback)
-        if (confirm("Mot de passe incorrect ou problème de connexion. Souhaites-tu recevoir un lien de connexion par email ?")) {
-          const { error: otpErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: APP_MAGIC_REDIRECT } });
-          if (otpErr) alert("Erreur envoi lien : " + otpErr.message);
-          else alert("Lien envoyé ! Vérifie ta boîte mail.");
-        }
-        return;
-      }
-      // Succès ; on laisse onAuthStateChange gérer l'UI
-      console.log("Connecté via mot de passe", data);
-      return;
-    }
-
-    // 2) sinon, demander confirmation AVANT d'envoyer le magic link
-    if (!confirm("Tu n'as pas entré de mot de passe. Souhaites-tu recevoir un lien de connexion par email ?")) {
+    if (!password) {
+      alert("Mot de passe manquant.");
       if (btn) btn.disabled = false;
       return;
     }
 
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: APP_MAGIC_REDIRECT } });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
     if (btn) btn.disabled = false;
-    if (error) alert("Erreur envoi lien : " + error.message);
-    else alert("Lien envoyé ! Vérifie ta boîte mail.");
+
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid") || msg.includes("credentials")) {
+        return alert("Identifiant ou mot de passe incorrect.\nEn cas de souci, embrasser à Vespula 84 An225");
+      }
+      if (msg.includes("not found") || msg.includes("user")) {
+        return alert("Adresse non inscrite.\nEn cas de souci, embrasser à Vespula 84 An225");
+      }
+      return alert("Erreur : " + error.message);
+    }
+
+    // Succès → onAuthStateChange gère l’UI
+    return;
   } catch (err) {
     console.error("login fatal:", err);
     alert("Erreur lors de la connexion.");
-    const btn = el("loginBtn");
-    if (btn) btn.disabled = false;
+    el("loginBtn")?.disabled = false;
   }
 }
 
@@ -1105,6 +1099,15 @@ async function signup() {
         actions.appendChild(del);
       }
 
+        // Suppression par propriétaire
+        if (user && user.id === t.owner) {
+          const delOwner = document.createElement('button');
+          delOwner.className = 'delete-btn';
+          delOwner.textContent = 'Supprimer';
+          delOwner.addEventListener('click', () => deleteTrip(t.id));
+          actions.appendChild(delOwner);
+        }
+
       // Annuler / Réserver
       if (reserved) {
         const un = document.createElement('button');
@@ -1218,13 +1221,14 @@ async function signup() {
 
 // Remplit automatiquement le formulaire de publication
 function autofillPublishForm(profile) {
-  if (el("nom") && !el("nom").value) el("nom").value = profile.nom || "";
-  if (el("prenom") && !el("prenom").value) el("prenom").value = profile.prenom || "";
-  if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = profile.surns || "";
-  if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = profile.fams || "";
-  if (el("promo") && !el("promo").value) el("promo").value = profile.promo || "";
-}
+  if (!profile) return;
 
+  if (el("nom")) el("nom").value = profile.nom || "";
+  if (el("prenom")) el("prenom").value = profile.prenom || "";
+  if (el("surns_pub")) el("surns_pub").value = profile.surns || "";
+  if (el("fams_pub")) el("fams_pub").value = profile.fams || "";
+  if (el("promo")) el("promo").value = profile.promo || "";
+}
 
  async function saveProfile(e) {
   if (e && e.preventDefault) e.preventDefault();
@@ -1287,7 +1291,7 @@ function autofillPublishForm(profile) {
   }
 
   safeOn("loginBtn", "click", login);
-  safeOn("logoutBtn", "click", logout);
+  safeOn("logoutBtnMain", "click", logout);
   safeOn("logoutBtnSmall", "click", async () => { if (confirm("Confirmer la déconnexion ?")) await logout(); });
   safeOn("openProfileBtn", "click", openProfile);
   safeOn("closeProfileBtn", "click", closeProfile);
@@ -1488,4 +1492,5 @@ initAuthUI();
 
 </body>
 </html>
+
 
