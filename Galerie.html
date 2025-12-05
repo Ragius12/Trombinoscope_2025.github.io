@@ -13,7 +13,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Galerie</title>
-    <link rel="stylesheet" href="style.css" />
 
     <!-- SUPABASE INIT UNIQUE ET CORRECT -->
     <script type="module">
@@ -285,6 +284,22 @@
         function show(el) { if (!el) return; el.classList.remove('hidden'); el.style.display = ''; }
         function hide(el) { if (!el) return; el.classList.add('hidden'); el.style.display = 'none'; }
 
+        // show/hide login/profile UI helpers
+        function showLoginUI() {
+            show(btnLogin);
+            hide(profileBox);
+            hide(publishArea);
+            if (profileEmailDisplay) profileEmailDisplay.textContent = '';
+        }
+        function showProfileUI(user) {
+            if (!user) return showLoginUI();
+            hide(btnLogin);
+            show(profileBox);
+            show(publishArea);
+            if (profileEmailSpan) profileEmailSpan.textContent = user.email;
+            if (profileEmailDisplay) profileEmailDisplay.textContent = user.email;
+        }
+        
         // Elements
         const btnLogin = $id('btn-login');
         const loginDialog = $id('login-dialog');
@@ -319,21 +334,6 @@
             }
         }
 
-        // show/hide login/profile UI helpers
-        function showLoginUI() {
-            show(btnLogin);
-            hide(profileBox);
-            hide(publishArea);
-            if (profileEmailDisplay) profileEmailDisplay.textContent = '';
-        }
-        function showProfileUI(user) {
-            if (!user) return showLoginUI();
-            hide(btnLogin);
-            show(profileBox);
-            show(publishArea);
-            if (profileEmailSpan) profileEmailSpan.textContent = user.email;
-            if (profileEmailDisplay) profileEmailDisplay.textContent = user.email;
-        }
 
         // Wait for initial session and set UI
         async function initAuthState() {
@@ -853,3 +853,4 @@
 
 </body>
 </html>
+
