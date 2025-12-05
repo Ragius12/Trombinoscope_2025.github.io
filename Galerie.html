@@ -429,6 +429,29 @@ async function initApp() {
 
     await updateUI(user);
 
+      // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
+  async function ensureSessionAutoRefresh() {
+    try {
+      // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
+      if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
+        try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
+      }
+
+      // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
+      if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
+        try {
+          await supabase.auth.refreshSession();
+        } catch(e) {
+          // refreshSession peut échouer si pas nécessaire ou si token invalide
+          console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
+        }
+      }
+    } catch (err) {
+      console.error("ensureSessionAutoRefresh error:", err);
+    }
+  }
+
+      
     if (user) {
       await ensureProfilePresent(user);
       await loadTrips();
@@ -568,18 +591,19 @@ async function signup() {
 
 
     
+   // --- Remplacer logout existante par celle-ci ---
   async function logout() {
-  try {
-    // confirmation claire (comme dans ton UI)
-    if (!confirm("Se déconnecter ?")) return;
-    await supabase.auth.signOut();
-    // onAuthStateChange va faire updateUI(); si besoin on peut forcer reload minimal
-    console.log("Déconnecté.");
-  } catch (err) {
-    console.error("logout error", err);
-    alert("Erreur lors de la déconnexion.");
+    try {
+      // Ne PAS demander confirmation ici : les handlers UI doivent contrôler l'UX (évite double popup).
+      await supabase.auth.signOut(); // par défaut, supabase révoque la session côté client
+      console.log("Déconnecté.");
+      // onAuthStateChange déclenchera updateUI
+    } catch (err) {
+      console.error("logout error", err);
+      alert("Erreur lors de la déconnexion.");
+    }
   }
-}
+
 
   /* ---------- Profile modal ---------- */
   function openProfile() {
@@ -775,6 +799,7 @@ async function signup() {
   }
 
   let publishing = false;
+    // --- Remplacer publishTrip existante par celle-ci ---
   async function publishTrip(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (publishing) return;
@@ -784,45 +809,52 @@ async function signup() {
       if (publishBtn) publishBtn.disabled = true;
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { alert("Connecte-toi !"); return; }
+      if (!user) { alert("Connecte-toi !"); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
 
+      // Vérifier le profil obligatoire (nom/prenom/surns/fams/promo)
+      const { data: profilData, error: profilError } = await supabase
+        .from("profiles")
+        .select("nom, prenom, surns, fams, promo")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
+
+      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+      if (missingProfileField) {
+        alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
+        if (profilData) {
+          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
+        }
+        if (el("profileEmail")) el("profileEmail").textContent = user.email;
+        openProfile();
+        publishing = false;
+        if (publishBtn) publishBtn.disabled = false;
+        return;
+      }
+
+      // Récupérer valeurs du form (avec champ Autre géré)
       const departEl = el("depart");
       const arriveeEl = el("arrivee");
       const depart_autreEl = el("depart_autre");
       const arrivee_autreEl = el("arrivee_autre");
-
       const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
       const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
-
       const datetimeVal = el("datetime") ? el("datetime").value : "";
-      if (!datetimeVal) { alert("Choisis une date et heure."); return; }
-
+      if (!datetimeVal) { alert("Choisis une date et heure."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
       const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
 
-      let publishNom = el("nom") ? el("nom").value.trim() : "";
-      let publishPrenom = el("prenom") ? el("prenom").value.trim() : "";
-      let publishSurns = el("surns_pub") ? el("surns_pub").value.trim() : "";
-      let publishFams = el("fams_pub") ? el("fams_pub").value.trim() : "";
-      let publishPromo = el("promo") ? el("promo").value : "";
-
-      if (!publishNom || !publishPrenom || !publishSurns || !publishFams || !publishPromo) {
-        const { data: profilData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-        if (profilData) {
-          publishNom = publishNom || (profilData.nom || '');
-          publishPrenom = publishPrenom || (profilData.prenom || '');
-          publishSurns = publishSurns || (profilData.surns || '');
-          publishFams = publishFams || (profilData.fams || '');
-          publishPromo = publishPromo || (profilData.promo || '');
-        }
-      }
-
+      // Utiliser le profil (obligatoire) pour préremplir l'auteur du trajet
       const trip = {
         owner: user.id,
-        nom: publishNom,
-        prenom: publishPrenom,
-        surns: publishSurns,
-        fams: publishFams,
-        promo: publishPromo,
+        nom: profilData.nom,
+        prenom: profilData.prenom,
+        surns: profilData.surns,
+        fams: profilData.fams,
+        promo: profilData.promo,
         depart: departValue,
         arrivee: arriveeValue,
         datetime: datetimeISO,
@@ -853,36 +885,64 @@ async function signup() {
     }
   }
 
+
   /* ---------- Réservations (RPCs) ---------- */
   async function confirmReserve(tripId){
     if(!confirm("Confirmer la réservation de ce trajet ?")) return;
     await reserve(tripId);
   }
 
-  async function reserve(tripId) {
+    async function reserve(tripId) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return alert("Connecte-toi !");
 
+      // Lire le trajet pour vérifier le propriétaire (défensive)
+      const { data: trip, error: tripErr } = await supabase
+        .from("trips")
+        .select("owner, depart, arrivee, datetime, places")
+        .eq("id", tripId)
+        .maybeSingle();
+      if (tripErr) { console.error(tripErr); return alert("Impossible de lire le trajet."); }
+      if (!trip) return alert("Trajet introuvable.");
+
+      // Empêcher le propriétaire du trajet de réserver son propre trajet
+      if (!adminMode && trip.owner === user.id) {
+        return alert("Tu ne peux pas réserver ton propre trajet.");
+      }
+
+      // Vérifier que le profil existe ET contient bien les champs obligatoires
       const { data: profilData, error: profilError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("nom, prenom, surns, fams, promo")
         .eq("id", user.id)
         .maybeSingle();
 
       if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
-      if (!profilData) {
-        alert("Complète ton profil avant de réserver.");
-        if (el("profile_nom")) el("profile_nom").value = "";
-        if (el("profile_prenom")) el("profile_prenom").value = "";
-        if (el("profile_surns")) el("profile_surns").value = "";
-        if (el("profile_fams")) el("profile_fams").value = "";
-        if (el("profile_promo")) el("profile_promo").value = "";
+
+      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+      if (missingProfileField) {
+        alert("Complète ton profil (nom, prénom, Surn's, Fam's et Promo) avant de réserver.");
+        // Pré-remplir modal profil si on a un objet (ou vider sinon)
+        if (profilData) {
+          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
+        } else {
+          if (el("profile_nom")) el("profile_nom").value = "";
+          if (el("profile_prenom")) el("profile_prenom").value = "";
+          if (el("profile_surns")) el("profile_surns").value = "";
+          if (el("profile_fams")) el("profile_fams").value = "";
+          if (el("profile_promo")) el("profile_promo").value = "";
+        }
         if (el("profileEmail")) el("profileEmail").textContent = user.email;
         openProfile();
         return;
       }
 
+      // Appel RPC si tout est OK
       const { data, error } = await supabase.rpc("reserve_trip", {
         p_trip_id: tripId,
         p_user_id: user.id,
@@ -1290,7 +1350,7 @@ function autofillPublishForm(profile) {
   }
 
   safeOn("loginBtn", "click", login);
-  safeOn("logoutBtnMain", "click", logout);
+  safeOn("logoutBtnMain", "click", async () => { if (confirm("Confirmer la déconnexion ?")) await logout(); });
   safeOn("logoutBtnSmall", "click", async () => { if (confirm("Confirmer la déconnexion ?")) await logout(); });
   safeOn("openProfileBtn", "click", openProfile);
   safeOn("closeProfileBtn", "click", closeProfile);
@@ -1491,6 +1551,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
