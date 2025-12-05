@@ -390,24 +390,54 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
   /* ---------- UI update ---------- */
   async function updateUI(user) {
-    try {
-      if (user) {
-        if (el("loginArea")) el("loginArea").style.display = "none";
-        if (el("publishArea")) el("publishArea").style.display = "block";
-        if (el("userEmail")) el("userEmail").textContent = user.email;
-        if (el("profileEmail")) el("profileEmail").textContent = user.email;
-
-        if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
-        if (typeof loadTrips === "function") await loadTrips();
-        if (typeof loadMyReservation === "function") await loadMyReservation();
-      } else {
-        if (el("loginArea")) el("loginArea").style.display = "block";
-        if (el("publishArea")) el("publishArea").style.display = "none";
-      }
-    } catch (err) {
-      console.error("updateUI error:", err);
-    }
+  // Masquer/afficher boutons etc. comme d'habitude
+  if (!user) {
+    if (el("loginSection")) el("loginSection").style.display = "block";
+    if (el("appSection")) el("appSection").style.display = "none";
+    return;
   }
+
+  // ----------- NOUVEAU : charger le profil à chaque updateUI ----------- 
+  let profil = null;
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!error) profil = data;
+  } catch (e) { console.error("Erreur profil:", e); }
+
+  // ----------- NOUVEAU : si profil incomplet => ouvrir la popup ----------- 
+  const missing =
+    !profil ||
+    !profil.nom ||
+    !profil.prenom ||
+    !profil.surns ||
+    !profil.fams ||
+    !profil.promo;
+
+  if (missing) {
+    if (el("profileEmail")) el("profileEmail").textContent = user.email;
+    if (profil) {
+      if (el("profile_nom")) el("profile_nom").value = profil.nom || "";
+      if (el("profile_prenom")) el("profile_prenom").value = profil.prenom || "";
+      if (el("profile_surns")) el("profile_surns").value = profil.surns || "";
+      if (el("profile_fams")) el("profile_fams").value = profil.fams || "";
+      if (el("profile_promo")) el("profile_promo").value = profil.promo || "";
+    }
+    openProfile(); // popup immédiate première connexion
+  }
+
+  // Section app visible
+  if (el("loginSection")) el("loginSection").style.display = "none";
+  if (el("appSection")) el("appSection").style.display = "block";
+
+  // Charger les trajets à chaque fois
+  await loadTrips();
+  await loadMyReservation();
+}
+
 
   // Un seul listener unifié (après updateUI déclaré)
   supabase.auth.onAuthStateChange(async (event, session) => {
@@ -606,9 +636,35 @@ async function signup() {
 
 
   /* ---------- Profile modal ---------- */
-  function openProfile() {
-    if (el("profileModal")) el("profileModal").style.display = "flex";
+  async function openProfile() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  try {
+    const { data: profil } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (el("profileEmail")) el("profileEmail").textContent = user.email;
+
+    if (profil) {
+      if (el("profile_nom")) el("profile_nom").value = profil.nom || "";
+      if (el("profile_prenom")) el("profile_prenom").value = profil.prenom || "";
+      if (el("profile_surns")) el("profile_surns").value = profil.surns || "";
+      if (el("profile_fams")) el("profile_fams").value = profil.fams || "";
+      if (el("profile_promo")) el("profile_promo").value = profil.promo || "";
+    }
+
+    if (el("profileModal")) el("profileModal").style.display = "block";
+
+  } catch (err) {
+    console.error("openProfile error:", err);
+    alert("Impossible de charger le profil.");
   }
+}
+
   function closeProfile() {
     if (el("profileModal")) el("profileModal").style.display = "none";
   }
@@ -690,106 +746,46 @@ async function signup() {
   }
 
   /* ---------- loadTrips (défensif) ---------- */
-  async function loadTrips() {
-    const list = el("trajets");
-    if (!list) return;
-    list.innerHTML = "Chargement...";
+async function loadTrips() {
+  const container = el("tripsList");
+  if (!container) return;
 
-    try {
-      const { data, error } = await supabase.from("trips").select("*");
-      if (error) {
-        list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
-        return;
-      }
+  container.innerHTML = ""; // important pour éviter la duplication
 
-      let trips = data || [];
+  try {
+    const { data: trips, error } = await supabase
+      .from("trips")
+      .select("*")
+      .order("datetime", { ascending: true });
 
-      // filtre UI
-      const searchDest = el("searchDest") ? el("searchDest").value : "";
-      const searchOther = el("searchOther") ? String(el("searchOther").value).trim().toLowerCase() : "";
-      const searchText = el("searchText") ? String(el("searchText").value).trim().toLowerCase() : "";
-
-      trips = trips.filter(t => {
-        const depart = String(t.depart || "").toLowerCase();
-        const arrivee = String(t.arrivee || "").toLowerCase();
-        const nom = String(t.nom || "").toLowerCase();
-        const prenom = String(t.prenom || "").toLowerCase();
-        const desc = String(t.description || "").toLowerCase();
-
-        let okDest = true;
-        if (searchDest) {
-          if (searchDest === "Autre") {
-            okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
-          } else {
-            okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
-          }
-        }
-
-        let okText = true;
-        if (searchText) {
-          okText =
-            nom.includes(searchText) ||
-            prenom.includes(searchText) ||
-            desc.includes(searchText) ||
-            depart.includes(searchText) ||
-            arrivee.includes(searchText);
-        }
-
-        return okDest && okText;
-      });
-
-      // tri: pertinence proche
-      const now = Date.now();
-      function score(t) {
-        let s = 0;
-        const q = (searchText || "");
-        const dQ = (searchDest || "").toLowerCase();
-
-        const depart = String(t.depart || "").toLowerCase();
-        const arrivee = String(t.arrivee || "").toLowerCase();
-        const nom = String(t.nom || "").toLowerCase();
-        const prenom = String(t.prenom || "").toLowerCase();
-        const desc = String(t.description || "").toLowerCase();
-
-        if (q) {
-          if (nom === q || prenom === q) s += 50;
-          if (nom.includes(q) || prenom.includes(q)) s += 20;
-          if (desc.includes(q)) s += 10;
-          if (depart.includes(q) || arrivee.includes(q)) s += 15;
-        }
-        if (dQ) {
-          if (depart === dQ || arrivee === dQ) s += 40;
-          if ((depart + arrivee).includes(dQ)) s += 10;
-        }
-        const dt = new Date(t.datetime).getTime();
-        if (!isNaN(dt)) {
-          const diff = dt - now;
-          if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000*60*60)));
-        }
-        if (isExpired(t.datetime)) s -= 1000;
-        return s;
-      }
-
-      trips.sort((a,b) => {
-        const sa = score(a), sb = score(b);
-        if (sa !== sb) return sb - sa;
-        const da = new Date(a.datetime).getTime() || 0;
-        const db = new Date(b.datetime).getTime() || 0;
-        return da - db;
-      });
-
-      // affichage
-      list.innerHTML = "";
-      for (const t of trips) {
-        // createTrajetElement est défini plus bas
-        const elem = await createTrajetElement(t, t.id);
-        list.appendChild(elem);
-      }
-    } catch (err) {
-      console.error("loadTrips error:", err);
-      list.innerHTML = "Erreur de chargement (voir console).";
+    if (error) {
+      console.error("Erreur loadTrips:", error);
+      return;
     }
+
+    if (!trips || trips.length === 0) {
+      container.innerHTML = "<p>Aucun trajet disponible.</p>";
+      return;
+    }
+
+    for (const trip of trips) {
+      const div = document.createElement("div");
+      div.className = "trip";
+
+      div.innerHTML = `
+        <h3>${trip.depart} → ${trip.arrivee}</h3>
+        <p>${new Date(trip.datetime).toLocaleString()}</p>
+        <p>${trip.places} place(s)</p>
+        <button onclick="reserve(${trip.id})">Réserver</button>
+      `;
+
+      container.appendChild(div);
+    }
+  } catch (err) {
+    console.error("loadTrips Exception:", err);
   }
+}
+
 
   /* ---------- utilitaires & actions ---------- */
   function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
@@ -1551,6 +1547,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
