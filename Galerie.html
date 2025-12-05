@@ -557,7 +557,7 @@ async function signup() {
     }
 
     if (btn) btn.disabled = false;
-    alert("Inscription lancée. Vérifie ta boîte mail si confirmation nécessaire. Tu pourras ensuite te connecter.");
+    alert("Inscription lancée. Vérifie ta boîte mail pour une confirmation (nécessaire). Tu pourras ensuite te connecter avec ton mail et ton mot de passe.");
   } catch (err) {
     console.error("signup fatal:", err);
     alert("Erreur lors de l'inscription.");
@@ -1483,6 +1483,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
