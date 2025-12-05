@@ -191,18 +191,23 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 <div class="container">
 
-<!-- Login area (remplacé : email + password + login/signup) -->
+<!-- Login area (remplacé : email + password + login/signup distincts) -->
 <div id="loginArea" class="card" style="text-align:center;">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:420px;margin:auto;">
     <input id="email" class="login-input" placeholder="email@ensam.eu" type="email" aria-label="email">
-    <input id="password" class="login-input" placeholder="Mot de passe (laisser vide pour lien mail)" type="password" aria-label="password">
+    <input id="password" class="login-input" placeholder="Mot de passe (pour Connexion / Inscription)" type="password" aria-label="password">
     <div style="display:flex;gap:10px;width:100%;">
       <button id="loginBtn" class="login-btn" style="flex:1">Se connecter</button>
       <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
     </div>
+    <div style="display:flex;gap:8px;width:100%;justify-content:center;margin-top:6px;">
+      <button id="openProfileBtnSmall" class="btn" style="display:none">Modifier le profil</button>
+      <button id="logoutBtnSmall" class="login-btn" style="display:none;background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Se déconnecter</button>
+    </div>
   </div>
-  <div class="small-muted">Utilise ton adresse <b>@ensam.eu</b>. Si tu n’as pas de mot de passe, laisse le champ vide : un lien mail sera envoyé.</div>
+  <div class="small-muted">Utilise ton adresse <b>@ensam.eu</b>. Si tu n’as pas de mot de passe, utilise S'inscrire.</div>
 </div>
+
 
 
 <div id="publishArea" class="card" style="display:none;">
@@ -432,12 +437,10 @@ async function initApp() {
  document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- AUTH ---------- */
-  async function login() {
+ async function login() {
   try {
-    const emailEl = el("email");
-    const passEl = el("password");
-    const email = emailEl ? emailEl.value.trim().toLowerCase() : "";
-    const password = passEl ? passEl.value : "";
+    const email = el("email") ? el("email").value.trim().toLowerCase() : "";
+    const password = el("password") ? el("password").value : "";
 
     if (!email) return alert("Entre ton email.");
     if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
@@ -445,77 +448,92 @@ async function initApp() {
     const btn = el("loginBtn");
     if (btn) btn.disabled = true;
 
-    // 1) Si l'utilisateur a saisi un mot de passe -> tentative de connexion par mot de passe
+    // 1) Si le mot de passe est fourni, tenter la connexion par mot de passe
     if (password) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (btn) btn.disabled = false;
       if (error) {
-        console.warn("Login password error:", error);
-        // Si mot de passe incorrect, proposer fallback OTP
-        if (confirm("Mot de passe incorrect ou erreur. Souhaites-tu recevoir un lien de connexion par email (magic link) ?")) {
-          const { error: otpErr } = await supabase.auth.signInWithOtp({
-            email,
-            options: { emailRedirectTo: window.location.href }
-          });
+        console.warn("signInWithPassword err:", error);
+        // Proposer d'envoyer un magic link comme fallback
+        if (confirm("Mot de passe incorrect ou erreur. Souhaites-tu recevoir un lien de connexion par email ?")) {
+          const { error: otpErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
           if (otpErr) alert("Erreur envoi lien : " + otpErr.message);
           else alert("Lien envoyé ! Vérifie ta boîte mail.");
         }
         return;
       }
-      // connecté par mot de passe
+      // signInWithPassword a réussi — la session/UID sera traitée par onAuthStateChange/initApp
       console.log("Connecté via mot de passe", data);
-      // UI update se fera via onAuthStateChange / initApp
       return;
     }
 
-    // 2) Sinon -> envoi du magic link (OTP)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href }
-    });
-
+    // 2) Sinon, envoi du magic link (OTP)
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
     if (btn) btn.disabled = false;
-    if (error) alert(error.message);
+    if (error) alert("Erreur envoi lien : " + error.message);
     else alert("Lien envoyé ! Vérifie ta boîte mail.");
   } catch (err) {
-    console.error("login error", err);
-    alert("Erreur lors de la tentative de connexion.");
+    console.error("login fatal:", err);
+    alert("Erreur lors de la connexion.");
     const btn = el("loginBtn");
     if (btn) btn.disabled = false;
   }
 }
 
+
 async function signup() {
   try {
-    const emailEl = el("email");
-    const passEl = el("password");
-    const email = emailEl ? emailEl.value.trim().toLowerCase() : "";
-    const password = passEl ? passEl.value : "";
+    const email = el("email") ? el("email").value.trim().toLowerCase() : "";
+    const password = el("password") ? el("password").value : "";
 
-    if (!email || !password) return alert("Entre un email et un mot de passe pour t'inscrire.");
+    if (!email || !password) return alert("Entre un email et un mot de passe.");
     if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
 
     const btn = el("signupBtn");
     if (btn) btn.disabled = true;
 
-    // sign up avec mot de passe (crée user dans Auth)
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    // 1) Créer l'utilisateur dans Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password
+    });
 
-    if (btn) btn.disabled = false;
     if (error) {
-      console.error("signup error", error);
+      console.error("signup error:", error);
+      if (btn) btn.disabled = false;
       return alert("Inscription impossible : " + error.message);
     }
 
-    // si signup retourne user sans confirmation (varie selon config), on laisse onAuthStateChange gérer UI
-    alert("Inscription lancée. Si nécessaire, confirme via le mail reçu. Tu pourras ensuite remplir ton profil.");
+    // 2) Si Supabase renvoie un user (confirmé ou auto-confirm), on crée un profil immédiatement
+    if (data && data.user && data.user.id) {
+      const userId = data.user.id;
+      const profile = {
+        id: userId,
+        nom: el("profile_nom") ? el("profile_nom").value.trim() : "",
+        prenom: el("profile_prenom") ? el("profile_prenom").value.trim() : "",
+        surns: el("profile_surns") ? el("profile_surns").value.trim() : "",
+        fams: el("profile_fams") ? el("profile_fams").value.trim() : "",
+        promo: el("profile_promo") ? el("profile_promo").value : ""
+      };
+
+      // upsert profile (avec ID matching auth.uid())
+      const { error: pErr } = await supabase.from("profiles").upsert(profile, { returning: 'minimal' });
+      if (pErr) console.warn("Impossible de créer le profil automatiquement:", pErr);
+    } else {
+      // si pas de user retourné, l'utilisateur doit confirmer son email. on attend la première connexion.
+      console.log("Signup: confirmation email peut être nécessaire.");
+    }
+
+    if (btn) btn.disabled = false;
+    alert("Inscription lancée. Vérifie ta boite mail si confirmation nécessaire. Tu pourras ensuite te connecter.");
   } catch (err) {
-    console.error("signup error", err);
+    console.error("signup fatal:", err);
     alert("Erreur lors de l'inscription.");
     const btn = el("signupBtn");
     if (btn) btn.disabled = false;
   }
 }
+
 
     
   async function logout() {
@@ -1108,7 +1126,6 @@ async function signup() {
   if (!user) return;
 
   try {
-    // Lire profil
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
@@ -1120,40 +1137,33 @@ async function signup() {
       return;
     }
 
-    // Mettre à jour l'affichage de l'email connecté
+    // afficher email connecté dans la UI
     if (el("userEmail")) el("userEmail").textContent = user.email;
     if (el("profileEmail")) el("profileEmail").textContent = user.email;
 
-    // Si profil présent -> remplir les champs et continuer
     if (profile) {
       autofillPublishForm(profile);
+      // montrer boutons modifier / logout petits si nécessaires
+      const smallEdit = el("openProfileBtnSmall");
+      const smallLogout = el("logoutBtnSmall");
+      if (smallEdit) smallEdit.style.display = "inline-block";
+      if (smallLogout) smallLogout.style.display = "inline-block";
       return;
     }
 
-    // Profil manquant -> créer un profil minimal (évite la boucle OTP)
-    const newProfile = {
-      id: user.id,
-      nom: "",
-      prenom: "",
-      surns: "",
-      fams: "",
-      promo: ""
-    };
-
+    // profil absent -> créer un profil minimal (empêche boucle OTP)
+    const newProfile = { id: user.id, nom: "", prenom: "", surns: "", fams: "", promo: "" };
     const { error: insertErr } = await supabase.from('profiles').insert(newProfile);
-    if (insertErr) {
-      console.error("Erreur création profil :", insertErr);
-      return;
-    }
+    if (insertErr) { console.error("Erreur création profil :", insertErr); return; }
 
-    // ouvrir modal pour compléter (nouveau)
+    // open modal pour compléter
     if (el("profileEmail")) el("profileEmail").textContent = user.email;
     openProfile();
-
   } catch (err) {
     console.error("ensureProfilePresent - fatal error:", err);
   }
 }
+
 
 
 // Remplit automatiquement le formulaire de publication
@@ -1166,7 +1176,7 @@ function autofillPublishForm(profile) {
 }
 
 
-  async function saveProfile(e) {
+ async function saveProfile(e) {
   if (e && e.preventDefault) e.preventDefault();
   try {
     const getUser = await supabase.auth.getUser();
@@ -1216,6 +1226,7 @@ function autofillPublishForm(profile) {
   }
 }
 
+
   /* ---------- Liaisons évènementielles - safe attach ---------- */
   function safeOn(id, event, handler) {
     const node = el(id);
@@ -1225,8 +1236,12 @@ function autofillPublishForm(profile) {
 
   safeOn("loginBtn", "click", login);
   safeOn("logoutBtn", "click", logout);
+  safeOn("logoutBtnSmall", "click", async () => {
+      if (confirm("Confirmer la déconnexion ?")) await logout();
+    });
   safeOn("openProfileBtn", "click", openProfile);
   safeOn("closeProfileBtn", "click", closeProfile);
+  safeOn("openProfileBtnSmall", "click", openProfile);
   safeOn("saveProfileBtn", "click", saveProfile);
   safeOn("toggleFormBtn", "click", toggleForm);
   safeOn("publishBtn", "click", publishTrip);
@@ -1243,6 +1258,7 @@ function autofillPublishForm(profile) {
 
 })(); // fin IIFE
 </script>
+
 
 
 
