@@ -357,6 +357,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 </script>
 
 <script>
+    const APP_MAGIC_REDIRECT = "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html";
     console.log("FULL URL BEFORE:", window.location.href);
     /* ------------------------------
     console.log("URL:", window.location.href);
@@ -453,27 +454,29 @@ async function initApp() {
     const btn = el("loginBtn");
     if (btn) btn.disabled = true;
 
-    // 1) Si le mot de passe est fourni, tenter la connexion par mot de passe
+    // 1) si mot de passe fourni -> signInWithPassword
     if (password) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (btn) btn.disabled = false;
       if (error) {
         console.warn("signInWithPassword err:", error);
-        // Proposer d'envoyer un magic link comme fallback
-        if (confirm("Mot de passe incorrect ou erreur. Souhaites-tu recevoir un lien de connexion par email ?")) {
-          const { error: otpErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+
+        // Si l'erreur indique que l'utilisateur n'existe pas ou n'a pas de mot de passe,
+        // proposer un magic link (fallback)
+        if (confirm("Mot de passe incorrect ou problème de connexion. Souhaites-tu recevoir un lien de connexion par email ?")) {
+          const { error: otpErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: APP_MAGIC_REDIRECT } });
           if (otpErr) alert("Erreur envoi lien : " + otpErr.message);
           else alert("Lien envoyé ! Vérifie ta boîte mail.");
         }
         return;
       }
-      // signInWithPassword a réussi — la session/UID sera traitée par onAuthStateChange/initApp
+      // Succès ; on laisse onAuthStateChange gérer l'UI
       console.log("Connecté via mot de passe", data);
       return;
     }
 
-    // 2) Sinon, envoi du magic link (OTP)
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+    // 2) sinon, envoyer magic link (OTP)
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: APP_MAGIC_REDIRECT } });
     if (btn) btn.disabled = false;
     if (error) alert("Erreur envoi lien : " + error.message);
     else alert("Lien envoyé ! Vérifie ta boîte mail.");
@@ -497,40 +500,59 @@ async function signup() {
     const btn = el("signupBtn");
     if (btn) btn.disabled = true;
 
-    // 1) Créer l'utilisateur dans Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        emailRedirectTo: APP_MAGIC_REDIRECT
+      }
     });
 
     if (error) {
       console.error("signup error:", error);
+
+      // Si le compte existe déjà, demander de se connecter
+      const msg = String(error.message || "").toLowerCase();
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("user already exists")) {
+        alert("Ce compte existe déjà — connecte-toi (ou utilise \"Mot de passe oublié\").");
+      } else {
+        alert("Inscription impossible : " + error.message);
+      }
+
       if (btn) btn.disabled = false;
-      return alert("Inscription impossible : " + error.message);
+      return;
     }
 
-    // 2) Si Supabase renvoie un user (confirmé ou auto-confirm), on crée un profil immédiatement
+    // Si Supabase renvoie un user et qu'il est déjà confirmé, créer / upsert le profile
+    // NOTE : selon la version/config, le champ de confirmation peut s'appeler
+    // email_confirmed_at / confirmed_at / email_confirmed
     if (data && data.user && data.user.id) {
-      const userId = data.user.id;
-      const profile = {
-        id: userId,
-        nom: el("profile_nom") ? el("profile_nom").value.trim() : "",
-        prenom: el("profile_prenom") ? el("profile_prenom").value.trim() : "",
-        surns: el("profile_surns") ? el("profile_surns").value.trim() : "",
-        fams: el("profile_fams") ? el("profile_fams").value.trim() : "",
-        promo: el("profile_promo") ? el("profile_promo").value : ""
-      };
+      const user = data.user;
+      const isConfirmed = !!(user.email_confirmed_at || user.confirmed_at || user.email_confirmed);
 
-      // upsert profile (avec ID matching auth.uid())
-      const { error: pErr } = await supabase.from("profiles").upsert(profile, { returning: 'minimal' });
-      if (pErr) console.warn("Impossible de créer le profil automatiquement:", pErr);
+      if (isConfirmed) {
+        const userId = user.id;
+        const profile = {
+          id: userId,
+          nom: el("profile_nom") ? el("profile_nom").value.trim() : "",
+          prenom: el("profile_prenom") ? el("profile_prenom").value.trim() : "",
+          surns: el("profile_surns") ? el("profile_surns").value.trim() : "",
+          fams: el("profile_fams") ? el("profile_fams").value.trim() : "",
+          promo: el("profile_promo") ? el("profile_promo").value : ""
+        };
+
+        const { error: pErr } = await supabase.from("profiles").upsert(profile, { returning: 'minimal' });
+        if (pErr) console.warn("Impossible de créer le profil automatiquement:", pErr);
+      } else {
+        // email non confirmé : ne pas créer de profil, attendre confirmation
+        console.log("Signup: email non confirmé — profil non créé, attendre confirmation.");
+      }
     } else {
-      // si pas de user retourné, l'utilisateur doit confirmer son email. on attend la première connexion.
-      console.log("Signup: confirmation email peut être nécessaire.");
+      console.log("Signup: pas de user retourné immédiatement (vérifier confirmation email).");
     }
 
     if (btn) btn.disabled = false;
-    alert("Inscription lancée. Vérifie ta boite mail si confirmation nécessaire. Tu pourras ensuite te connecter.");
+    alert("Inscription lancée. Vérifie ta boîte mail si confirmation nécessaire. Tu pourras ensuite te connecter.");
   } catch (err) {
     console.error("signup fatal:", err);
     alert("Erreur lors de l'inscription.");
@@ -542,12 +564,17 @@ async function signup() {
 
     
   async function logout() {
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error("logout error", err);
-    }
+  try {
+    // confirmation claire (comme dans ton UI)
+    if (!confirm("Se déconnecter ?")) return;
+    await supabase.auth.signOut();
+    // onAuthStateChange va faire updateUI(); si besoin on peut forcer reload minimal
+    console.log("Déconnecté.");
+  } catch (err) {
+    console.error("logout error", err);
+    alert("Erreur lors de la déconnexion.");
   }
+}
 
   /* ---------- Profile modal ---------- */
   function openProfile() {
@@ -1147,21 +1174,28 @@ async function signup() {
     if (el("profileEmail")) el("profileEmail").textContent = user.email;
 
     if (profile) {
+      // Remplit le formulaire de publication sans écraser les valeurs existantes
       autofillPublishForm(profile);
-      // montrer boutons modifier / logout petits si nécessaires
-      const smallEdit = el("openProfileBtnSmall");
-      const smallLogout = el("logoutBtnSmall");
-      if (smallEdit) smallEdit.style.display = "inline-block";
-      if (smallLogout) smallLogout.style.display = "inline-block";
       return;
     }
 
-    // profil absent -> créer un profil minimal (empêche boucle OTP)
+    // Si pas de profil, vérifier si l'email est confirmé AVANT de créer un profil vide
+    // (évite que les profils vides écrasent les infos après refresh)
+    const isConfirmed = !!(user.email_confirmed_at || user.confirmed_at || user.email_confirmed);
+
+    if (!isConfirmed) {
+      // Ne pas créer de profil - demander à l'utilisateur de confirmer son email
+      console.log("Profil absent mais email non confirmé. Demander confirmation avant création du profil.");
+      // Optionnel : afficher un petit message non intrusif
+      // (ne change pas le DOM existant si tu veux garder le style)
+      return;
+    }
+
+    // Email confirmé -> créer un profil minimal et ouvrir modal pour compléter
     const newProfile = { id: user.id, nom: "", prenom: "", surns: "", fams: "", promo: "" };
     const { error: insertErr } = await supabase.from('profiles').insert(newProfile);
     if (insertErr) { console.error("Erreur création profil :", insertErr); return; }
 
-    // open modal pour compléter
     if (el("profileEmail")) el("profileEmail").textContent = user.email;
     openProfile();
   } catch (err) {
@@ -1217,11 +1251,12 @@ function autofillPublishForm(profile) {
     alert("Profil enregistré !");
     closeProfile();
 
-    if (el("nom") && el("nom").value === '') el("nom").value = nom;
-    if (el("prenom") && el("prenom").value === '') el("prenom").value = prenom;
-    if (el("surns_pub") && el("surns_pub").value === '') el("surns_pub").value = surns;
-    if (el("fams_pub") && el("fams_pub").value === '') el("fams_pub").value = fams;
-    if (el("promo") && el("promo").value === '') el("promo").value = promo;
+    // Mettre à jour le formulaire de publication seulement si vide (garde le style existant)
+    if (el("nom") && !el("nom").value) el("nom").value = nom;
+    if (el("prenom") && !el("prenom").value) el("prenom").value = prenom;
+    if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = surns;
+    if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = fams;
+    if (el("promo") && !el("promo").value) el("promo").value = promo;
 
     await loadTrips();
     await loadMyReservation();
@@ -1230,6 +1265,7 @@ function autofillPublishForm(profile) {
     alert("Erreur en sauvegardant le profil (voir console).");
   }
 }
+
 
 
   /* ---------- Liaisons évènementielles - safe attach ---------- */
@@ -1270,81 +1306,122 @@ function hide(id){ document.getElementById(id).style.display = "none"; }
 
 // LOGIN
 async function loginPassword() {
-  const email = login_email.value.trim().toLowerCase();
-  const password = login_password.value;
+  try {
+    const email = (document.getElementById("login_email")?.value || "").trim().toLowerCase();
+    const password = document.getElementById("login_password")?.value || "";
 
-  if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
+    if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return alert("Erreur : " + error.message);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return alert("Erreur : " + error.message);
 
-  hide("loginModal");
-  await initAuthUI();
+    hide("loginModal");
+    await initAuthUI();
+  } catch (err) {
+    console.error("loginPassword error:", err);
+    alert("Erreur lors de la connexion (voir console).");
+  }
 }
 
 // SIGNUP
 async function signupPassword() {
-  const email = signup_email.value.trim().toLowerCase();
-  const password = signup_password.value;
+  try {
+    const email = (document.getElementById("signup_email")?.value || "").trim().toLowerCase();
+    const password = document.getElementById("signup_password")?.value || "";
 
-  if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
+    if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return alert("Erreur : " + error.message);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: APP_MAGIC_REDIRECT }
+    });
 
-  await supabase.from("profiles").insert({
-    id: data.user.id,
-    nom: signup_nom.value,
-    prenom: signup_prenom.value,
-    surns: signup_surns.value,
-    fams: signup_fams.value,
-    promo: signup_promo.value
-  });
+    if (error) {
+      console.error("signupPassword error:", error);
+      const msg = String(error.message || "").toLowerCase();
+      if (msg.includes("already") || msg.includes("registered") || msg.includes("user already exists")) {
+        alert("Ce compte existe déjà — connecte-toi.");
+      } else {
+        alert("Erreur : " + error.message);
+      }
+      return;
+    }
 
-  alert("Compte créé ! Vérifie ton email.");
-  hide("signupModal");
+    // Si user présent et confirmé, insert profile from modal fields
+    const user = data?.user;
+    const isConfirmed = !!(user?.email_confirmed_at || user?.confirmed_at || user?.email_confirmed);
+    if (user && isConfirmed) {
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        nom: (document.getElementById("signup_nom")?.value || "").trim(),
+        prenom: (document.getElementById("signup_prenom")?.value || "").trim(),
+        surns: (document.getElementById("signup_surns")?.value || "").trim(),
+        fams: (document.getElementById("signup_fams")?.value || "").trim(),
+        promo: (document.getElementById("signup_promo")?.value || "")
+      }, { returning: 'minimal' });
+    } else {
+      console.log("signupPassword: profil non créé (email non confirmé ou pas de user immédiat).");
+    }
+
+    alert("Compte créé ! Vérifie ton email.");
+    hide("signupModal");
+  } catch (err) {
+    console.error("signupPassword fatal:", err);
+    alert("Erreur lors de la création du compte (voir console).");
+  }
 }
+
 
 // EDIT PROFILE
 async function updateProfile() {
-  const user = (await supabase.auth.getUser()).data.user;
+  try {
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return alert("Connecte-toi !");
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      nom: signup_nom.value,
-      prenom: signup_prenom.value,
-      surns: signup_surns.value,
-      fams: signup_fams.value,
-      promo: signup_promo.value
-    })
-    .eq("id", user.id);
+    const nom = (document.getElementById("signup_nom")?.value || "").trim();
+    const prenom = (document.getElementById("signup_prenom")?.value || "").trim();
+    const surns = (document.getElementById("signup_surns")?.value || "").trim();
+    const fams = (document.getElementById("signup_fams")?.value || "").trim();
+    const promo = (document.getElementById("signup_promo")?.value || "");
 
-  if (error) alert("Erreur profil : " + error.message);
-  else alert("Profil mis à jour !");
-}
+    const { error } = await supabase
+      .from("profiles")
+      .update({ nom, prenom, surns, fams, promo })
+      .eq("id", user.id);
 
-// LOGOUT
-async function logout() {
-  if (!confirm("Se déconnecter ?")) return;
-  await supabase.auth.signOut();
-  await initAuthUI();
+    if (error) alert("Erreur profil : " + error.message);
+    else alert("Profil mis à jour !");
+  } catch (err) {
+    console.error("updateProfile error:", err);
+  }
 }
 
 // UI SELON SESSION
 async function initAuthUI() {
-  const session = (await supabase.auth.getSession()).data.session;
+  try {
+    const sessionResp = await supabase.auth.getSession();
+    const session = sessionResp?.data?.session || null;
 
-  if (!session) {
-    authArea.style.display = "block";
-    connectedInfo.style.display = "none";
-    return;
+    // Si pas de session -> afficher la zone d'auth et masquer infos connectées
+    if (!session) {
+      if (el("authArea")) el("authArea").style.display = "block";
+      if (el("connectedInfo")) el("connectedInfo").style.display = "none";
+      return;
+    }
+
+    // Avec session -> afficher email connecté
+    const user = session.user;
+    if (el("connectedEmail")) el("connectedEmail").textContent = user.email;
+
+    if (el("authArea")) el("authArea").style.display = "none";
+    if (el("connectedInfo")) el("connectedInfo").style.display = "block";
+
+    // Mettre à jour l'UI générale (si nécessaire)
+    await updateUI(user);
+  } catch (err) {
+    console.error("initAuthUI error:", err);
   }
-
-  connectedEmail.textContent = session.user.email;
-
-  authArea.style.display = "none";
-  connectedInfo.style.display = "block";
 }
 
 // LISTENERS
@@ -1402,3 +1479,4 @@ initAuthUI();
 
 </body>
 </html>
+
