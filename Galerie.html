@@ -179,6 +179,20 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   header h1 { font-size:1.8rem; }
   .login-panel { flex-direction:column; gap:8px; }
 }
+
+/* Sécurise les modals : si aria-hidden=true, ne capte pas les clics */
+  #profileModal[aria-hidden="true"],
+  .modal[aria-hidden="true"] {
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* modal visible garde pointer-events normales */
+  #profileModal,
+  .modal {
+    /* ne pas forcer z-index ici ; conserve le comportement existant */
+  }
 </style>
 </head>
 <body>
@@ -389,54 +403,36 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   window.__authReady = false;
 
   /* ---------- UI update ---------- */
-  async function updateUI(user) {
-  // Masquer/afficher boutons etc. comme d'habitude
+// --- START REPLACE updateUI(user) ENTETE ---
+async function updateUI(user) {
+  // Si pas connecté : afficher la section login et s'assurer que rien (modal overlay) ne bloque l'UI
   if (!user) {
     if (el("loginSection")) el("loginSection").style.display = "block";
     if (el("appSection")) el("appSection").style.display = "none";
+
+    // --- Important : s'assurer que le modal de profil est fermé / non réceptif aux clics ---
+    const profileModal = el("profileModal");
+    if (profileModal) {
+      profileModal.style.display = "none";
+      profileModal.setAttribute("aria-hidden", "true");
+      // pour s'assurer que rien n'intercepte les clics
+      profileModal.style.pointerEvents = "none";
+    }
+
+    // --- Réactiver explicitement le bouton 'se connecter' au cas où ---
+    const loginBtn = el("loginBtn") || el("seConnecterBtn") || el("btnLogin");
+    if (loginBtn) {
+      loginBtn.disabled = false;
+      loginBtn.style.pointerEvents = "auto";
+    }
+
     return;
   }
-
-  // ----------- NOUVEAU : charger le profil à chaque updateUI ----------- 
-  let profil = null;
-  try {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (!error) profil = data;
-  } catch (e) { console.error("Erreur profil:", e); }
-
-  // ----------- NOUVEAU : si profil incomplet => ouvrir la popup ----------- 
-  const missing =
-    !profil ||
-    !profil.nom ||
-    !profil.prenom ||
-    !profil.surns ||
-    !profil.fams ||
-    !profil.promo;
-
-  if (missing) {
-    if (el("profileEmail")) el("profileEmail").textContent = user.email;
-    if (profil) {
-      if (el("profile_nom")) el("profile_nom").value = profil.nom || "";
-      if (el("profile_prenom")) el("profile_prenom").value = profil.prenom || "";
-      if (el("profile_surns")) el("profile_surns").value = profil.surns || "";
-      if (el("profile_fams")) el("profile_fams").value = profil.fams || "";
-      if (el("profile_promo")) el("profile_promo").value = profil.promo || "";
-    }
-    openProfile(); // popup immédiate première connexion
-  }
-
-  // Section app visible
-  if (el("loginSection")) el("loginSection").style.display = "none";
-  if (el("appSection")) el("appSection").style.display = "block";
-
-  // Charger les trajets à chaque fois
-  await loadTrips();
-  await loadMyReservation();
+  // --- suite normale de updateUI pour utilisateur connecté (reste inchangé) ---
+  ...
 }
+// --- END REPLACE ---
+
 
 
   // Un seul listener unifié (après updateUI déclaré)
@@ -495,6 +491,25 @@ async function initApp() {
   }
 }
 
+    function ensureUIReady() {
+  // Réactive les boutons de connexion connus
+  const possibleLoginIds = ["loginBtn", "seConnecterBtn", "btnLogin", "signinBtn"];
+  for (const id of possibleLoginIds) {
+    const b = el(id);
+    if (b) {
+      b.disabled = false;
+      b.style.pointerEvents = "auto";
+    }
+  }
+  // Ferme le modal profil si visible par erreur
+  const pm = el("profileModal");
+  if (pm && pm.style.display === "block") {
+    pm.style.display = "none";
+    pm.setAttribute("aria-hidden", "true");
+    pm.style.pointerEvents = "none";
+  }
+}
+    
  // → LE BON PLACEMENT : en dehors de initApp
  document.addEventListener("DOMContentLoaded", initApp);
 
@@ -1547,6 +1562,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
