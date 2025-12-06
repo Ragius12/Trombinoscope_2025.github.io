@@ -554,15 +554,18 @@ async function logout() {
     const { error } = await supabase.auth.signOut();
     if (error) return alert("Erreur de déconnexion : " + error.message);
 
-    // Nettoyage UI immédiat
-    await updateUI(null);
-    await initApp();
+    // Nettoyage immédiat
+    if (document.getElementById("loginArea")) 
+      document.getElementById("loginArea").style.display = "block";
+    if (document.getElementById("publishArea")) 
+      document.getElementById("publishArea").style.display = "none";
 
   } catch (err) {
     console.error("logout error:", err);
     alert("Erreur lors de la déconnexion.");
   }
 }
+
 
 
 
@@ -653,70 +656,70 @@ async function logout() {
   }
 
   /* ---------- loadTrips (défensif) ---------- */
+let tripsLoading = false;
+
 async function loadTrips() {
-  const list = el("trajets");
+  const list = document.getElementById("trajets");
   if (!list) return;
-  list.innerHTML = "Chargement...";
+
+  if (tripsLoading) return; // empêche double refresh
+  tripsLoading = true;
+
+  list.innerHTML = `<div style="padding:20px;text-align:center;">⏳ Chargement...</div>`;
 
   try {
-    /* 🔥 CLEANUP AUTOMATIQUE : supprimer les trajets expirés depuis +1h */
     await supabase.rpc("cleanup_expired_trips");
 
     const { data, error } = await supabase.from("trips").select("*");
     if (error) {
       list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
+      tripsLoading = false;
       return;
     }
 
     let trips = data || [];
 
-    // ---------------- FILTRES EXACTEMENT COMME AVANT ----------------
-    const searchDest = el("searchDest")?.value || "";
-    const searchOther = (el("searchOther")?.value.trim().toLowerCase()) || "";
-    const searchText = (el("searchText")?.value.trim().toLowerCase()) || "";
+    /* FILTRES EXACTS */
+    const searchDest = document.getElementById("searchDest")?.value || "";
+    const searchOther = (document.getElementById("searchOther")?.value || "").trim().toLowerCase();
+    const searchText = (document.getElementById("searchText")?.value || "").trim().toLowerCase();
 
     trips = trips.filter(t => {
-      const depart = String(t.depart || "").toLowerCase();
-      const arrivee = String(t.arrivee || "").toLowerCase();
-      const nom = String(t.nom || "").toLowerCase();
-      const prenom = String(t.prenom || "").toLowerCase();
-      const desc = String(t.description || "").toLowerCase();
+      const depart = (t.depart || "").toLowerCase();
+      const arrivee = (t.arrivee || "").toLowerCase();
+      const nom = (t.nom || "").toLowerCase();
+      const prenom = (t.prenom || "").toLowerCase();
+      const desc = (t.description || "").toLowerCase();
 
       let okDest = true;
-      if (searchDest) {
-        if (searchDest === "Autre") {
-          okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
-        } else {
-          okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
-        }
+      if (searchDest === "Autre") {
+        okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
+      } else if (searchDest) {
+        okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
       }
 
-      let okText = true;
-      if (searchText) {
-        okText =
-          nom.includes(searchText) ||
-          prenom.includes(searchText) ||
-          desc.includes(searchText) ||
-          depart.includes(searchText) ||
-          arrivee.includes(searchText);
-      }
+      let okText = !searchText ||
+        nom.includes(searchText) ||
+        prenom.includes(searchText) ||
+        desc.includes(searchText) ||
+        depart.includes(searchText) ||
+        arrivee.includes(searchText);
 
       return okDest && okText;
     });
 
-    // ---------------- TRI EXACTEMENT COMME AVANT ----------------
+    /* TRI EXACT */
     const now = Date.now();
-
     function score(t) {
       let s = 0;
-      const q = searchText || "";
-      const dQ = searchDest.toLowerCase() || "";
+      const q = searchText;
+      const dQ = searchDest.toLowerCase();
 
-      const depart = String(t.depart || "").toLowerCase();
-      const arrivee = String(t.arrivee || "").toLowerCase();
-      const nom = String(t.nom || "").toLowerCase();
-      const prenom = String(t.prenom || "").toLowerCase();
-      const desc = String(t.description || "").toLowerCase();
+      const depart = (t.depart || "").toLowerCase();
+      const arrivee = (t.arrivee || "").toLowerCase();
+      const nom = (t.nom || "").toLowerCase();
+      const prenom = (t.prenom || "").toLowerCase();
+      const desc = (t.description || "").toLowerCase();
 
       if (q) {
         if (nom === q || prenom === q) s += 50;
@@ -740,17 +743,35 @@ async function loadTrips() {
 
     trips.sort((a, b) => score(b) - score(a));
 
-    // ---------------- AFFICHAGE ----------------
+    /* PRÉCHARGER une seule fois : qui a réservé quoi ? */
+    const userId = (await supabase.auth.getUser()).data?.user?.id || null;
+    let myReservations = [];
+
+    if (userId) {
+      const { data: resList } = await supabase
+        .from("reservations")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      myReservations = resList || [];
+    }
+
+    /* AFFICHAGE */
     list.innerHTML = "";
     for (const t of trips) {
-      const elem = await createTrajetElement(t, t.id);
+      const elem = await createTrajetElement(t, t.id, myReservations);
       list.appendChild(elem);
     }
+
   } catch (err) {
     console.error("loadTrips error:", err);
     list.innerHTML = "Erreur de chargement.";
   }
+
+  tripsLoading = false;
 }
+
 
 
   /* ---------- utilitaires & actions ---------- */
@@ -1057,122 +1078,93 @@ async function reserve(tripId) {
   }
 
   /* ---------- createTrajetElement ---------- */
-  async function createTrajetElement(t, i) {
-    const d = document.createElement('div');
-    d.className = 'trajet';
+async function createTrajetElement(t, id, myReservations = []) {
+  const d = document.createElement("div");
+  d.className = "trajet";
 
-    try {
-      if (isEnCours(t.datetime)) {
-        const b = document.createElement('div');
-        b.className = 'bandeau';
-        b.textContent = 'EN COURS';
-        d.appendChild(b);
-      } else if ((t.places || 0) <= 0) {
-        const b = document.createElement('div');
-        b.className = 'bandeau';
-        b.textContent = 'PLEIN';
-        d.appendChild(b);
-      } else if (isExpired(t.datetime)) {
-        const b = document.createElement('div');
-        b.className = 'bandeau';
-        b.textContent = 'EXPIRÉ';
-        b.style.background = '#6c6c6c';
-        d.appendChild(b);
-      }
+  const userId = (await supabase.auth.getUser()).data?.user?.id || null;
+  const reserved = myReservations.some(r => r.trip_id === t.id);
 
-      const info = document.createElement('div');
-      info.className = 'trajet-info';
-      info.innerHTML = `
-        <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
-        <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
-        <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
-        <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
-        <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
-      `;
-
-      if (t.description && String(t.description).trim() !== '') {
-        info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
-      }
-
-      const actions = document.createElement('div');
-      actions.className = 'action-buttons';
-
-      // user
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // check reservation for current user
-      let reserved = false;
-      let myRes = null;
-      if (user) {
-        const res = await supabase
-          .from("reservations")
-          .select("*")
-          .eq("trip_id", t.id)
-          .eq("user_id", user.id)
-          .eq("status", "active")
-          .maybeSingle();
-
-        myRes = res.data;
-        reserved = !!res.data;
-      }
-        
-        // Bouton supprimer fusionné (admin OU propriétaire)
-        if (adminMode || (user && user.id === t.owner)) {
-          const del = document.createElement('button');
-          del.className = 'delete-btn';
-          del.textContent = 'Supprimer';
-          del.addEventListener('click', () => deleteTrip(t.id));
-          actions.appendChild(del);
-        }
-
-      // Annuler / Réserver
-      if (reserved) {
-        const un = document.createElement('button');
-        un.className = 'btn';
-        un.textContent = 'Annuler';
-        un.addEventListener('click', () => cancelReservation(myRes.id));
-        actions.appendChild(un);
-      } else if ((t.places || 0) > 0 && !isEnCours(t.datetime) && !isExpired(t.datetime)) {
-        const resBtn = document.createElement('button');
-        resBtn.className = 'btn';
-        resBtn.textContent = 'Réserver';
-        resBtn.addEventListener('click', () => confirmReserve(t.id));
-        actions.appendChild(resBtn);
-      } else {
-        const disabled = document.createElement('button');
-        disabled.className = 'btn btn-disabled';
-        disabled.textContent = 'Réserver';
-        disabled.setAttribute('aria-disabled','true');
-        actions.appendChild(disabled);
-      }
-
-      // Voir les réservations
-      const maySee = await canViewReservations(t);
-      if (maySee) {
-        const btnRes = document.createElement('button');
-        btnRes.className = 'btn';
-        btnRes.textContent = 'Réservations';
-        btnRes.addEventListener('click', () => viewReservations(t.id));
-        actions.appendChild(btnRes);
-      } else {
-        const btnRes = document.createElement('button');
-        btnRes.className = 'btn btn-disabled';
-        btnRes.textContent = 'Réservations';
-        btnRes.setAttribute('aria-disabled', 'true');
-        actions.appendChild(btnRes);
-      }
-
-      d.appendChild(info);
-      d.appendChild(actions);
-    } catch (err) {
-      console.error("createTrajetElement error for id", i, err);
-      const errDiv = document.createElement('div');
-      errDiv.textContent = "Erreur affichage trajet.";
-      d.appendChild(errDiv);
-    }
-
-    return d;
+  // Bandeaux
+  if (isEnCours(t.datetime)) {
+    const b = document.createElement("div");
+    b.className = "bandeau";
+    b.textContent = "EN COURS";
+    d.appendChild(b);
+  } else if (t.places <= 0) {
+    const b = document.createElement("div");
+    b.className = "bandeau";
+    b.textContent = "PLEIN";
+    d.appendChild(b);
+  } else if (isExpired(t.datetime)) {
+    const b = document.createElement("div");
+    b.className = "bandeau";
+    b.textContent = "EXPIRÉ";
+    b.style.background = "#6c6c6c";
+    d.appendChild(b);
   }
+
+  const info = document.createElement("div");
+  info.className = "trajet-info";
+  info.innerHTML = `
+    <p><span class="label-fixed">Conducteur :</span> ${escapeHTML(t.nom)} ${escapeHTML(t.prenom)}</p>
+    <p><span class="label-fixed">Bucque :</span> ${escapeHTML(t.surns)} ${escapeHTML(t.fams)} ${escapeHTML(t.promo)}</p>
+    <p class="label-fixed">${escapeHTML(t.depart)} ➤ ${escapeHTML(t.arrivee)}</p>
+    <p><span class="label-fixed">Date :</span> ${formatFR(t.datetime)}</p>
+    <p><span class="label-fixed">Places restantes :</span> ${t.places}</p>
+  `;
+
+  if (t.description?.trim()) {
+    info.innerHTML += `<p><span class="label-fixed">Description :</span> ${escapeHTML(t.description)}</p>`;
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "action-buttons";
+
+  // Supprimer — admin ou owner
+  if (adminMode || (userId && userId === t.owner)) {
+    const del = document.createElement("button");
+    del.className = "delete-btn";
+    del.textContent = "Supprimer";
+    del.addEventListener("click", () => deleteTrip(t.id));
+    actions.appendChild(del);
+  }
+
+  // Réserver / Annuler
+  if (reserved) {
+    const un = document.createElement("button");
+    un.className = "btn";
+    un.textContent = "Annuler";
+    const myRes = myReservations.find(r => r.trip_id === t.id);
+    un.addEventListener("click", () => cancelReservation(myRes.id));
+    actions.appendChild(un);
+  } else if (t.places > 0 && !isEnCours(t.datetime) && !isExpired(t.datetime)) {
+    const resBtn = document.createElement("button");
+    resBtn.className = "btn";
+    resBtn.textContent = "Réserver";
+    resBtn.addEventListener("click", () => confirmReserve(t.id));
+    actions.appendChild(resBtn);
+  } else {
+    const disabled = document.createElement("button");
+    disabled.className = "btn btn-disabled";
+    disabled.textContent = "Réserver";
+    actions.appendChild(disabled);
+  }
+
+  // Bouton réservations (owner ou admin)
+  if (adminMode || (userId && userId === t.owner)) {
+    const btnRes = document.createElement("button");
+    btnRes.className = "btn";
+    btnRes.textContent = "Réservations";
+    btnRes.addEventListener("click", () => viewReservations(t.id));
+    actions.appendChild(btnRes);
+  }
+
+  d.appendChild(info);
+  d.appendChild(actions);
+  return d;
+}
+
 
   /* ---------- admin ---------- */
   function activateAdmin(){
@@ -1495,6 +1487,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
