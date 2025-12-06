@@ -421,6 +421,41 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       console.error("onAuthStateChange error:", err);
     }
   });
+  
+  function ensureSessionAutoRefresh() {
+  // Implémentation simple : refresh interval with guard to avoid overlapping refreshes
+  const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // toutes les 15 min (ajuste selon besoin)
+  let refreshing = false;
+
+  async function refreshIfNeeded() {
+    if (refreshing) return;
+    refreshing = true;
+    try {
+      // Exemple générique : si tu utilises Firebase / Supabase adapte ici
+      // SUPABASE:
+      // await supabase.auth.refreshSession();
+      // FIREBASE:
+      // await firebase.auth().currentUser.getIdToken(true);
+
+      // Exemple générique via API endpoint:
+      await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+
+      // après refresh, re-fetch profile/trips to keep UI in sync
+      await fetchAndRenderProfile();
+      await fetchAndRenderTrips();
+    } catch (err) {
+      console.warn('session refresh failed', err);
+    } finally {
+      refreshing = false;
+    }
+  }
+
+  // start periodic refresh
+  setInterval(refreshIfNeeded, REFRESH_INTERVAL_MS);
+
+  // optionally run once immediately
+  refreshIfNeeded();
+}
 
 	  // init
 	async function initApp() {
@@ -431,37 +466,26 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 		await updateUI(user);
 		  // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
-	  async function ensureSessionAutoRefresh() {
-		try {
-		  // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
-		  if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
-			try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
-		  }
+	   ensureSessionAutoRefresh();
 
-		  // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
-		  if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
-			try {
-			  await supabase.auth.refreshSession();
-			} catch(e) {
-			  // refreshSession peut échouer si pas nécessaire ou si token invalide
-			  console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
-			}
-		  }
-		} catch (err) {
-		  console.error("ensureSessionAutoRefresh error:", err);
-		}
-	  }
+    // 3) On app start, fetch fresh profile + trips so UI is always backed by DB
+    //    fetchAndRenderProfile will also show the "complete your profile" popup if needed
+    await fetchAndRenderProfile();
+    await fetchAndRenderTrips(); // <-- si tu as une fonction pour récupérer les trips
 
-    if (user) {
-      await ensureProfilePresent(user);
-      await loadTrips();
-      await loadMyReservation();
-    }
+    // 4) Add auth state change listener (if you don't already have one)
+    //    Ensure on auth change we always re-fetch profile & trips
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        await fetchAndRenderProfile();
+        await fetchAndRenderTrips();
+      } else {
+        // user logged out: keep HUD as is or perform your existing logout UI
+      }
+    });
 
-    window.__authReady = true;
   } catch (err) {
-    console.error("initApp error:", err);
-    window.__authReady = true;
+    console.error('initApp error', err);
   }
 }
 
@@ -591,18 +615,30 @@ async function signup() {
 
 
     
-  // --- Remplacer logout existante par celle-ci ---
-  async function logout() {
-    try {
-      // Ne PAS demander confirmation ici : les handlers UI doivent contrôler l'UX (évite double popup).
-      await supabase.auth.signOut(); // par défaut, supabase révoque la session côté client
-      console.log("Déconnecté.");
-      // onAuthStateChange déclenchera updateUI
-    } catch (err) {
-      console.error("logout error", err);
-      alert("Erreur lors de la déconnexion.");
-    }
+async function logout() {
+  try {
+    // Disable UI interactions that could trigger network calls while logging out
+    disableUIInteractions(); // si tu as cette fonction, sinon désactiver le bouton logout
+
+    // Call server/provider logout
+    // Ex: SUPABASE: await supabase.auth.signOut();
+    // Ex: FIREBASE: await firebase.auth().signOut();
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+
+    // Clear local caches and UI state (but keep HUD appearance if you want)
+    clearLocalCache(); // implémente pour vider variables locales : profile, trips, temp arrays
+    // if you want to keep HUD: don't reload the whole page, just hide protected UI
+
+    // Notify app about logout (if you use an event bus)
+    document.dispatchEvent(new Event('user:logged_out'));
+
+  } catch (err) {
+    console.error('logout error', err);
+  } finally {
+    enableUIInteractions();
   }
+}
+
 
 
   /* ---------- Profile modal ---------- */
@@ -832,6 +868,32 @@ async function signup() {
     }
   }
 
+function localDateTimeLocalToISOStringLocal(localValue) {
+    // localValue example: "2025-12-08T14:30"
+    if (!localValue) return null;
+
+    // Split date and time
+    const [datePart, timePart] = localValue.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = timePart.split(':').map(Number);
+
+    // Build a Date object WITHOUT timezone shift (important!)
+    const date = new Date(year, month - 1, day, hour, minute);
+
+    // Format manually to avoid timezone conversion
+    const pad = (n) => String(n).padStart(2, '0');
+
+    return (
+        date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds())
+    );
+}
+
+
 async function openPublishModal() {
   const container = el("form-container");
   if (!container) return;
@@ -858,133 +920,167 @@ async function openPublishModal() {
   // Afficher le modal
   container.style.display = "block";
 }
-  /* ---------- utilitaires & actions ---------- */
-    // --- Remplacer publishTrip existante par celle-ci ---
-async function publishTrip(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (publishing) return;
-  publishing = true;
 
-  const publishBtn = el("publishBtn");
-  try {
-    if (publishBtn) { publishBtn.disabled = true; publishBtn.textContent = "Publication..."; }
+function generateUUID() {
+  // simple RFC4122 v4 UUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { alert("Connecte-toi !"); return; }
-
-    // Lire le profil (obligatoire)
-    const { data: profilData, error: profilError } = await supabase
-      .from("profiles")
-      .select("nom, prenom, surns, fams, promo")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); return; }
-
-    const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
-    if (missingProfileField) {
-      alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
-      if (profilData) {
-        if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
-        if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
-        if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
-        if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
-        if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
-      }
-      if (el("profileEmail")) el("profileEmail").textContent = user.email;
-      openProfile();
-      return;
+function dedupeAndInsertTrip(trip) {
+  // Assumes each trip has a unique server id: trip.id
+  const existing = document.querySelector(`[data-trip-id="${trip.id}"]`);
+  if (existing) {
+    // replace DOM node or update it
+    updateTripUIFromServer(trip);
+  } else {
+    // check by title+date to avoid client-side double insertions
+    const listing = getTripsArrayFromLocalCache();
+    const dup = listing.find(t => t.title === trip.title && t.publishedAt === trip.publishedAt);
+    if (!dup) {
+      prependTripToUI(trip);
+      addTripToLocalCache(trip);
+    } else {
+      // replace duplicate entry with canonical one
+      replaceTripInLocalCache(trip);
+      fetchAndRenderTrips(); // ensure full consistency
     }
-
-    // Récupérer valeurs du form (avec champ Autre géré)
-    const departEl = el("depart");
-    const arriveeEl = el("arrivee");
-    const depart_autreEl = el("depart_autre");
-    const arrivee_autreEl = el("arrivee_autre");
-    const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
-    const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
-    const datetimeVal = el("datetime") ? el("datetime").value : "";
-    const datetimeISO = localDateTimeLocalToISOStringLocal ? localDateTimeLocalToISOStringLocal(datetimeVal) : new Date(datetimeVal).toISOString();
-
-    const description = el("desc") ? el("desc").value.trim() : "";
-    const places = parseInt(el("places") ? el("places").value : "1") || 1;
-
-	// Vérifier que tous les champs obligatoires sont remplis
-	if (!departValue) return alert("Le départ est obligatoire.");
-	if (!arriveeValue) return alert("L’arrivée est obligatoire.");
-	if (!datetimeVal) return alert("La date/heure est obligatoire.");
-	if (!places || places < 1) return alert("Le nombre de places est obligatoire.");
-
-	// Champs de profil obligatoires (déjà vérifiés plus haut)
-	if (!profilData.nom) return alert("Ton Nom doit être renseigné dans ton profil.");
-	if (!profilData.prenom) return alert("Ton Prénom doit être renseigné.");
-	if (!profilData.surns) return alert("Ton Surn's doit être renseigné.");
-	if (!profilData.fams) return alert("Ta Fam's doit être renseignée.");
-	if (!profilData.promo) return alert("Ta promo doit être renseignée.");
-
-
-    // Défensive : vérifier si un trajet identique existe déjà (même owner + depart + arrivee + datetime + description)
-    try {
-      const { data: existing, error: existErr } = await supabase
-        .from("trips")
-        .select("id")
-        .eq("owner", user.id)
-        .eq("depart", departValue)
-        .eq("arrivee", arriveeValue)
-        .eq("datetime", datetimeISO)
-        .eq("description", description)
-        .limit(1)
-        .maybeSingle();
-
-      if (existErr) {
-        console.warn("Erreur vérification doublon :", existErr);
-      } else if (existing) {
-        alert("Un trajet identique a déjà été publié — opération annulée.");
-        return;
-      }
-    } catch (errCheck) {
-      console.warn("publishTrip doublon check failed:", errCheck);
-      // on continue malgré l'erreur de check (ne pas bloquer l'utilisateur)
-    }
-
-    // Construire le trip depuis le profil récupéré
-    const trip = {
-      owner: user.id,
-      nom: profilData.nom,
-      prenom: profilData.prenom,
-      surns: profilData.surns,
-      fams: profilData.fams,
-      promo: profilData.promo,
-      depart: departValue,
-      arrivee: arriveeValue,
-      datetime: datetimeISO,
-      places,
-      description
-    };
-
-    // Insert
-    const { data: insertData, error: insertErr } = await supabase
-      .from("trips")
-      .insert(trip)
-      .select("id");
-
-    if (insertErr) {
-      alert("Erreur publication : " + (insertErr.message || JSON.stringify(insertErr)));
-      console.error("publish insert error:", insertErr);
-      return;
-    }
-
-    alert("Trajet publié !");
-    if (el("publishForm")) el("publishForm").reset();
-    if (el("form-container")) el("form-container").style.display = "none";
-    await loadTrips();
-  } catch (err) {
-    console.error("publishTrip error:", err);
-    alert("Erreur lors de la publication (voir console).");
-  } finally {
-    publishing = false;
-    if (publishBtn) { publishBtn.disabled = false; publishBtn.textContent = "Publier"; }
   }
 }
+
+// fetchAndRenderProfile : récupère depuis la BDD et met à jour l'UI
+async function fetchAndRenderProfile() {
+  try {
+    // get profile from server
+    const res = await fetch('/api/profile', { credentials: 'include' });
+    if (!res.ok) {
+      throw new Error('Erreur fetch profile: ' + (await res.text()));
+    }
+    const profile = await res.json();
+
+    // render profile in UI
+    renderProfile(profile); // ta fonction existante pour afficher le profil
+
+    // store profile in local cache for quick reference (but always re-fetch on profile open)
+    setLocalProfileCache(profile);
+
+    // If profile incomplete -> show mandatory modal to fill data
+    if (!profile.completed) {
+      showProfileModalIfIncomplete(profile);
+    }
+  } catch (err) {
+    console.error('fetchAndRenderProfile error', err);
+  }
+}
+
+// appelé quand l'utilisateur clique sur "Mon profil"
+async function openProfile() {
+  // Always re-fetch from server to ensure data is the latest
+  await fetchAndRenderProfile();
+  // then open the profile panel/modal as usual
+  openProfilePanel(); // ta fonction d'ouverture UI
+}
+
+// modal pour forcer remplissage du profil si incomplet
+function showProfileModalIfIncomplete(profile) {
+  // crée ou ouvre ton modal existant et pré-remplit les champs avec 'profile'
+  // rend le modal "blocking" : l'utilisateur ne peut pas continuer sans compléter
+  const modal = document.querySelector('#completeProfileModal');
+  populateProfileModalFields(modal, profile);
+
+  modal.classList.add('open'); // adapte selon ton système de modal
+  // prevent closing unless validated
+  modal.querySelector('.close').style.display = 'none';
+
+  // handler submit du modal
+  modal.querySelector('form').onsubmit = async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target);
+    const payload = {};
+    fd.forEach((v,k) => payload[k]=v);
+
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+      const updated = await res.json();
+      renderProfile(updated);
+      setLocalProfileCache(updated);
+      modal.classList.remove('open');
+    } catch (err) {
+      console.error('update profile failed', err);
+      showToast('Impossible d\'enregistrer le profil : ' + err.message);
+    }
+  };
+}
+
+  /* ---------- utilitaires & actions ---------- */
+    // --- Remplacer publishTrip existante par celle-ci ---
+let publishLock = false;
+
+async function publishTrip(e) {
+  e && e.preventDefault && e.preventDefault();
+  if (publishLock) return;
+  publishLock = true;
+
+  try {
+    // disable publish button
+    disablePublishButton();
+
+    // collect form data
+    const form = document.querySelector('#publishForm');
+    const formData = new FormData(form);
+    const payload = {};
+    formData.forEach((v,k) => payload[k] = v);
+
+    // generate an idempotency key (client side)
+    const clientRequestId = generateUUID(); // implement generateUUID()
+    payload.clientRequestId = clientRequestId;
+
+    // send to server
+    const res = await fetch('/api/trips', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error('Publish failed: ' + text);
+    }
+
+    const createdTrip = await res.json();
+
+    // Update UI safely:
+    // 1) If trip list already contains this trip id -> replace (prevents duplicates)
+    // 2) Else prepend / insert the new trip
+    dedupeAndInsertTrip(createdTrip);
+
+    // 3) re-fetch trips to ensure consistency (important if server adds computed fields)
+    await fetchAndRenderTrips();
+
+    showToast('Publication créée ✔');
+
+  } catch (err) {
+    console.error('publishTrip error', err);
+    showToast('Erreur lors de la publication : ' + (err.message || err));
+  } finally {
+    publishLock = false;
+    enablePublishButton();
+    // reset form if needed:
+    // form.reset();
+  }
+}
+
 
 
 
@@ -995,90 +1091,53 @@ async function publishTrip(e) {
   }
 
     // --- Remplacer la fonction reserve existante par celle-ci ---
-  async function reserve(tripId) {
-  if (!tripId) return alert("Trajet invalide.");
-  if (reservingTripIds.has(tripId)) return; // déjà en cours
-  reservingTripIds.add(tripId);
+const reservationLocks = new Set();
+
+async function reserve(tripId) {
+  if (reservationLocks.has(tripId)) {
+    console.log('Reservation in progress for', tripId);
+    return;
+  }
+  reservationLocks.add(tripId);
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      alert("Connecte-toi !");
-      return;
-    }
+    // show busy indicator on the trip UI
+    setTripLoadingState(tripId, true);
 
-    // Lire le trajet
-    const { data: trip, error: tripErr } = await supabase
-      .from("trips")
-      .select("owner, depart, arrivee, datetime, places")
-      .eq("id", tripId)
-      .maybeSingle();
-    if (tripErr) { console.error(tripErr); return alert("Impossible de lire le trajet."); }
-    if (!trip) return alert("Trajet introuvable.");
-
-    if (!adminMode && trip.owner === user.id) {
-      return alert("Tu ne peux pas réserver ton propre trajet.");
-    }
-
-    // Vérifier profil
-    const { data: profilData, error: profilError } = await supabase
-      .from("profiles")
-      .select("nom, prenom, surns, fams, promo")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
-
-    const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
-    if (missingProfileField) {
-      alert("Complète ton profil (nom, prénom, Surn's, Fam's et Promo) avant de réserver.");
-      if (profilData) {
-        if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
-        if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
-        if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
-        if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
-        if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
-      } else {
-        if (el("profile_nom")) el("profile_nom").value = "";
-        if (el("profile_prenom")) el("profile_prenom").value = "";
-        if (el("profile_surns")) el("profile_surns").value = "";
-        if (el("profile_fams")) el("profile_fams").value = "";
-        if (el("profile_promo")) el("profile_promo").value = "";
-      }
-      if (el("profileEmail")) el("profileEmail").textContent = user.email;
-      openProfile();
-      return;
-    }
-
-    // Appel RPC
-    const { data, error } = await supabase.rpc("reserve_trip", {
-      p_trip_id: tripId,
-      p_user_id: user.id,
-      p_nom: profilData.nom,
-      p_prenom: profilData.prenom,
-      p_surns: profilData.surns,
-      p_fams: profilData.fams,
-      p_promo: profilData.promo
+    // POST reserve
+    const res = await fetch(`/api/trips/${encodeURIComponent(tripId)}/reserve`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tripId })
     });
 
-    if (error) {
-      console.error("reserve RPC error:", error);
-      return alert(error.details || error.message || JSON.stringify(error));
-    }
-    if (data && data.ok === false) {
-      return alert(data.error || "Impossible de réserver.");
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error('Reservation failed: ' + errText);
     }
 
-    alert("Réservation confirmée !");
-    await loadTrips();
-    await loadMyReservation();
+    // Server returns updated trip or reservation object: use it to update UI
+    const updatedTrip = await res.json();
+
+    // Update the specific trip in UI (don't blindly re-render full list if not needed)
+    updateTripUIFromServer(updatedTrip);
+
+    // If you keep local lists, ensure dedup / replace entry by id
+    replaceTripInLocalCache(updatedTrip);
+
   } catch (err) {
-    console.error("reserve error:", err);
-    alert("Erreur lors de la réservation (voir console).");
+    console.error('reserve error', err);
+    showToast('Réservation échouée : ' + (err.message || err));
   } finally {
-    reservingTripIds.delete(tripId);
+    reservationLocks.delete(tripId);
+    setTripLoadingState(tripId, false);
+
+    // re-fetch single trip to guarantee final consistency
+    fetchAndRenderTripById(tripId).catch(e => console.warn('fetch trip post-reserve failed', e));
   }
 }
+
 
 
 
