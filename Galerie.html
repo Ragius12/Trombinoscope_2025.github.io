@@ -413,12 +413,15 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   let authAlreadyHandled = false;
 
 supabase.auth.onAuthStateChange(async (event, session) => {
-  if (authAlreadyHandled) return;
-  authAlreadyHandled = true;
-
   const user = session?.user ?? null;
+
+  // UI immédiate
   await updateUI(user);
+
+  // recharge toute l'app (verify profile, trips, réservation…)
+  await initApp();
 });
+
 
 
   // init
@@ -439,25 +442,19 @@ async function initApp() {
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
 
-    // mettre à jour l'UI directement
     await updateUI(user);
 
-    // s'assurer du rafraîchissement de session si disponible
-    await ensureSessionAutoRefresh();
-
-    // si connecté, garantir profil + charger données
     if (user) {
       await ensureProfilePresent(user);
       await loadTrips();
       await loadMyReservation();
     }
 
-    window.__authReady = true;
   } catch (err) {
     console.error("initApp error:", err);
-    window.__authReady = true;
   }
 }
+
 
 
  // → LE BON PLACEMENT : en dehors de initApp
@@ -469,9 +466,9 @@ async function login() {
     const email = el("email")?.value.trim().toLowerCase() || "";
     const password = el("password")?.value || "";
 
-    if (!email) { alert("Entre ton email."); return; }
-    if (!email.endsWith("@ensam.eu")) { alert("Utilise une adresse @ensam.eu"); return; }
-    if (!password) { alert("Mot de passe manquant."); return; }
+    if (!email) return alert("Entre ton email.");
+    if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+    if (!password) return alert("Mot de passe manquant.");
 
     const btn = el("loginBtn");
     if (btn) { btn.disabled = true; btn.textContent = "Connexion..."; }
@@ -481,24 +478,24 @@ async function login() {
     if (btn) { btn.disabled = false; btn.textContent = "Se connecter"; }
 
     if (error) {
-      const msg = String(error.message || "").toLowerCase();
-      if (msg.includes("invalid") || msg.includes("credentials")) {
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("invalid") || msg.includes("credentials"))
         return alert("Identifiant ou mot de passe incorrect.");
-      }
-      if (msg.includes("not found") || msg.includes("user") || msg.includes("no user")) {
-        return alert("Adresse non inscrite ! Tu dois d'abord t'inscrire avec ton mail @ensam.eu.");
-      }
+      if (msg.includes("not found"))
+        return alert("Adresse non inscrite ! Inscris-toi d’abord.");
       return alert("Erreur : " + error.message);
     }
 
-    // Si tout est OK, on laisse onAuthStateChange / updateUI gérer l'UI.
-    return;
+    // UI instantanée (plus besoin d'attendre un reload)
+    await updateUI(data.user);
+    await initApp();
+
   } catch (err) {
     console.error("login fatal:", err);
-    alert("Erreur lors de la connexion (voir console).");
-    if (el("loginBtn")) { el("loginBtn").disabled = false; el("loginBtn").textContent = "Se connecter"; }
+    alert("Erreur lors de la connexion.");
   }
 }
+
 
 
 
@@ -548,20 +545,19 @@ async function signup() {
   // --- Remplacer logout existante par celle-ci ---
 async function logout() {
   try {
-    // simple signOut, puis mise à jour UI
     const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("logout error:", error);
-      alert("Erreur de déconnexion : " + (error.message || JSON.stringify(error)));
-      return;
-    }
-    // Forcer update UI locale
-    updateUI(null);
+    if (error) return alert("Erreur de déconnexion : " + error.message);
+
+    // Nettoyage UI immédiat
+    await updateUI(null);
+    await initApp();
+
   } catch (err) {
     console.error("logout error:", err);
-    alert("Erreur de déconnexion (voir console).");
+    alert("Erreur lors de la déconnexion.");
   }
 }
+
 
 
 
@@ -1225,44 +1221,36 @@ async function ensureProfilePresent(user) {
   if (!user) return;
 
   try {
-    const { data: profile, error } = await supabase
+    const { data: profile } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (error) {
-      console.warn("ensureProfilePresent read error:", error);
-      return;
-    }
-
+    // Profil existe → ne rien forcer mais remplir les champs
     if (profile) {
-      // remplir formulaire de publication si possible
       autofillPublishForm(profile);
       return;
     }
 
-    // créer profil vide (pour que les autres fonctions trouvent la ligne)
-    const { error: insertErr } = await supabase.from("profiles").insert({
+    // Profil n’existe pas → création + ouverture obligatoire de la popup
+    await supabase.from("profiles").insert({
       id: user.id,
       nom: "",
       prenom: "",
       surns: "",
       fams: "",
       promo: ""
-    }, { returning: 'minimal' });
+    });
 
-    if (insertErr) {
-      console.warn("ensureProfilePresent insert error:", insertErr);
-    } else {
-      // Ouvrir la modal profil pour que l'utilisateur complète
-      if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
-      openProfile();
-    }
+    if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
+    openProfile();
+
   } catch (err) {
     console.error("ensureProfilePresent error:", err);
   }
 }
+
 
 
 
@@ -1539,6 +1527,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
