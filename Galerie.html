@@ -390,6 +390,31 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   const reservingTripIds = new Set(); // protège les réservations contre double-appel
   window.__authReady = false;
 
+	function localDateTimeLocalToISOStringLocal(localValue) {
+    // localValue example: "2025-12-08T14:30"
+    if (!localValue) return null;
+
+    // Split date and time
+    const [datePart, timePart] = localValue.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = timePart.split(':').map(Number);
+
+    // Build a Date object WITHOUT timezone shift (important!)
+    const date = new Date(year, month - 1, day, hour, minute);
+
+    // Format manually to avoid timezone conversion
+    const pad = (n) => String(n).padStart(2, '0');
+
+    return (
+        date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds())
+    );
+}
+window.localDateTimeLocalToISOStringLocal = localDateTimeLocalToISOStringLocal;
   /* ---------- UI update ---------- */
   async function updateUI(user) {
     try {
@@ -867,31 +892,6 @@ async function logout() {
       list.innerHTML = "Erreur de chargement (voir console).";
     }
   }
-
-function localDateTimeLocalToISOStringLocal(localValue) {
-    // localValue example: "2025-12-08T14:30"
-    if (!localValue) return null;
-
-    // Split date and time
-    const [datePart, timePart] = localValue.split('T');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hour, minute] = timePart.split(':').map(Number);
-
-    // Build a Date object WITHOUT timezone shift (important!)
-    const date = new Date(year, month - 1, day, hour, minute);
-
-    // Format manually to avoid timezone conversion
-    const pad = (n) => String(n).padStart(2, '0');
-
-    return (
-        date.getFullYear() +
-        '-' + pad(date.getMonth() + 1) +
-        '-' + pad(date.getDate()) +
-        'T' + pad(date.getHours()) +
-        ':' + pad(date.getMinutes()) +
-        ':' + pad(date.getSeconds())
-    );
-}
 
 
 async function openPublishModal() {
@@ -1729,6 +1729,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
