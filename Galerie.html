@@ -412,15 +412,20 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   // Un seul listener unifié (après updateUI déclaré)
   let authAlreadyHandled = false;
 
-supabase.auth.onAuthStateChange(async (event, session) => {
+supabase.auth.onAuthStateChange(async (_event, session) => {
   const user = session?.user ?? null;
 
-  // UI immédiate
+  // Met à jour les zones connectées / déconnectées
   await updateUI(user);
 
-  // recharge toute l'app (verify profile, trips, réservation…)
-  await initApp();
+  // Recharge proprement l'app (profils, trajets…)
+  if (user) {
+    await ensureProfilePresent(user);
+    await loadTrips();
+    await loadMyReservation();
+  }
 });
+
 
 
 
@@ -454,6 +459,7 @@ async function initApp() {
     console.error("initApp error:", err);
   }
 }
+
 
 
 
@@ -756,121 +762,83 @@ async function loadTrips() {
 
 // --- Remplacer publishTrip existante par celle-ci ---
 let publishing = false;
+
 async function publishTrip(e) {
-  if (e && e.preventDefault) e.preventDefault();
+  if (e) e.preventDefault();
   if (publishing) return;
+
   publishing = true;
+  const btn = el("publishBtn");
+  btn.disabled = true;
+  btn.textContent = "Publication...";
 
-  const publishBtn = el("publishBtn");
   try {
-    if (publishBtn) { publishBtn.disabled = true; publishBtn.textContent = "Publication..."; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("Connecte-toi !");
+      return;
+    }
 
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
-    if (!user) { alert("Connecte-toi !"); return; }
-
-    // lire profil
-    const { data: profilData, error: profilError } = await supabase
+    // Vérifie profil complet
+    const { data: profil } = await supabase
       .from("profiles")
-      .select("nom, prenom, surns, fams, promo")
+      .select("*")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); return; }
-
-    const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
-    if (missingProfileField) {
-      alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
-      if (profilData) {
-        if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
-        if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
-        if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
-        if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
-        if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
-      }
-      if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
+    if (!profil || !profil.nom || !profil.prenom || !profil.surns || !profil.fams || !profil.promo) {
+      alert("Complète ton profil d'abord !");
       openProfile();
       return;
     }
 
-    // récupérer champs
-    const departEl = el("depart");
-    const arriveeEl = el("arrivee");
-    const depart_autreEl = el("depart_autre");
-    const arrivee_autreEl = el("arrivee_autre");
+    // Champs formulaire
+    const depart = el("depart").value === "Autre" ? el("depart_autre").value.trim() : el("depart").value;
+    const arrivee = el("arrivee").value === "Autre" ? el("arrivee_autre").value.trim() : el("arrivee").value;
+    const datetimeVal = el("datetime").value;
 
-    let departValue = "";
-    let arriveeValue = "";
-
-    // 🔥 Obligation stricte pour DEPART
-    if (departEl.value === "") {
-      alert("Choisis une ville de départ.");
+    if (!depart || !arrivee || !datetimeVal) {
+      alert("Tous les champs sont requis.");
       return;
     }
-    if (departEl.value === "Autre") {
-      if (!depart_autreEl.value.trim()) {
-        alert("Indique la ville de départ (champ 'Autre').");
-        return;
-      }
-      departValue = depart_autreEl.value.trim();
-    } else {
-      departValue = departEl.value;
-    }
 
-    // 🔥 Obligation stricte pour ARRIVEE
-    if (arriveeEl.value === "") {
-      alert("Choisis une ville d'arrivée.");
-      return;
-    }
-    if (arriveeEl.value === "Autre") {
-      if (!arrivee_autreEl.value.trim()) {
-        alert("Indique la ville d'arrivée (champ 'Autre').");
-        return;
-      }
-      arriveeValue = arrivee_autreEl.value.trim();
-    } else {
-      arriveeValue = arriveeEl.value;
-    }
+    const datetimeISO = new Date(datetimeVal).toISOString();
 
-    // date
-    const datetimeVal = el("datetime") ? el("datetime").value : "";
-    if (!datetimeVal) { alert("Choisis une date et heure."); return; }
-    const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
-
-    const trip = {
+    const { error } = await supabase.from("trips").insert({
       owner: user.id,
-      nom: profilData.nom,
-      prenom: profilData.prenom,
-      surns: profilData.surns,
-      fams: profilData.fams,
-      promo: profilData.promo,
-      depart: departValue,
-      arrivee: arriveeValue,
+      nom: profil.nom,
+      prenom: profil.prenom,
+      surns: profil.surns,
+      fams: profil.fams,
+      promo: profil.promo,
+      depart,
+      arrivee,
       datetime: datetimeISO,
-      places: parseInt(el("places") ? el("places").value : "1") || 1,
-      description: el("desc") ? el("desc").value.trim() : ""
-    };
-
-    const { error } = await supabase.from("trips").insert(trip);
+      places: parseInt(el("places").value),
+      description: el("desc").value.trim()
+    });
 
     if (error) {
-      console.error("publish error:", error);
-      alert("Erreur publication : " + (error.message || JSON.stringify(error)));
-      return;
+      console.error("publishTrip error:", error);
+      return alert("Erreur : " + error.message);
     }
 
     alert("Trajet publié !");
-    if (el("publishForm")) el("publishForm").reset();
-    if (el("form-container")) el("form-container").style.display = "none";
+    el("publishForm").reset();
+    el("form-container").style.display = "none";
+
     await loadTrips();
+
   } catch (err) {
-    console.error("publishTrip error:", err);
-    alert("Erreur lors de la publication (voir console).");
+    console.error("publishTrip fatal:", err);
+    alert("Erreur lors de la publication.");
   } finally {
     publishing = false;
-    if (publishBtn) { publishBtn.disabled = false; publishBtn.textContent = "Publier"; }
+    btn.disabled = false;
+    btn.textContent = "Publier";
   }
 }
+
 
 
 
@@ -1221,19 +1189,24 @@ async function ensureProfilePresent(user) {
   if (!user) return;
 
   try {
-    const { data: profile } = await supabase
+    // Vérifie si profil déjà existant
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .maybeSingle();
 
-    // Profil existe → ne rien forcer mais remplir les champs
+    if (error) {
+      console.error("ensureProfilePresent error:", error);
+      return;
+    }
+
     if (profile) {
       autofillPublishForm(profile);
       return;
     }
 
-    // Profil n’existe pas → création + ouverture obligatoire de la popup
+    // Crée le profil VIDE (mais auth OK donc pas de 401)
     await supabase.from("profiles").insert({
       id: user.id,
       nom: "",
@@ -1243,13 +1216,15 @@ async function ensureProfilePresent(user) {
       promo: ""
     });
 
-    if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
+    // Ouvre obligatoirement la pop-up
+    if (el("profileEmail")) el("profileEmail").textContent = user.email;
     openProfile();
 
   } catch (err) {
-    console.error("ensureProfilePresent error:", err);
+    console.error("ensureProfilePresent (fatal):", err);
   }
 }
+
 
 
 
@@ -1267,53 +1242,46 @@ function autofillPublishForm(profile) {
 }
 
 async function saveProfile(e) {
-  if (e && e.preventDefault) e.preventDefault();
+  if (e) e.preventDefault();
+
   try {
-    const getUser = await supabase.auth.getUser();
-    const user = getUser?.data?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Connecte-toi !");
 
-    const nom = (el("profile_nom")?.value || "").trim();
-    const prenom = (el("profile_prenom")?.value || "").trim();
-    const surns = (el("profile_surns")?.value || "").trim();
-    const fams = (el("profile_fams")?.value || "").trim();
-    const promo = (el("profile_promo")?.value || "");
+    const nom = el("profile_nom").value.trim();
+    const prenom = el("profile_prenom").value.trim();
+    const surns = el("profile_surns").value.trim();
+    const fams = el("profile_fams").value.trim();
+    const promo = el("profile_promo").value;
 
-    if (!nom || !prenom) return alert("Nom et prénom requis.");
+    if (!nom || !prenom || !surns || !fams || !promo)
+      return alert("Tous les champs sont obligatoires.");
 
     const { error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .upsert({
         id: user.id,
-        nom,
-        prenom,
-        surns,
-        fams,
-        promo
-      }, { returning: 'minimal' });
+        nom, prenom, surns, fams, promo
+      });
 
     if (error) {
-      console.error("Erreur saveProfile:", error);
-      return alert("Impossible d'enregistrer le profil : " + error.message);
+      console.error("saveProfile error:", error);
+      return alert("Erreur : " + error.message);
     }
 
     alert("Profil enregistré !");
     closeProfile();
 
-    // Mettre à jour le formulaire de publication si vide
-    if (el("nom") && !el("nom").value) el("nom").value = nom;
-    if (el("prenom") && !el("prenom").value) el("prenom").value = prenom;
-    if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = surns;
-    if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = fams;
-    if (el("promo") && !el("promo").value) el("promo").value = promo;
-
+    // Actualise les trajets
     await loadTrips();
     await loadMyReservation();
+
   } catch (err) {
-    console.error("saveProfile error:", err);
-    alert("Erreur en sauvegardant le profil (voir console).");
+    console.error("saveProfile fatal:", err);
+    alert("Erreur en sauvegardant le profil.");
   }
 }
+
 
 
 
@@ -1527,6 +1495,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
