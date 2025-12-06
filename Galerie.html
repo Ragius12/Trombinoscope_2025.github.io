@@ -415,6 +415,28 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     );
 }
 window.localDateTimeLocalToISOStringLocal = localDateTimeLocalToISOStringLocal;
+
+	function disablePublishButton() {
+    const btn = document.getElementById("publishBtn");
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add("disabled");
+        btn.style.opacity = "0.6";
+        btn.style.pointerEvents = "none";
+    }
+}
+
+function enablePublishButton() {
+    const btn = document.getElementById("publishBtn");
+    if (btn) {
+        btn.disabled = false;
+        btn.classList.remove("disabled");
+        btn.style.opacity = "1";
+        btn.style.pointerEvents = "auto";
+    }
+}
+
+	
   /* ---------- UI update ---------- */
   async function updateUI(user) {
     try {
@@ -1729,6 +1751,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
