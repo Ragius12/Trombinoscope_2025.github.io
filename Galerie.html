@@ -420,35 +420,35 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     }
   });
 
-	  // init
-	async function initApp() {
-	  try {
-		// On laisse Supabase gérer automatiquement le magic link
-		const { data: { session } } = await supabase.auth.getSession();
-		const user = session?.user ?? null;
+  // init
+async function initApp() {
+  try {
+    // On laisse Supabase gérer automatiquement le magic link
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
 
-		await updateUI(user);
-		  // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
-	  async function ensureSessionAutoRefresh() {
-		try {
-		  // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
-		  if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
-			try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
-		  }
+    await updateUI(user);
+	  // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
+  async function ensureSessionAutoRefresh() {
+    try {
+      // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
+      if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
+        try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
+      }
 
-		  // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
-		  if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
-			try {
-			  await supabase.auth.refreshSession();
-			} catch(e) {
-			  // refreshSession peut échouer si pas nécessaire ou si token invalide
-			  console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
-			}
-		  }
-		} catch (err) {
-		  console.error("ensureSessionAutoRefresh error:", err);
-		}
-	  }
+      // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
+      if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
+        try {
+          await supabase.auth.refreshSession();
+        } catch(e) {
+          // refreshSession peut échouer si pas nécessaire ou si token invalide
+          console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
+        }
+      }
+    } catch (err) {
+      console.error("ensureSessionAutoRefresh error:", err);
+    }
+  }
 
     if (user) {
       await ensureProfilePresent(user);
@@ -790,7 +790,14 @@ async function signup() {
   }
 
   /* ---------- utilitaires & actions ---------- */
-    // --- Remplacer publishTrip existante par celle-ci ---
+  function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
+    const d = new Date(datetimeLocalValue);
+    if (isNaN(d)) return datetimeLocalValue;
+    return d.toISOString();
+  }
+
+  let publishing = false;
+  // --- Remplacer publishTrip existante par celle-ci ---
   async function publishTrip(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (publishing) return;
@@ -883,7 +890,7 @@ async function signup() {
     await reserve(tripId);
   }
 
-    // --- Remplacer la fonction reserve existante par celle-ci ---
+  // --- Remplacer la fonction reserve existante par celle-ci ---
   async function reserve(tripId) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1544,7 +1551,6 @@ initAuthUI();
 
 </body>
 </html>
-
 
 
 
