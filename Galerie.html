@@ -513,10 +513,13 @@ async function signup() {
     const btn = el("signupBtn");
     if (btn) { btn.disabled = true; btn.textContent = "Inscription..."; }
 
-    // signup sans redirect magic link (on garde simple email+password).
+    // signup AVEC redirect correct
     const { data, error } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: { 
+        emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html" 
+      }
     });
 
     if (btn) { btn.disabled = false; btn.textContent = "S'inscrire"; }
@@ -530,27 +533,14 @@ async function signup() {
       return alert("Inscription impossible : " + error.message);
     }
 
-    // Si Supabase retourne un user confirmé immédiatement (rare), on upsert le profil.
-    const user = data?.user;
-    const isConfirmed = !!(user?.email_confirmed_at || user?.confirmed_at || user?.email_confirmed);
-    if (user && isConfirmed) {
-      await supabase.from('profiles').upsert({
-        id: user.id,
-        nom: (el("profile_nom")?.value || "").trim(),
-        prenom: (el("profile_prenom")?.value || "").trim(),
-        surns: (el("profile_surns")?.value || "").trim(),
-        fams: (el("profile_fams")?.value || "").trim(),
-        promo: (el("profile_promo")?.value || "")
-      }, { returning: 'minimal' });
-    }
-
-    alert("Compte créé ! (Si un email de confirmation est requis, vérifie ta boîte mail).");
+    alert("Compte créé ! Vérifie ta boîte mail.");
   } catch (err) {
     console.error("signup fatal:", err);
     alert("Erreur lors de l'inscription (voir console).");
     if (el("signupBtn")) { el("signupBtn").disabled = false; el("signupBtn").textContent = "S'inscrire"; }
   }
 }
+
 
 
 
@@ -1549,6 +1539,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
