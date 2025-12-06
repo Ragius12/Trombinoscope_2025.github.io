@@ -386,57 +386,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   const supabase = window.supabase;
     
   let adminMode = false;
-  let publishing = false;            // protège la publication contre double-envoi
-  const reservingTripIds = new Set(); // protège les réservations contre double-appel
   window.__authReady = false;
 
-	function localDateTimeLocalToISOStringLocal(localValue) {
-    // localValue example: "2025-12-08T14:30"
-    if (!localValue) return null;
-
-    // Split date and time
-    const [datePart, timePart] = localValue.split('T');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hour, minute] = timePart.split(':').map(Number);
-
-    // Build a Date object WITHOUT timezone shift (important!)
-    const date = new Date(year, month - 1, day, hour, minute);
-
-    // Format manually to avoid timezone conversion
-    const pad = (n) => String(n).padStart(2, '0');
-
-    return (
-        date.getFullYear() +
-        '-' + pad(date.getMonth() + 1) +
-        '-' + pad(date.getDate()) +
-        'T' + pad(date.getHours()) +
-        ':' + pad(date.getMinutes()) +
-        ':' + pad(date.getSeconds())
-    );
-}
-window.localDateTimeLocalToISOStringLocal = localDateTimeLocalToISOStringLocal;
-
-	function disablePublishButton() {
-    const btn = document.getElementById("publishBtn");
-    if (btn) {
-        btn.disabled = true;
-        btn.classList.add("disabled");
-        btn.style.opacity = "0.6";
-        btn.style.pointerEvents = "none";
-    }
-}
-
-function enablePublishButton() {
-    const btn = document.getElementById("publishBtn");
-    if (btn) {
-        btn.disabled = false;
-        btn.classList.remove("disabled");
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "auto";
-    }
-}
-
-	
   /* ---------- UI update ---------- */
   async function updateUI(user) {
     try {
@@ -468,41 +419,6 @@ function enablePublishButton() {
       console.error("onAuthStateChange error:", err);
     }
   });
-  
-  function ensureSessionAutoRefresh() {
-  // Implémentation simple : refresh interval with guard to avoid overlapping refreshes
-  const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // toutes les 15 min (ajuste selon besoin)
-  let refreshing = false;
-
-  async function refreshIfNeeded() {
-    if (refreshing) return;
-    refreshing = true;
-    try {
-      // Exemple générique : si tu utilises Firebase / Supabase adapte ici
-      // SUPABASE:
-      // await supabase.auth.refreshSession();
-      // FIREBASE:
-      // await firebase.auth().currentUser.getIdToken(true);
-
-      // Exemple générique via API endpoint:
-      await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
-
-      // après refresh, re-fetch profile/trips to keep UI in sync
-      await fetchAndRenderProfile();
-      await fetchAndRenderTrips();
-    } catch (err) {
-      console.warn('session refresh failed', err);
-    } finally {
-      refreshing = false;
-    }
-  }
-
-  // start periodic refresh
-  setInterval(refreshIfNeeded, REFRESH_INTERVAL_MS);
-
-  // optionally run once immediately
-  refreshIfNeeded();
-}
 
 	  // init
 	async function initApp() {
@@ -513,26 +429,37 @@ function enablePublishButton() {
 
 		await updateUI(user);
 		  // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
-	   ensureSessionAutoRefresh();
+	  async function ensureSessionAutoRefresh() {
+		try {
+		  // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
+		  if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
+			try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
+		  }
 
-    // 3) On app start, fetch fresh profile + trips so UI is always backed by DB
-    //    fetchAndRenderProfile will also show the "complete your profile" popup if needed
-    await fetchAndRenderProfile();
-    await fetchAndRenderTrips(); // <-- si tu as une fonction pour récupérer les trips
+		  // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
+		  if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
+			try {
+			  await supabase.auth.refreshSession();
+			} catch(e) {
+			  // refreshSession peut échouer si pas nécessaire ou si token invalide
+			  console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
+			}
+		  }
+		} catch (err) {
+		  console.error("ensureSessionAutoRefresh error:", err);
+		}
+	  }
 
-    // 4) Add auth state change listener (if you don't already have one)
-    //    Ensure on auth change we always re-fetch profile & trips
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        await fetchAndRenderProfile();
-        await fetchAndRenderTrips();
-      } else {
-        // user logged out: keep HUD as is or perform your existing logout UI
-      }
-    });
+    if (user) {
+      await ensureProfilePresent(user);
+      await loadTrips();
+      await loadMyReservation();
+    }
 
+    window.__authReady = true;
   } catch (err) {
-    console.error('initApp error', err);
+    console.error("initApp error:", err);
+    window.__authReady = true;
   }
 }
 
@@ -660,115 +587,26 @@ async function signup() {
   }
 }
 
-function disableUIInteractions() {
-    // Désactiver tous les boutons
-    document.querySelectorAll("button, input[type=submit]").forEach(btn => {
-        btn.disabled = true;
-        btn.classList.add("disabled");
-        btn.style.opacity = "0.5";
-        btn.style.pointerEvents = "none";
-    });
 
-    // Désactiver tous les liens (optionnel)
-    document.querySelectorAll("a").forEach(a => {
-        a.dataset.href = a.getAttribute("href");
-        a.setAttribute("href", "javascript:void(0)");
-        a.style.opacity = "0.5";
-        a.style.pointerEvents = "none";
-    });
-}
-
-function enableUIInteractions() {
-    // Réactiver tous les boutons
-    document.querySelectorAll("button, input[type=submit]").forEach(btn => {
-        btn.disabled = false;
-        btn.classList.remove("disabled");
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "auto";
-    });
-
-    // Réactiver tous les liens (optionnel)
-    document.querySelectorAll("a").forEach(a => {
-        if (a.dataset.href) {
-            a.setAttribute("href", a.dataset.href);
-            delete a.dataset.href;
-        }
-        a.style.opacity = "1";
-        a.style.pointerEvents = "auto";
-    });
-}
     
-async function logout() {
-  try {
-    // Disable UI interactions that could trigger network calls while logging out
-    disableUIInteractions(); // si tu as cette fonction, sinon désactiver le bouton logout
-
-    // Call server/provider logout
-    // Ex: SUPABASE: await supabase.auth.signOut();
-    // Ex: FIREBASE: await firebase.auth().signOut();
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-
-    // Clear local caches and UI state (but keep HUD appearance if you want)
-    clearLocalCache(); // implémente pour vider variables locales : profile, trips, temp arrays
-    // if you want to keep HUD: don't reload the whole page, just hide protected UI
-
-    // Notify app about logout (if you use an event bus)
-    document.dispatchEvent(new Event('user:logged_out'));
-
-  } catch (err) {
-    console.error('logout error', err);
-  } finally {
-    enableUIInteractions();
+  // --- Remplacer logout existante par celle-ci ---
+  async function logout() {
+    try {
+      // Ne PAS demander confirmation ici : les handlers UI doivent contrôler l'UX (évite double popup).
+      await supabase.auth.signOut(); // par défaut, supabase révoque la session côté client
+      console.log("Déconnecté.");
+      // onAuthStateChange déclenchera updateUI
+    } catch (err) {
+      console.error("logout error", err);
+      alert("Erreur lors de la déconnexion.");
+    }
   }
-}
-
 
 
   /* ---------- Profile modal ---------- */
-  async function openProfile() {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      alert("Connecte-toi !");
-      return;
-    }
-
-    // Lire le profil à chaque ouverture (forcé depuis la BDD)
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Erreur lecture profil openProfile:", error);
-      // on ouvre quand même la modal vide (défensif)
-    }
-
-    // remplir les champs (si profile présent)
-    if (profile) {
-      if (el("profile_nom")) el("profile_nom").value = profile.nom || "";
-      if (el("profile_prenom")) el("profile_prenom").value = profile.prenom || "";
-      if (el("profile_surns")) el("profile_surns").value = profile.surns || "";
-      if (el("profile_fams")) el("profile_fams").value = profile.fams || "";
-      if (el("profile_promo")) el("profile_promo").value = profile.promo || "";
-    } else {
-      // pas de profile : vider les champs et afficher l'email
-      if (el("profile_nom")) el("profile_nom").value = "";
-      if (el("profile_prenom")) el("profile_prenom").value = "";
-      if (el("profile_surns")) el("profile_surns").value = "";
-      if (el("profile_fams")) el("profile_fams").value = "";
-      if (el("profile_promo")) el("profile_promo").value = "";
-    }
-
-    if (el("profileEmail")) el("profileEmail").textContent = user.email;
-    if (el("profileModal")) el("profileModal").style.display = "flex";
-  } catch (err) {
-    console.error("openProfile fatal:", err);
+  function openProfile() {
     if (el("profileModal")) el("profileModal").style.display = "flex";
   }
-}
-
   function closeProfile() {
     if (el("profileModal")) el("profileModal").style.display = "none";
   }
@@ -951,195 +789,92 @@ async function logout() {
     }
   }
 
-
-async function openPublishModal() {
-  const container = el("form-container");
-  if (!container) return;
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return alert("Connecte-toi !");
-
-  // Lire le profil dans la BDD
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  // Remplir les champs du modal
-  if (profile) {
-    if (el("nom")) el("nom").value = profile.nom || "";
-    if (el("prenom")) el("prenom").value = profile.prenom || "";
-    if (el("surns_pub")) el("surns_pub").value = profile.surns || "";
-    if (el("fams_pub")) el("fams_pub").value = profile.fams || "";
-    if (el("promo")) el("promo").value = profile.promo || "";
-  }
-
-  // Afficher le modal
-  container.style.display = "block";
-}
-
-function generateUUID() {
-  // simple RFC4122 v4 UUID
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
-function dedupeAndInsertTrip(trip) {
-  // Assumes each trip has a unique server id: trip.id
-  const existing = document.querySelector(`[data-trip-id="${trip.id}"]`);
-  if (existing) {
-    // replace DOM node or update it
-    updateTripUIFromServer(trip);
-  } else {
-    // check by title+date to avoid client-side double insertions
-    const listing = getTripsArrayFromLocalCache();
-    const dup = listing.find(t => t.title === trip.title && t.publishedAt === trip.publishedAt);
-    if (!dup) {
-      prependTripToUI(trip);
-      addTripToLocalCache(trip);
-    } else {
-      // replace duplicate entry with canonical one
-      replaceTripInLocalCache(trip);
-      fetchAndRenderTrips(); // ensure full consistency
-    }
-  }
-}
-
-// fetchAndRenderProfile : récupère depuis la BDD et met à jour l'UI
-async function fetchAndRenderProfile() {
-  try {
-    // get profile from server
-    const res = await fetch('/api/profile', { credentials: 'include' });
-    if (!res.ok) {
-      throw new Error('Erreur fetch profile: ' + (await res.text()));
-    }
-    const profile = await res.json();
-
-    // render profile in UI
-    renderProfile(profile); // ta fonction existante pour afficher le profil
-
-    // store profile in local cache for quick reference (but always re-fetch on profile open)
-    setLocalProfileCache(profile);
-
-    // If profile incomplete -> show mandatory modal to fill data
-    if (!profile.completed) {
-      showProfileModalIfIncomplete(profile);
-    }
-  } catch (err) {
-    console.error('fetchAndRenderProfile error', err);
-  }
-}
-
-// appelé quand l'utilisateur clique sur "Mon profil"
-async function openProfile() {
-  // Always re-fetch from server to ensure data is the latest
-  await fetchAndRenderProfile();
-  // then open the profile panel/modal as usual
-  openProfilePanel(); // ta fonction d'ouverture UI
-}
-
-// modal pour forcer remplissage du profil si incomplet
-function showProfileModalIfIncomplete(profile) {
-  // crée ou ouvre ton modal existant et pré-remplit les champs avec 'profile'
-  // rend le modal "blocking" : l'utilisateur ne peut pas continuer sans compléter
-  const modal = document.querySelector('#completeProfileModal');
-  populateProfileModalFields(modal, profile);
-
-  modal.classList.add('open'); // adapte selon ton système de modal
-  // prevent closing unless validated
-  modal.querySelector('.close').style.display = 'none';
-
-  // handler submit du modal
-  modal.querySelector('form').onsubmit = async (ev) => {
-    ev.preventDefault();
-    const fd = new FormData(ev.target);
-    const payload = {};
-    fd.forEach((v,k) => payload[k]=v);
-
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-      const updated = await res.json();
-      renderProfile(updated);
-      setLocalProfileCache(updated);
-      modal.classList.remove('open');
-    } catch (err) {
-      console.error('update profile failed', err);
-      showToast('Impossible d\'enregistrer le profil : ' + err.message);
-    }
-  };
-}
-
   /* ---------- utilitaires & actions ---------- */
     // --- Remplacer publishTrip existante par celle-ci ---
-let publishLock = false;
+  async function publishTrip(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (publishing) return;
+    publishing = true;
+    try {
+      const publishBtn = el("publishBtn");
+      if (publishBtn) publishBtn.disabled = true;
 
-async function publishTrip(e) {
-  e && e.preventDefault && e.preventDefault();
-  if (publishLock) return;
-  publishLock = true;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert("Connecte-toi !"); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
 
-  try {
-    // disable publish button
-    disablePublishButton();
+      // Vérifier le profil obligatoire (nom/prenom/surns/fams/promo)
+      const { data: profilData, error: profilError } = await supabase
+        .from("profiles")
+        .select("nom, prenom, surns, fams, promo")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
 
-    // collect form data
-    const form = document.querySelector('#publishForm');
-    const formData = new FormData(form);
-    const payload = {};
-    formData.forEach((v,k) => payload[k] = v);
+      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+      if (missingProfileField) {
+        alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
+        if (profilData) {
+          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
+        }
+        if (el("profileEmail")) el("profileEmail").textContent = user.email;
+        openProfile();
+        publishing = false;
+        if (publishBtn) publishBtn.disabled = false;
+        return;
+      }
 
-    // generate an idempotency key (client side)
-    const clientRequestId = generateUUID(); // implement generateUUID()
-    payload.clientRequestId = clientRequestId;
+      // Récupérer valeurs du form (avec champ Autre géré)
+      const departEl = el("depart");
+      const arriveeEl = el("arrivee");
+      const depart_autreEl = el("depart_autre");
+      const arrivee_autreEl = el("arrivee_autre");
+      const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
+      const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
+      const datetimeVal = el("datetime") ? el("datetime").value : "";
+      if (!datetimeVal) { alert("Choisis une date et heure."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
+      const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
 
-    // send to server
-    const res = await fetch('/api/trips', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    });
+      // Utiliser le profil (obligatoire) pour préremplir l'auteur du trajet
+      const trip = {
+        owner: user.id,
+        nom: profilData.nom,
+        prenom: profilData.prenom,
+        surns: profilData.surns,
+        fams: profilData.fams,
+        promo: profilData.promo,
+        depart: departValue,
+        arrivee: arriveeValue,
+        datetime: datetimeISO,
+        places: parseInt(el("places") ? el("places").value : "1") || 1,
+        description: el("desc") ? el("desc").value.trim() : ""
+      };
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error('Publish failed: ' + text);
+      try {
+        if (el("publishBtn")) el("publishBtn").textContent = "Publication...";
+        const { data, error } = await supabase.from("trips").insert(trip);
+        if (error) {
+          alert("Erreur publication : " + (error.message || JSON.stringify(error)));
+        } else {
+          alert("Trajet publié !");
+          if (el("publishForm")) el("publishForm").reset();
+          if (el("form-container")) el("form-container").style.display = "none";
+          await loadTrips();
+        }
+      } finally {
+        if (el("publishBtn")) { el("publishBtn").disabled = false; el("publishBtn").textContent = "Publier"; }
+      }
+    } catch (err) {
+      console.error("publishTrip error:", err);
+      alert("Erreur lors de la publication (voir console).");
+    } finally {
+      publishing = false;
+      if (el("publishBtn")) el("publishBtn").disabled = false;
     }
-
-    const createdTrip = await res.json();
-
-    // Update UI safely:
-    // 1) If trip list already contains this trip id -> replace (prevents duplicates)
-    // 2) Else prepend / insert the new trip
-    dedupeAndInsertTrip(createdTrip);
-
-    // 3) re-fetch trips to ensure consistency (important if server adds computed fields)
-    await fetchAndRenderTrips();
-
-    showToast('Publication créée ✔');
-
-  } catch (err) {
-    console.error('publishTrip error', err);
-    showToast('Erreur lors de la publication : ' + (err.message || err));
-  } finally {
-    publishLock = false;
-    enablePublishButton();
-    // reset form if needed:
-    // form.reset();
   }
-}
-
-
 
 
   /* ---------- Réservations (RPCs) ---------- */
@@ -1149,54 +884,78 @@ async function publishTrip(e) {
   }
 
     // --- Remplacer la fonction reserve existante par celle-ci ---
-const reservationLocks = new Set();
+  async function reserve(tripId) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return alert("Connecte-toi !");
 
-async function reserve(tripId) {
-  if (reservationLocks.has(tripId)) {
-    console.log('Reservation in progress for', tripId);
-    return;
-  }
-  reservationLocks.add(tripId);
+      // Lire le trajet pour vérifier le propriétaire (défensive)
+      const { data: trip, error: tripErr } = await supabase
+        .from("trips")
+        .select("owner, depart, arrivee, datetime, places")
+        .eq("id", tripId)
+        .maybeSingle();
+      if (tripErr) { console.error(tripErr); return alert("Impossible de lire le trajet."); }
+      if (!trip) return alert("Trajet introuvable.");
 
-  try {
-    // show busy indicator on the trip UI
-    setTripLoadingState(tripId, true);
+      // Empêcher le propriétaire du trajet de réserver son propre trajet
+      if (!adminMode && trip.owner === user.id) {
+        return alert("Tu ne peux pas réserver ton propre trajet.");
+      }
 
-    // POST reserve
-    const res = await fetch(`/api/trips/${encodeURIComponent(tripId)}/reserve`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tripId })
-    });
+      // Vérifier que le profil existe ET contient bien les champs obligatoires
+      const { data: profilData, error: profilError } = await supabase
+        .from("profiles")
+        .select("nom, prenom, surns, fams, promo")
+        .eq("id", user.id)
+        .maybeSingle();
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error('Reservation failed: ' + errText);
+      if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
+
+      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+      if (missingProfileField) {
+        alert("Complète ton profil (nom, prénom, Surn's, Fam's et Promo) avant de réserver.");
+        // Pré-remplir modal profil si on a un objet (ou vider sinon)
+        if (profilData) {
+          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
+        } else {
+          if (el("profile_nom")) el("profile_nom").value = "";
+          if (el("profile_prenom")) el("profile_prenom").value = "";
+          if (el("profile_surns")) el("profile_surns").value = "";
+          if (el("profile_fams")) el("profile_fams").value = "";
+          if (el("profile_promo")) el("profile_promo").value = "";
+        }
+        if (el("profileEmail")) el("profileEmail").textContent = user.email;
+        openProfile();
+        return;
+      }
+
+      // Appel RPC si tout est OK
+      const { data, error } = await supabase.rpc("reserve_trip", {
+        p_trip_id: tripId,
+        p_user_id: user.id,
+        p_nom: profilData.nom,
+        p_prenom: profilData.prenom,
+        p_surns: profilData.surns,
+        p_fams: profilData.fams,
+        p_promo: profilData.promo
+      });
+
+      if (error) return alert(error.details || error.message || JSON.stringify(error));
+      if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
+
+      alert("Réservation confirmée !");
+      await loadTrips();
+      await loadMyReservation();
+    } catch (err) {
+      console.error("reserve error:", err);
+      alert("Erreur lors de la réservation (voir console).");
     }
-
-    // Server returns updated trip or reservation object: use it to update UI
-    const updatedTrip = await res.json();
-
-    // Update the specific trip in UI (don't blindly re-render full list if not needed)
-    updateTripUIFromServer(updatedTrip);
-
-    // If you keep local lists, ensure dedup / replace entry by id
-    replaceTripInLocalCache(updatedTrip);
-
-  } catch (err) {
-    console.error('reserve error', err);
-    showToast('Réservation échouée : ' + (err.message || err));
-  } finally {
-    reservationLocks.delete(tripId);
-    setTripLoadingState(tripId, false);
-
-    // re-fetch single trip to guarantee final consistency
-    fetchAndRenderTripById(tripId).catch(e => console.warn('fetch trip post-reserve failed', e));
   }
-}
-
-
 
 
   async function loadMyReservation() {
@@ -1523,7 +1282,7 @@ function autofillPublishForm(profile) {
   if (el("promo")) el("promo").value = profile.promo || "";
 }
 
-async function saveProfile(e) {
+ async function saveProfile(e) {
   if (e && e.preventDefault) e.preventDefault();
   try {
     const getUser = await supabase.auth.getUser();
@@ -1549,7 +1308,7 @@ async function saveProfile(e) {
         surns,
         fams,
         promo
-      }, { returning: 'representation' });
+      }, { returning: 'minimal' });
 
     if (error) {
       console.error("Erreur saveProfile:", error);
@@ -1559,14 +1318,13 @@ async function saveProfile(e) {
     alert("Profil enregistré !");
     closeProfile();
 
-    // Mettre à jour le formulaire de publication si vide (garde le style existant)
+    // Mettre à jour le formulaire de publication seulement si vide (garde le style existant)
     if (el("nom") && !el("nom").value) el("nom").value = nom;
     if (el("prenom") && !el("prenom").value) el("prenom").value = prenom;
     if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = surns;
     if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = fams;
     if (el("promo") && !el("promo").value) el("promo").value = promo;
 
-    // Recharger données affichées
     await loadTrips();
     await loadMyReservation();
   } catch (err) {
@@ -1574,7 +1332,6 @@ async function saveProfile(e) {
     alert("Erreur en sauvegardant le profil (voir console).");
   }
 }
-
 
 
 
@@ -1787,9 +1544,6 @@ initAuthUI();
 
 </body>
 </html>
-
-
-
 
 
 
