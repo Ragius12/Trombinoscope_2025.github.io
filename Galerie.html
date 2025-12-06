@@ -179,20 +179,6 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   header h1 { font-size:1.8rem; }
   .login-panel { flex-direction:column; gap:8px; }
 }
-
-/* Sécurise les modals : si aria-hidden=true, ne capte pas les clics */
-  #profileModal[aria-hidden="true"],
-  .modal[aria-hidden="true"] {
-    pointer-events: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-  }
-
-  /* modal visible garde pointer-events normales */
-  #profileModal,
-  .modal {
-    /* ne pas forcer z-index ici ; conserve le comportement existant */
-  }
 </style>
 </head>
 <body>
@@ -400,40 +386,30 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   const supabase = window.supabase;
     
   let adminMode = false;
+  let publishing = false;            // protège la publication contre double-envoi
+  const reservingTripIds = new Set(); // protège les réservations contre double-appel
   window.__authReady = false;
 
   /* ---------- UI update ---------- */
-// --- START REPLACE updateUI(user) ENTETE ---
-async function updateUI(user) {
-  // Si pas connecté : afficher la section login et s'assurer que rien (modal overlay) ne bloque l'UI
-  if (!user) {
-    if (el("loginSection")) el("loginSection").style.display = "block";
-    if (el("appSection")) el("appSection").style.display = "none";
+  async function updateUI(user) {
+    try {
+      if (user) {
+        if (el("loginArea")) el("loginArea").style.display = "none";
+        if (el("publishArea")) el("publishArea").style.display = "block";
+        if (el("userEmail")) el("userEmail").textContent = user.email;
+        if (el("profileEmail")) el("profileEmail").textContent = user.email;
 
-    // --- Important : s'assurer que le modal de profil est fermé / non réceptif aux clics ---
-    const profileModal = el("profileModal");
-    if (profileModal) {
-      profileModal.style.display = "none";
-      profileModal.setAttribute("aria-hidden", "true");
-      // pour s'assurer que rien n'intercepte les clics
-      profileModal.style.pointerEvents = "none";
+        if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
+        if (typeof loadTrips === "function") await loadTrips();
+        if (typeof loadMyReservation === "function") await loadMyReservation();
+      } else {
+        if (el("loginArea")) el("loginArea").style.display = "block";
+        if (el("publishArea")) el("publishArea").style.display = "none";
+      }
+    } catch (err) {
+      console.error("updateUI error:", err);
     }
-
-    // --- Réactiver explicitement le bouton 'se connecter' au cas où ---
-    const loginBtn = el("loginBtn") || el("seConnecterBtn") || el("btnLogin");
-    if (loginBtn) {
-      loginBtn.disabled = false;
-      loginBtn.style.pointerEvents = "auto";
-    }
-
-    return;
   }
-  // --- suite normale de updateUI pour utilisateur connecté (reste inchangé) ---
-  ...
-}
-// --- END REPLACE ---
-
-
 
   // Un seul listener unifié (après updateUI déclaré)
   supabase.auth.onAuthStateChange(async (event, session) => {
@@ -446,38 +422,36 @@ async function updateUI(user) {
     }
   });
 
-  // init
-async function initApp() {
-  try {
-    // On laisse Supabase gérer automatiquement le magic link
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
+	  // init
+	async function initApp() {
+	  try {
+		// On laisse Supabase gérer automatiquement le magic link
+		const { data: { session } } = await supabase.auth.getSession();
+		const user = session?.user ?? null;
 
-    await updateUI(user);
+		await updateUI(user);
+		  // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
+	  async function ensureSessionAutoRefresh() {
+		try {
+		  // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
+		  if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
+			try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
+		  }
 
-      // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
-  async function ensureSessionAutoRefresh() {
-    try {
-      // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
-      if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
-        try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
-      }
+		  // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
+		  if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
+			try {
+			  await supabase.auth.refreshSession();
+			} catch(e) {
+			  // refreshSession peut échouer si pas nécessaire ou si token invalide
+			  console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
+			}
+		  }
+		} catch (err) {
+		  console.error("ensureSessionAutoRefresh error:", err);
+		}
+	  }
 
-      // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
-      if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
-        try {
-          await supabase.auth.refreshSession();
-        } catch(e) {
-          // refreshSession peut échouer si pas nécessaire ou si token invalide
-          console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
-        }
-      }
-    } catch (err) {
-      console.error("ensureSessionAutoRefresh error:", err);
-    }
-  }
-
-      
     if (user) {
       await ensureProfilePresent(user);
       await loadTrips();
@@ -491,25 +465,6 @@ async function initApp() {
   }
 }
 
-    function ensureUIReady() {
-  // Réactive les boutons de connexion connus
-  const possibleLoginIds = ["loginBtn", "seConnecterBtn", "btnLogin", "signinBtn"];
-  for (const id of possibleLoginIds) {
-    const b = el(id);
-    if (b) {
-      b.disabled = false;
-      b.style.pointerEvents = "auto";
-    }
-  }
-  // Ferme le modal profil si visible par erreur
-  const pm = el("profileModal");
-  if (pm && pm.style.display === "block") {
-    pm.style.display = "none";
-    pm.setAttribute("aria-hidden", "true");
-    pm.style.pointerEvents = "none";
-  }
-}
-    
  // → LE BON PLACEMENT : en dehors de initApp
  document.addEventListener("DOMContentLoaded", initApp);
 
@@ -636,7 +591,7 @@ async function signup() {
 
 
     
-   // --- Remplacer logout existante par celle-ci ---
+  // --- Remplacer logout existante par celle-ci ---
   async function logout() {
     try {
       // Ne PAS demander confirmation ici : les handlers UI doivent contrôler l'UX (évite double popup).
@@ -652,31 +607,46 @@ async function signup() {
 
   /* ---------- Profile modal ---------- */
   async function openProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
   try {
-    const { data: profil } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (el("profileEmail")) el("profileEmail").textContent = user.email;
-
-    if (profil) {
-      if (el("profile_nom")) el("profile_nom").value = profil.nom || "";
-      if (el("profile_prenom")) el("profile_prenom").value = profil.prenom || "";
-      if (el("profile_surns")) el("profile_surns").value = profil.surns || "";
-      if (el("profile_fams")) el("profile_fams").value = profil.fams || "";
-      if (el("profile_promo")) el("profile_promo").value = profil.promo || "";
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("Connecte-toi !");
+      return;
     }
 
-    if (el("profileModal")) el("profileModal").style.display = "block";
+    // Lire le profil à chaque ouverture (forcé depuis la BDD)
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
 
+    if (error) {
+      console.error("Erreur lecture profil openProfile:", error);
+      // on ouvre quand même la modal vide (défensif)
+    }
+
+    // remplir les champs (si profile présent)
+    if (profile) {
+      if (el("profile_nom")) el("profile_nom").value = profile.nom || "";
+      if (el("profile_prenom")) el("profile_prenom").value = profile.prenom || "";
+      if (el("profile_surns")) el("profile_surns").value = profile.surns || "";
+      if (el("profile_fams")) el("profile_fams").value = profile.fams || "";
+      if (el("profile_promo")) el("profile_promo").value = profile.promo || "";
+    } else {
+      // pas de profile : vider les champs et afficher l'email
+      if (el("profile_nom")) el("profile_nom").value = "";
+      if (el("profile_prenom")) el("profile_prenom").value = "";
+      if (el("profile_surns")) el("profile_surns").value = "";
+      if (el("profile_fams")) el("profile_fams").value = "";
+      if (el("profile_promo")) el("profile_promo").value = "";
+    }
+
+    if (el("profileEmail")) el("profileEmail").textContent = user.email;
+    if (el("profileModal")) el("profileModal").style.display = "flex";
   } catch (err) {
-    console.error("openProfile error:", err);
-    alert("Impossible de charger le profil.");
+    console.error("openProfile fatal:", err);
+    if (el("profileModal")) el("profileModal").style.display = "flex";
   }
 }
 
@@ -761,140 +731,261 @@ async function signup() {
   }
 
   /* ---------- loadTrips (défensif) ---------- */
-async function loadTrips() {
-  const container = el("tripsList");
-  if (!container) return;
+  async function loadTrips() {
+    const list = el("trajets");
+    if (!list) return;
+    list.innerHTML = "Chargement...";
 
-  container.innerHTML = ""; // important pour éviter la duplication
-
-  try {
-    const { data: trips, error } = await supabase
-      .from("trips")
-      .select("*")
-      .order("datetime", { ascending: true });
-
-    if (error) {
-      console.error("Erreur loadTrips:", error);
-      return;
-    }
-
-    if (!trips || trips.length === 0) {
-      container.innerHTML = "<p>Aucun trajet disponible.</p>";
-      return;
-    }
-
-    for (const trip of trips) {
-      const div = document.createElement("div");
-      div.className = "trip";
-
-      div.innerHTML = `
-        <h3>${trip.depart} → ${trip.arrivee}</h3>
-        <p>${new Date(trip.datetime).toLocaleString()}</p>
-        <p>${trip.places} place(s)</p>
-        <button onclick="reserve(${trip.id})">Réserver</button>
-      `;
-
-      container.appendChild(div);
-    }
-  } catch (err) {
-    console.error("loadTrips Exception:", err);
-  }
-}
-
-
-  /* ---------- utilitaires & actions ---------- */
-  function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
-    const d = new Date(datetimeLocalValue);
-    if (isNaN(d)) return datetimeLocalValue;
-    return d.toISOString();
-  }
-
-  let publishing = false;
-    // --- Remplacer publishTrip existante par celle-ci ---
-  async function publishTrip(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    if (publishing) return;
-    publishing = true;
     try {
-      const publishBtn = el("publishBtn");
-      if (publishBtn) publishBtn.disabled = true;
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { alert("Connecte-toi !"); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
-
-      // Vérifier le profil obligatoire (nom/prenom/surns/fams/promo)
-      const { data: profilData, error: profilError } = await supabase
-        .from("profiles")
-        .select("nom, prenom, surns, fams, promo")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
-
-      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
-      if (missingProfileField) {
-        alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
-        if (profilData) {
-          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
-          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
-          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
-          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
-          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
-        }
-        if (el("profileEmail")) el("profileEmail").textContent = user.email;
-        openProfile();
-        publishing = false;
-        if (publishBtn) publishBtn.disabled = false;
+      const { data, error } = await supabase.from("trips").select("*");
+      if (error) {
+        list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
         return;
       }
 
-      // Récupérer valeurs du form (avec champ Autre géré)
-      const departEl = el("depart");
-      const arriveeEl = el("arrivee");
-      const depart_autreEl = el("depart_autre");
-      const arrivee_autreEl = el("arrivee_autre");
-      const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
-      const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
-      const datetimeVal = el("datetime") ? el("datetime").value : "";
-      if (!datetimeVal) { alert("Choisis une date et heure."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
-      const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
+      let trips = data || [];
 
-      // Utiliser le profil (obligatoire) pour préremplir l'auteur du trajet
-      const trip = {
-        owner: user.id,
-        nom: profilData.nom,
-        prenom: profilData.prenom,
-        surns: profilData.surns,
-        fams: profilData.fams,
-        promo: profilData.promo,
-        depart: departValue,
-        arrivee: arriveeValue,
-        datetime: datetimeISO,
-        places: parseInt(el("places") ? el("places").value : "1") || 1,
-        description: el("desc") ? el("desc").value.trim() : ""
-      };
+      // filtre UI
+      const searchDest = el("searchDest") ? el("searchDest").value : "";
+      const searchOther = el("searchOther") ? String(el("searchOther").value).trim().toLowerCase() : "";
+      const searchText = el("searchText") ? String(el("searchText").value).trim().toLowerCase() : "";
 
-      try {
-        if (el("publishBtn")) el("publishBtn").textContent = "Publication...";
-        const { data, error } = await supabase.from("trips").insert(trip);
-        if (error) {
-          alert("Erreur publication : " + (error.message || JSON.stringify(error)));
-        } else {
-          alert("Trajet publié !");
-          if (el("publishForm")) el("publishForm").reset();
-          if (el("form-container")) el("form-container").style.display = "none";
-          await loadTrips();
+      trips = trips.filter(t => {
+        const depart = String(t.depart || "").toLowerCase();
+        const arrivee = String(t.arrivee || "").toLowerCase();
+        const nom = String(t.nom || "").toLowerCase();
+        const prenom = String(t.prenom || "").toLowerCase();
+        const desc = String(t.description || "").toLowerCase();
+
+        let okDest = true;
+        if (searchDest) {
+          if (searchDest === "Autre") {
+            okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
+          } else {
+            okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
+          }
         }
-      } finally {
-        if (el("publishBtn")) { el("publishBtn").disabled = false; el("publishBtn").textContent = "Publier"; }
+
+        let okText = true;
+        if (searchText) {
+          okText =
+            nom.includes(searchText) ||
+            prenom.includes(searchText) ||
+            desc.includes(searchText) ||
+            depart.includes(searchText) ||
+            arrivee.includes(searchText);
+        }
+
+        return okDest && okText;
+      });
+
+      // tri: pertinence proche
+      const now = Date.now();
+      function score(t) {
+        let s = 0;
+        const q = (searchText || "");
+        const dQ = (searchDest || "").toLowerCase();
+
+        const depart = String(t.depart || "").toLowerCase();
+        const arrivee = String(t.arrivee || "").toLowerCase();
+        const nom = String(t.nom || "").toLowerCase();
+        const prenom = String(t.prenom || "").toLowerCase();
+        const desc = String(t.description || "").toLowerCase();
+
+        if (q) {
+          if (nom === q || prenom === q) s += 50;
+          if (nom.includes(q) || prenom.includes(q)) s += 20;
+          if (desc.includes(q)) s += 10;
+          if (depart.includes(q) || arrivee.includes(q)) s += 15;
+        }
+        if (dQ) {
+          if (depart === dQ || arrivee === dQ) s += 40;
+          if ((depart + arrivee).includes(dQ)) s += 10;
+        }
+        const dt = new Date(t.datetime).getTime();
+        if (!isNaN(dt)) {
+          const diff = dt - now;
+          if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000*60*60)));
+        }
+        if (isExpired(t.datetime)) s -= 1000;
+        return s;
+      }
+
+      trips.sort((a,b) => {
+        const sa = score(a), sb = score(b);
+        if (sa !== sb) return sb - sa;
+        const da = new Date(a.datetime).getTime() || 0;
+        const db = new Date(b.datetime).getTime() || 0;
+        return da - db;
+      });
+
+      // affichage
+      list.innerHTML = "";
+      for (const t of trips) {
+        // createTrajetElement est défini plus bas
+        const elem = await createTrajetElement(t, t.id);
+        list.appendChild(elem);
       }
     } catch (err) {
-      console.error("publishTrip error:", err);
-      alert("Erreur lors de la publication (voir console).");
-    } finally {
-      publishing = false;
-      if (el("publishBtn")) el("publishBtn").disabled = false;
+      console.error("loadTrips error:", err);
+      list.innerHTML = "Erreur de chargement (voir console).";
     }
   }
+
+async function openPublishModal() {
+  const container = el("form-container");
+  if (!container) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return alert("Connecte-toi !");
+
+  // Lire le profil dans la BDD
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  // Remplir les champs du modal
+  if (profile) {
+    if (el("nom")) el("nom").value = profile.nom || "";
+    if (el("prenom")) el("prenom").value = profile.prenom || "";
+    if (el("surns_pub")) el("surns_pub").value = profile.surns || "";
+    if (el("fams_pub")) el("fams_pub").value = profile.fams || "";
+    if (el("promo")) el("promo").value = profile.promo || "";
+  }
+
+  // Afficher le modal
+  container.style.display = "block";
+}
+  /* ---------- utilitaires & actions ---------- */
+    // --- Remplacer publishTrip existante par celle-ci ---
+async function publishTrip(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (publishing) return;
+  publishing = true;
+
+  const publishBtn = el("publishBtn");
+  try {
+    if (publishBtn) { publishBtn.disabled = true; publishBtn.textContent = "Publication..."; }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { alert("Connecte-toi !"); return; }
+
+    // Lire le profil (obligatoire)
+    const { data: profilData, error: profilError } = await supabase
+      .from("profiles")
+      .select("nom, prenom, surns, fams, promo")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); return; }
+
+    const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+    if (missingProfileField) {
+      alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
+      if (profilData) {
+        if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+        if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+        if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+        if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+        if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
+      }
+      if (el("profileEmail")) el("profileEmail").textContent = user.email;
+      openProfile();
+      return;
+    }
+
+    // Récupérer valeurs du form (avec champ Autre géré)
+    const departEl = el("depart");
+    const arriveeEl = el("arrivee");
+    const depart_autreEl = el("depart_autre");
+    const arrivee_autreEl = el("arrivee_autre");
+    const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
+    const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
+    const datetimeVal = el("datetime") ? el("datetime").value : "";
+    const datetimeISO = localDateTimeLocalToISOStringLocal ? localDateTimeLocalToISOStringLocal(datetimeVal) : new Date(datetimeVal).toISOString();
+
+    const description = el("desc") ? el("desc").value.trim() : "";
+    const places = parseInt(el("places") ? el("places").value : "1") || 1;
+
+	// Vérifier que tous les champs obligatoires sont remplis
+	if (!departValue) return alert("Le départ est obligatoire.");
+	if (!arriveeValue) return alert("L’arrivée est obligatoire.");
+	if (!datetimeVal) return alert("La date/heure est obligatoire.");
+	if (!places || places < 1) return alert("Le nombre de places est obligatoire.");
+
+	// Champs de profil obligatoires (déjà vérifiés plus haut)
+	if (!profilData.nom) return alert("Ton Nom doit être renseigné dans ton profil.");
+	if (!profilData.prenom) return alert("Ton Prénom doit être renseigné.");
+	if (!profilData.surns) return alert("Ton Surn's doit être renseigné.");
+	if (!profilData.fams) return alert("Ta Fam's doit être renseignée.");
+	if (!profilData.promo) return alert("Ta promo doit être renseignée.");
+
+
+    // Défensive : vérifier si un trajet identique existe déjà (même owner + depart + arrivee + datetime + description)
+    try {
+      const { data: existing, error: existErr } = await supabase
+        .from("trips")
+        .select("id")
+        .eq("owner", user.id)
+        .eq("depart", departValue)
+        .eq("arrivee", arriveeValue)
+        .eq("datetime", datetimeISO)
+        .eq("description", description)
+        .limit(1)
+        .maybeSingle();
+
+      if (existErr) {
+        console.warn("Erreur vérification doublon :", existErr);
+      } else if (existing) {
+        alert("Un trajet identique a déjà été publié — opération annulée.");
+        return;
+      }
+    } catch (errCheck) {
+      console.warn("publishTrip doublon check failed:", errCheck);
+      // on continue malgré l'erreur de check (ne pas bloquer l'utilisateur)
+    }
+
+    // Construire le trip depuis le profil récupéré
+    const trip = {
+      owner: user.id,
+      nom: profilData.nom,
+      prenom: profilData.prenom,
+      surns: profilData.surns,
+      fams: profilData.fams,
+      promo: profilData.promo,
+      depart: departValue,
+      arrivee: arriveeValue,
+      datetime: datetimeISO,
+      places,
+      description
+    };
+
+    // Insert
+    const { data: insertData, error: insertErr } = await supabase
+      .from("trips")
+      .insert(trip)
+      .select("id");
+
+    if (insertErr) {
+      alert("Erreur publication : " + (insertErr.message || JSON.stringify(insertErr)));
+      console.error("publish insert error:", insertErr);
+      return;
+    }
+
+    alert("Trajet publié !");
+    if (el("publishForm")) el("publishForm").reset();
+    if (el("form-container")) el("form-container").style.display = "none";
+    await loadTrips();
+  } catch (err) {
+    console.error("publishTrip error:", err);
+    alert("Erreur lors de la publication (voir console).");
+  } finally {
+    publishing = false;
+    if (publishBtn) { publishBtn.disabled = false; publishBtn.textContent = "Publier"; }
+  }
+}
+
 
 
   /* ---------- Réservations (RPCs) ---------- */
@@ -903,78 +994,93 @@ async function loadTrips() {
     await reserve(tripId);
   }
 
-    async function reserve(tripId) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return alert("Connecte-toi !");
+    // --- Remplacer la fonction reserve existante par celle-ci ---
+  async function reserve(tripId) {
+  if (!tripId) return alert("Trajet invalide.");
+  if (reservingTripIds.has(tripId)) return; // déjà en cours
+  reservingTripIds.add(tripId);
 
-      // Lire le trajet pour vérifier le propriétaire (défensive)
-      const { data: trip, error: tripErr } = await supabase
-        .from("trips")
-        .select("owner, depart, arrivee, datetime, places")
-        .eq("id", tripId)
-        .maybeSingle();
-      if (tripErr) { console.error(tripErr); return alert("Impossible de lire le trajet."); }
-      if (!trip) return alert("Trajet introuvable.");
-
-      // Empêcher le propriétaire du trajet de réserver son propre trajet
-      if (!adminMode && trip.owner === user.id) {
-        return alert("Tu ne peux pas réserver ton propre trajet.");
-      }
-
-      // Vérifier que le profil existe ET contient bien les champs obligatoires
-      const { data: profilData, error: profilError } = await supabase
-        .from("profiles")
-        .select("nom, prenom, surns, fams, promo")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
-
-      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
-      if (missingProfileField) {
-        alert("Complète ton profil (nom, prénom, Surn's, Fam's et Promo) avant de réserver.");
-        // Pré-remplir modal profil si on a un objet (ou vider sinon)
-        if (profilData) {
-          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
-          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
-          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
-          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
-          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
-        } else {
-          if (el("profile_nom")) el("profile_nom").value = "";
-          if (el("profile_prenom")) el("profile_prenom").value = "";
-          if (el("profile_surns")) el("profile_surns").value = "";
-          if (el("profile_fams")) el("profile_fams").value = "";
-          if (el("profile_promo")) el("profile_promo").value = "";
-        }
-        if (el("profileEmail")) el("profileEmail").textContent = user.email;
-        openProfile();
-        return;
-      }
-
-      // Appel RPC si tout est OK
-      const { data, error } = await supabase.rpc("reserve_trip", {
-        p_trip_id: tripId,
-        p_user_id: user.id,
-        p_nom: profilData.nom,
-        p_prenom: profilData.prenom,
-        p_surns: profilData.surns,
-        p_fams: profilData.fams,
-        p_promo: profilData.promo
-      });
-
-      if (error) return alert(error.details || error.message || JSON.stringify(error));
-      if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
-
-      alert("Réservation confirmée !");
-      await loadTrips();
-      await loadMyReservation();
-    } catch (err) {
-      console.error("reserve error:", err);
-      alert("Erreur lors de la réservation (voir console).");
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("Connecte-toi !");
+      return;
     }
+
+    // Lire le trajet
+    const { data: trip, error: tripErr } = await supabase
+      .from("trips")
+      .select("owner, depart, arrivee, datetime, places")
+      .eq("id", tripId)
+      .maybeSingle();
+    if (tripErr) { console.error(tripErr); return alert("Impossible de lire le trajet."); }
+    if (!trip) return alert("Trajet introuvable.");
+
+    if (!adminMode && trip.owner === user.id) {
+      return alert("Tu ne peux pas réserver ton propre trajet.");
+    }
+
+    // Vérifier profil
+    const { data: profilData, error: profilError } = await supabase
+      .from("profiles")
+      .select("nom, prenom, surns, fams, promo")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
+
+    const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+    if (missingProfileField) {
+      alert("Complète ton profil (nom, prénom, Surn's, Fam's et Promo) avant de réserver.");
+      if (profilData) {
+        if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+        if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+        if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+        if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+        if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
+      } else {
+        if (el("profile_nom")) el("profile_nom").value = "";
+        if (el("profile_prenom")) el("profile_prenom").value = "";
+        if (el("profile_surns")) el("profile_surns").value = "";
+        if (el("profile_fams")) el("profile_fams").value = "";
+        if (el("profile_promo")) el("profile_promo").value = "";
+      }
+      if (el("profileEmail")) el("profileEmail").textContent = user.email;
+      openProfile();
+      return;
+    }
+
+    // Appel RPC
+    const { data, error } = await supabase.rpc("reserve_trip", {
+      p_trip_id: tripId,
+      p_user_id: user.id,
+      p_nom: profilData.nom,
+      p_prenom: profilData.prenom,
+      p_surns: profilData.surns,
+      p_fams: profilData.fams,
+      p_promo: profilData.promo
+    });
+
+    if (error) {
+      console.error("reserve RPC error:", error);
+      return alert(error.details || error.message || JSON.stringify(error));
+    }
+    if (data && data.ok === false) {
+      return alert(data.error || "Impossible de réserver.");
+    }
+
+    alert("Réservation confirmée !");
+    await loadTrips();
+    await loadMyReservation();
+  } catch (err) {
+    console.error("reserve error:", err);
+    alert("Erreur lors de la réservation (voir console).");
+  } finally {
+    reservingTripIds.delete(tripId);
   }
+}
+
+
 
   async function loadMyReservation() {
     try {
@@ -1300,7 +1406,7 @@ function autofillPublishForm(profile) {
   if (el("promo")) el("promo").value = profile.promo || "";
 }
 
- async function saveProfile(e) {
+async function saveProfile(e) {
   if (e && e.preventDefault) e.preventDefault();
   try {
     const getUser = await supabase.auth.getUser();
@@ -1326,7 +1432,7 @@ function autofillPublishForm(profile) {
         surns,
         fams,
         promo
-      }, { returning: 'minimal' });
+      }, { returning: 'representation' });
 
     if (error) {
       console.error("Erreur saveProfile:", error);
@@ -1336,13 +1442,14 @@ function autofillPublishForm(profile) {
     alert("Profil enregistré !");
     closeProfile();
 
-    // Mettre à jour le formulaire de publication seulement si vide (garde le style existant)
+    // Mettre à jour le formulaire de publication si vide (garde le style existant)
     if (el("nom") && !el("nom").value) el("nom").value = nom;
     if (el("prenom") && !el("prenom").value) el("prenom").value = prenom;
     if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = surns;
     if (el("fams_pub") && !el("fams_pub").value) el("fams_pub").value = fams;
     if (el("promo") && !el("promo").value) el("promo").value = promo;
 
+    // Recharger données affichées
     await loadTrips();
     await loadMyReservation();
   } catch (err) {
@@ -1350,6 +1457,7 @@ function autofillPublishForm(profile) {
     alert("Erreur en sauvegardant le profil (voir console).");
   }
 }
+
 
 
 
@@ -1562,9 +1670,6 @@ initAuthUI();
 
 </body>
 </html>
-
-
-
 
 
 
