@@ -410,15 +410,16 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   }
 
   // Un seul listener unifié (après updateUI déclaré)
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    try {
-      const user = session?.user ?? null;
-      await updateUI(user);
-      window.__authReady = true;
-    } catch (err) {
-      console.error("onAuthStateChange error:", err);
-    }
-  });
+  let authAlreadyHandled = false;
+
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (authAlreadyHandled) return;
+  authAlreadyHandled = true;
+
+  const user = session?.user ?? null;
+  await updateUI(user);
+});
+
 
   // init
 async function initApp() {
@@ -428,27 +429,21 @@ async function initApp() {
     const user = session?.user ?? null;
 
     await updateUI(user);
+	await ensureSessionAutoRefresh();
 	  // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
   async function ensureSessionAutoRefresh() {
-    try {
-      // Si la méthode startAutoRefresh existe (selon version du client), lance-la.
-      if (supabase && supabase.auth && typeof supabase.auth.startAutoRefresh === "function") {
-        try { supabase.auth.startAutoRefresh(); } catch(e){ console.warn("startAutoRefresh failed:", e); }
-      }
-
-      // Essayer un refresh immédiat si la session est proche de l'expiration (safe)
-      if (supabase && supabase.auth && typeof supabase.auth.refreshSession === "function") {
-        try {
-          await supabase.auth.refreshSession();
-        } catch(e) {
-          // refreshSession peut échouer si pas nécessaire ou si token invalide
-          console.debug("refreshSession non-applicable / a échoué:", e?.message || e);
-        }
-      }
-    } catch (err) {
-      console.error("ensureSessionAutoRefresh error:", err);
+  try {
+    if (supabase?.auth?.startAutoRefresh) {
+      supabase.auth.startAutoRefresh();
     }
+
+    // rafraîchit le token silencieusement
+    await supabase.auth.refreshSession();
+  } catch (err) {
+    console.warn("auto refresh error:", err);
   }
+}
+
 
     if (user) {
       await ensureProfilePresent(user);
@@ -590,17 +585,17 @@ async function signup() {
 
     
   // --- Remplacer logout existante par celle-ci ---
-  async function logout() {
-    try {
-      // Ne PAS demander confirmation ici : les handlers UI doivent contrôler l'UX (évite double popup).
-      await supabase.auth.signOut(); // par défaut, supabase révoque la session côté client
-      console.log("Déconnecté.");
-      // onAuthStateChange déclenchera updateUI
-    } catch (err) {
-      console.error("logout error", err);
-      alert("Erreur lors de la déconnexion.");
-    }
+ async function logout() {
+  try {
+    await supabase.auth.signOut({ scope: "local" });
+    await supabase.auth.refreshSession(); // force UI à se mettre à jour
+    updateUI(null);
+  } catch (err) {
+    console.error("logout error:", err);
+    alert("Erreur de déconnexion.");
   }
+}
+
 
 
   /* ---------- Profile modal ---------- */
@@ -688,106 +683,105 @@ async function signup() {
   }
 
   /* ---------- loadTrips (défensif) ---------- */
-  async function loadTrips() {
-    const list = el("trajets");
-    if (!list) return;
-    list.innerHTML = "Chargement...";
+async function loadTrips() {
+  const list = el("trajets");
+  if (!list) return;
+  list.innerHTML = "Chargement...";
 
-    try {
-      const { data, error } = await supabase.from("trips").select("*");
-      if (error) {
-        list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
-        return;
-      }
+  try {
+    /* 🔥 CLEANUP AUTOMATIQUE : supprimer les trajets expirés depuis +1h */
+    await supabase.rpc("cleanup_expired_trips");
 
-      let trips = data || [];
-
-      // filtre UI
-      const searchDest = el("searchDest") ? el("searchDest").value : "";
-      const searchOther = el("searchOther") ? String(el("searchOther").value).trim().toLowerCase() : "";
-      const searchText = el("searchText") ? String(el("searchText").value).trim().toLowerCase() : "";
-
-      trips = trips.filter(t => {
-        const depart = String(t.depart || "").toLowerCase();
-        const arrivee = String(t.arrivee || "").toLowerCase();
-        const nom = String(t.nom || "").toLowerCase();
-        const prenom = String(t.prenom || "").toLowerCase();
-        const desc = String(t.description || "").toLowerCase();
-
-        let okDest = true;
-        if (searchDest) {
-          if (searchDest === "Autre") {
-            okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
-          } else {
-            okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
-          }
-        }
-
-        let okText = true;
-        if (searchText) {
-          okText =
-            nom.includes(searchText) ||
-            prenom.includes(searchText) ||
-            desc.includes(searchText) ||
-            depart.includes(searchText) ||
-            arrivee.includes(searchText);
-        }
-
-        return okDest && okText;
-      });
-
-      // tri: pertinence proche
-      const now = Date.now();
-      function score(t) {
-        let s = 0;
-        const q = (searchText || "");
-        const dQ = (searchDest || "").toLowerCase();
-
-        const depart = String(t.depart || "").toLowerCase();
-        const arrivee = String(t.arrivee || "").toLowerCase();
-        const nom = String(t.nom || "").toLowerCase();
-        const prenom = String(t.prenom || "").toLowerCase();
-        const desc = String(t.description || "").toLowerCase();
-
-        if (q) {
-          if (nom === q || prenom === q) s += 50;
-          if (nom.includes(q) || prenom.includes(q)) s += 20;
-          if (desc.includes(q)) s += 10;
-          if (depart.includes(q) || arrivee.includes(q)) s += 15;
-        }
-        if (dQ) {
-          if (depart === dQ || arrivee === dQ) s += 40;
-          if ((depart + arrivee).includes(dQ)) s += 10;
-        }
-        const dt = new Date(t.datetime).getTime();
-        if (!isNaN(dt)) {
-          const diff = dt - now;
-          if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000*60*60)));
-        }
-        if (isExpired(t.datetime)) s -= 1000;
-        return s;
-      }
-
-      trips.sort((a,b) => {
-        const sa = score(a), sb = score(b);
-        if (sa !== sb) return sb - sa;
-        const da = new Date(a.datetime).getTime() || 0;
-        const db = new Date(b.datetime).getTime() || 0;
-        return da - db;
-      });
-
-      // affichage
-      list.innerHTML = "";
-      for (const t of trips) {
-        // createTrajetElement est défini plus bas
-        const elem = await createTrajetElement(t, t.id);
-        list.appendChild(elem);
-      }
-    } catch (err) {
-      console.error("loadTrips error:", err);
-      list.innerHTML = "Erreur de chargement (voir console).";
+    const { data, error } = await supabase.from("trips").select("*");
+    if (error) {
+      list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
+      return;
     }
+
+    let trips = data || [];
+
+    // ---------------- FILTRES EXACTEMENT COMME AVANT ----------------
+    const searchDest = el("searchDest")?.value || "";
+    const searchOther = (el("searchOther")?.value.trim().toLowerCase()) || "";
+    const searchText = (el("searchText")?.value.trim().toLowerCase()) || "";
+
+    trips = trips.filter(t => {
+      const depart = String(t.depart || "").toLowerCase();
+      const arrivee = String(t.arrivee || "").toLowerCase();
+      const nom = String(t.nom || "").toLowerCase();
+      const prenom = String(t.prenom || "").toLowerCase();
+      const desc = String(t.description || "").toLowerCase();
+
+      let okDest = true;
+      if (searchDest) {
+        if (searchDest === "Autre") {
+          okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
+        } else {
+          okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
+        }
+      }
+
+      let okText = true;
+      if (searchText) {
+        okText =
+          nom.includes(searchText) ||
+          prenom.includes(searchText) ||
+          desc.includes(searchText) ||
+          depart.includes(searchText) ||
+          arrivee.includes(searchText);
+      }
+
+      return okDest && okText;
+    });
+
+    // ---------------- TRI EXACTEMENT COMME AVANT ----------------
+    const now = Date.now();
+
+    function score(t) {
+      let s = 0;
+      const q = searchText || "";
+      const dQ = searchDest.toLowerCase() || "";
+
+      const depart = String(t.depart || "").toLowerCase();
+      const arrivee = String(t.arrivee || "").toLowerCase();
+      const nom = String(t.nom || "").toLowerCase();
+      const prenom = String(t.prenom || "").toLowerCase();
+      const desc = String(t.description || "").toLowerCase();
+
+      if (q) {
+        if (nom === q || prenom === q) s += 50;
+        if (nom.includes(q) || prenom.includes(q)) s += 20;
+        if (desc.includes(q)) s += 10;
+        if (depart.includes(q) || arrivee.includes(q)) s += 15;
+      }
+      if (dQ) {
+        if (depart === dQ || arrivee === dQ) s += 40;
+        if ((depart + arrivee).includes(dQ)) s += 10;
+      }
+
+      const dt = new Date(t.datetime).getTime();
+      if (!isNaN(dt)) {
+        const diff = dt - now;
+        if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000 * 60 * 60)));
+      }
+
+      return s;
+    }
+
+    trips.sort((a, b) => score(b) - score(a));
+
+    // ---------------- AFFICHAGE ----------------
+    list.innerHTML = "";
+    for (const t of trips) {
+      const elem = await createTrajetElement(t, t.id);
+      list.appendChild(elem);
+    }
+  } catch (err) {
+    console.error("loadTrips error:", err);
+    list.innerHTML = "Erreur de chargement.";
   }
+}
+
 
   /* ---------- utilitaires & actions ---------- */
   function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
@@ -1219,63 +1213,34 @@ async function signup() {
   function escapeHTML(str){ if(str === 0) return "0"; if(!str) return ''; return String(str).replace(/[&<>\"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]; }); }
 
   /* ---------- profile ---------- */
- async function ensureProfilePresent(user) {
+async function ensureProfilePresent(user) {
   if (!user) return;
 
-  try {
-    // Attendre un peu que Supabase propage le user (évite bug juste après inscription)
-    await new Promise(res => setTimeout(res, 250));
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Erreur lecture profiles :", error);
-      return;
-    }
-
-    // afficher email connecté
-    if (el("userEmail")) el("userEmail").textContent = user.email;
-    if (el("profileEmail")) el("profileEmail").textContent = user.email;
-
-    //Cas 1 : profil déjà existant → on remplit le formulaire
-    if (profile) {
-      autofillPublishForm(profile);
-      return;
-    }
-
-    //Cas 2 : pas de profil → créer un profil vide PUIS ouvrir automatiquement le popup
-    const newProfile = {
-      id: user.id,
-      nom: "",
-      prenom: "",
-      surns: "",
-      fams: "",
-      promo: ""
-    };
-
-    const { error: insertErr } = await supabase
-      .from('profiles')
-      .insert(newProfile);
-
-    if (insertErr) {
-      console.error("Erreur création profil :", insertErr);
-      return;
-    }
-
-    // ➤ Important : Attendre que les données existent avant d’ouvrir le popup
-    await new Promise(res => setTimeout(res, 150));
-
-    // ➤ On ouvre AUTOMATIQUEMENT la popup profil
-    openProfile();
-
-  } catch (err) {
-    console.error("ensureProfilePresent - fatal error:", err);
+  if (profile) {
+    autofillPublishForm(profile);
+    return;
   }
+
+  // créer profil vide
+  await supabase.from("profiles").insert({
+    id: user.id,
+    nom: "",
+    prenom: "",
+    surns: "",
+    fams: "",
+    promo: ""
+  });
+
+  // ouvrir profil direct
+  openProfile();
 }
+
 
 
 // Remplit automatiquement le formulaire de publication
@@ -1551,6 +1516,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
