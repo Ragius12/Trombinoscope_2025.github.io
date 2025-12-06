@@ -360,7 +360,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 </script>
 
 <script>
-    const APP_MAGIC_REDIRECT = window.location.origin + window.location.pathname;
+    const APP_MAGIC_REDIRECT = "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html";
     console.log("FULL URL BEFORE:", window.location.href);
     /* ------------------------------
     console.log("URL:", window.location.href);
@@ -768,8 +768,8 @@ async function loadTrips() {
     return d.toISOString();
   }
 
-  // --- Remplacer publishTrip existante par celle-ci ---
- let publishing = false;
+// --- Remplacer publishTrip existante par celle-ci ---
+let publishing = false;
 async function publishTrip(e) {
   if (e && e.preventDefault) e.preventDefault();
   if (publishing) return;
@@ -783,7 +783,7 @@ async function publishTrip(e) {
     const user = userData?.user;
     if (!user) { alert("Connecte-toi !"); return; }
 
-    // lire le profil complet
+    // lire profil
     const { data: profilData, error: profilError } = await supabase
       .from("profiles")
       .select("nom, prenom, surns, fams, promo")
@@ -807,14 +807,46 @@ async function publishTrip(e) {
       return;
     }
 
-    // récupérer valeurs du form
+    // récupérer champs
     const departEl = el("depart");
     const arriveeEl = el("arrivee");
     const depart_autreEl = el("depart_autre");
     const arrivee_autreEl = el("arrivee_autre");
 
-    const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
-    const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
+    let departValue = "";
+    let arriveeValue = "";
+
+    // 🔥 Obligation stricte pour DEPART
+    if (departEl.value === "") {
+      alert("Choisis une ville de départ.");
+      return;
+    }
+    if (departEl.value === "Autre") {
+      if (!depart_autreEl.value.trim()) {
+        alert("Indique la ville de départ (champ 'Autre').");
+        return;
+      }
+      departValue = depart_autreEl.value.trim();
+    } else {
+      departValue = departEl.value;
+    }
+
+    // 🔥 Obligation stricte pour ARRIVEE
+    if (arriveeEl.value === "") {
+      alert("Choisis une ville d'arrivée.");
+      return;
+    }
+    if (arriveeEl.value === "Autre") {
+      if (!arrivee_autreEl.value.trim()) {
+        alert("Indique la ville d'arrivée (champ 'Autre').");
+        return;
+      }
+      arriveeValue = arrivee_autreEl.value.trim();
+    } else {
+      arriveeValue = arriveeEl.value;
+    }
+
+    // date
     const datetimeVal = el("datetime") ? el("datetime").value : "";
     if (!datetimeVal) { alert("Choisis une date et heure."); return; }
     const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
@@ -833,7 +865,7 @@ async function publishTrip(e) {
       description: el("desc") ? el("desc").value.trim() : ""
     };
 
-    const { data, error } = await supabase.from("trips").insert(trip);
+    const { error } = await supabase.from("trips").insert(trip);
 
     if (error) {
       console.error("publish error:", error);
@@ -853,6 +885,7 @@ async function publishTrip(e) {
     if (publishBtn) { publishBtn.disabled = false; publishBtn.textContent = "Publier"; }
   }
 }
+
 
 
 
@@ -1516,6 +1549,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
