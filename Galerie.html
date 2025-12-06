@@ -660,7 +660,43 @@ async function signup() {
   }
 }
 
+function disableUIInteractions() {
+    // Désactiver tous les boutons
+    document.querySelectorAll("button, input[type=submit]").forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add("disabled");
+        btn.style.opacity = "0.5";
+        btn.style.pointerEvents = "none";
+    });
 
+    // Désactiver tous les liens (optionnel)
+    document.querySelectorAll("a").forEach(a => {
+        a.dataset.href = a.getAttribute("href");
+        a.setAttribute("href", "javascript:void(0)");
+        a.style.opacity = "0.5";
+        a.style.pointerEvents = "none";
+    });
+}
+
+function enableUIInteractions() {
+    // Réactiver tous les boutons
+    document.querySelectorAll("button, input[type=submit]").forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove("disabled");
+        btn.style.opacity = "1";
+        btn.style.pointerEvents = "auto";
+    });
+
+    // Réactiver tous les liens (optionnel)
+    document.querySelectorAll("a").forEach(a => {
+        if (a.dataset.href) {
+            a.setAttribute("href", a.dataset.href);
+            delete a.dataset.href;
+        }
+        a.style.opacity = "1";
+        a.style.pointerEvents = "auto";
+    });
+}
     
 async function logout() {
   try {
@@ -1751,6 +1787,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
