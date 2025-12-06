@@ -422,29 +422,30 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
 
   // init
-async function initApp() {
+async function ensureSessionAutoRefresh() {
   try {
-    // On laisse Supabase gérer automatiquement le magic link
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
-
-    await updateUI(user);
-	await ensureSessionAutoRefresh();
-	  // --- Ajouter cette fonction dans ton fichier (même scope que initApp / supabase) ---
-  async function ensureSessionAutoRefresh() {
-  try {
+    // Dans certaines versions de supabase-js v2, il y a startAutoRefresh; sinon on ignore.
     if (supabase?.auth?.startAutoRefresh) {
-      supabase.auth.startAutoRefresh();
+      try { supabase.auth.startAutoRefresh(); } catch(e) { /* ignore */ }
     }
-
-    // rafraîchit le token silencieusement
-    await supabase.auth.refreshSession();
+    // pas de refresh forcé si pas nécessaire
   } catch (err) {
-    console.warn("auto refresh error:", err);
+    console.warn("auto refresh init error:", err);
   }
 }
 
+async function initApp() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
 
+    // mettre à jour l'UI directement
+    await updateUI(user);
+
+    // s'assurer du rafraîchissement de session si disponible
+    await ensureSessionAutoRefresh();
+
+    // si connecté, garantir profil + charger données
     if (user) {
       await ensureProfilePresent(user);
       await loadTrips();
@@ -458,53 +459,47 @@ async function initApp() {
   }
 }
 
+
  // → LE BON PLACEMENT : en dehors de initApp
  document.addEventListener("DOMContentLoaded", initApp);
 
   /* ---------- AUTH ---------- */
- async function login() {
+async function login() {
   try {
     const email = el("email")?.value.trim().toLowerCase() || "";
     const password = el("password")?.value || "";
 
-    if (!email) return alert("Entre ton email.");
-    if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+    if (!email) { alert("Entre ton email."); return; }
+    if (!email.endsWith("@ensam.eu")) { alert("Utilise une adresse @ensam.eu"); return; }
+    if (!password) { alert("Mot de passe manquant."); return; }
 
     const btn = el("loginBtn");
-    if (btn) btn.disabled = true;
+    if (btn) { btn.disabled = true; btn.textContent = "Connexion..."; }
 
-    if (!password) {
-      alert("Mot de passe manquant.");
-      if (btn) btn.disabled = false;
-      return;
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (btn) btn.disabled = false;
+    if (btn) { btn.disabled = false; btn.textContent = "Se connecter"; }
 
     if (error) {
-      const msg = error.message.toLowerCase();
+      const msg = String(error.message || "").toLowerCase();
       if (msg.includes("invalid") || msg.includes("credentials")) {
-        return alert("Identifiant ou mot de passe incorrect.\nEn cas de soüci, en brasser à Vespula 84 An225 (06 31 49 57 22)");
+        return alert("Identifiant ou mot de passe incorrect.");
       }
-      if (msg.includes("not found") || msg.includes("user")) {
-        return alert("Adresse non inscrite ! Tu dois d'abord t'inscrire avec ton mail @ensam.eu.\nEn cas de soüci, en brasser à Vespula 84 An225 (06 31 49 57 22)");
+      if (msg.includes("not found") || msg.includes("user") || msg.includes("no user")) {
+        return alert("Adresse non inscrite ! Tu dois d'abord t'inscrire avec ton mail @ensam.eu.");
       }
       return alert("Erreur : " + error.message);
     }
 
-    // Succès → onAuthStateChange gère l’UI
+    // Si tout est OK, on laisse onAuthStateChange / updateUI gérer l'UI.
     return;
   } catch (err) {
     console.error("login fatal:", err);
-    alert("Erreur lors de la connexion.");
-    if (el("loginBtn")) el("loginBtn").disabled = false;
+    alert("Erreur lors de la connexion (voir console).");
+    if (el("loginBtn")) { el("loginBtn").disabled = false; el("loginBtn").textContent = "Se connecter"; }
   }
 }
+
 
 
 async function signup() {
@@ -512,89 +507,72 @@ async function signup() {
     const email = el("email") ? el("email").value.trim().toLowerCase() : "";
     const password = el("password") ? el("password").value : "";
 
-    if (!email || !password) return alert("Entre un email et un mot de passe.");
+    if (!email || !password) { return alert("Entre un email et un mot de passe."); }
     if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
 
     const btn = el("signupBtn");
-    if (btn) btn.disabled = true;
+    if (btn) { btn.disabled = true; btn.textContent = "Inscription..."; }
 
+    // signup sans redirect magic link (on garde simple email+password).
     const { data, error } = await supabase.auth.signUp({
       email,
-      password,
-      options: {
-        emailRedirectTo: APP_MAGIC_REDIRECT
-      }
+      password
     });
+
+    if (btn) { btn.disabled = false; btn.textContent = "S'inscrire"; }
 
     if (error) {
       console.error("signup error:", error);
-
-      // Si le compte existe déjà, proposer d'ouvrir la modal de connexion
       const msg = String(error.message || "").toLowerCase();
       if (msg.includes("already") || msg.includes("registered") || msg.includes("user already exists")) {
-        if (confirm("Ce compte existe déjà — veux-tu te connecter ?")) {
-          const loginModal = el('loginModal');
-          if (loginModal) loginModal.style.display = 'block';
-        }
-      } else {
-        alert("Inscription impossible : " + error.message);
+        return alert("Ce compte existe déjà — connecte-toi.");
       }
-
-      if (btn) btn.disabled = false;
-      return;
+      return alert("Inscription impossible : " + error.message);
     }
 
-    // Si Supabase renvoie un user et qu'il est déjà confirmé, créer / upsert le profile
-    // NOTE : selon la version/config, le champ de confirmation peut s'appeler
-    // email_confirmed_at / confirmed_at / email_confirmed
-    if (data && data.user && data.user.id) {
-      const user = data.user;
-      const isConfirmed = !!(user.email_confirmed_at || user.confirmed_at || user.email_confirmed);
-
-      if (isConfirmed) {
-        const userId = user.id;
-        const profile = {
-          id: userId,
-          nom: el("profile_nom") ? el("profile_nom").value.trim() : "",
-          prenom: el("profile_prenom") ? el("profile_prenom").value.trim() : "",
-          surns: el("profile_surns") ? el("profile_surns").value.trim() : "",
-          fams: el("profile_fams") ? el("profile_fams").value.trim() : "",
-          promo: el("profile_promo") ? el("profile_promo").value : ""
-        };
-
-        const { error: pErr } = await supabase.from("profiles").upsert(profile, { returning: 'minimal' });
-        if (pErr) console.warn("Impossible de créer le profil automatiquement:", pErr);
-      } else {
-        // email non confirmé : ne pas créer de profil, attendre confirmation
-        console.log("Signup: email non confirmé — profil non créé, attendre confirmation.");
-      }
-    } else {
-      console.log("Signup: pas de user retourné immédiatement (vérifier confirmation email).");
+    // Si Supabase retourne un user confirmé immédiatement (rare), on upsert le profil.
+    const user = data?.user;
+    const isConfirmed = !!(user?.email_confirmed_at || user?.confirmed_at || user?.email_confirmed);
+    if (user && isConfirmed) {
+      await supabase.from('profiles').upsert({
+        id: user.id,
+        nom: (el("profile_nom")?.value || "").trim(),
+        prenom: (el("profile_prenom")?.value || "").trim(),
+        surns: (el("profile_surns")?.value || "").trim(),
+        fams: (el("profile_fams")?.value || "").trim(),
+        promo: (el("profile_promo")?.value || "")
+      }, { returning: 'minimal' });
     }
 
-    if (btn) btn.disabled = false;
-    alert("Inscription lancée. Vérifie ta boîte mail pour une confirmation (nécessaire). Tu pourras ensuite te connecter avec ton mail et ton mot de passe.");
+    alert("Compte créé ! (Si un email de confirmation est requis, vérifie ta boîte mail).");
   } catch (err) {
     console.error("signup fatal:", err);
-    alert("Erreur lors de l'inscription.");
-    const btn = el("signupBtn");
-    if (btn) btn.disabled = false;
+    alert("Erreur lors de l'inscription (voir console).");
+    if (el("signupBtn")) { el("signupBtn").disabled = false; el("signupBtn").textContent = "S'inscrire"; }
   }
 }
+
 
 
     
   // --- Remplacer logout existante par celle-ci ---
- async function logout() {
+async function logout() {
   try {
-    await supabase.auth.signOut({ scope: "local" });
-    await supabase.auth.refreshSession(); // force UI à se mettre à jour
+    // simple signOut, puis mise à jour UI
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("logout error:", error);
+      alert("Erreur de déconnexion : " + (error.message || JSON.stringify(error)));
+      return;
+    }
+    // Forcer update UI locale
     updateUI(null);
   } catch (err) {
     console.error("logout error:", err);
-    alert("Erreur de déconnexion.");
+    alert("Erreur de déconnexion (voir console).");
   }
 }
+
 
 
 
@@ -792,90 +770,91 @@ async function loadTrips() {
 
   let publishing = false;
   // --- Remplacer publishTrip existante par celle-ci ---
-  async function publishTrip(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    if (publishing) return;
-    publishing = true;
-    try {
-      const publishBtn = el("publishBtn");
-      if (publishBtn) publishBtn.disabled = true;
+ let publishing = false;
+async function publishTrip(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (publishing) return;
+  publishing = true;
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { alert("Connecte-toi !"); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
+  const publishBtn = el("publishBtn");
+  try {
+    if (publishBtn) { publishBtn.disabled = true; publishBtn.textContent = "Publication..."; }
 
-      // Vérifier le profil obligatoire (nom/prenom/surns/fams/promo)
-      const { data: profilData, error: profilError } = await supabase
-        .from("profiles")
-        .select("nom, prenom, surns, fams, promo")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) { alert("Connecte-toi !"); return; }
 
-      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
-      if (missingProfileField) {
-        alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
-        if (profilData) {
-          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
-          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
-          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
-          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
-          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
-        }
-        if (el("profileEmail")) el("profileEmail").textContent = user.email;
-        openProfile();
-        publishing = false;
-        if (publishBtn) publishBtn.disabled = false;
-        return;
+    // lire le profil complet
+    const { data: profilData, error: profilError } = await supabase
+      .from("profiles")
+      .select("nom, prenom, surns, fams, promo")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profilError) { console.error(profilError); alert("Impossible de lire ton profil."); return; }
+
+    const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+    if (missingProfileField) {
+      alert("Avant de publier, complète ton profil (nom, prénom, Surn's, Fam's et Promo).");
+      if (profilData) {
+        if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+        if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+        if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+        if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+        if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
       }
-
-      // Récupérer valeurs du form (avec champ Autre géré)
-      const departEl = el("depart");
-      const arriveeEl = el("arrivee");
-      const depart_autreEl = el("depart_autre");
-      const arrivee_autreEl = el("arrivee_autre");
-      const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
-      const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
-      const datetimeVal = el("datetime") ? el("datetime").value : "";
-      if (!datetimeVal) { alert("Choisis une date et heure."); publishing = false; if (publishBtn) publishBtn.disabled = false; return; }
-      const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
-
-      // Utiliser le profil (obligatoire) pour préremplir l'auteur du trajet
-      const trip = {
-        owner: user.id,
-        nom: profilData.nom,
-        prenom: profilData.prenom,
-        surns: profilData.surns,
-        fams: profilData.fams,
-        promo: profilData.promo,
-        depart: departValue,
-        arrivee: arriveeValue,
-        datetime: datetimeISO,
-        places: parseInt(el("places") ? el("places").value : "1") || 1,
-        description: el("desc") ? el("desc").value.trim() : ""
-      };
-
-      try {
-        if (el("publishBtn")) el("publishBtn").textContent = "Publication...";
-        const { data, error } = await supabase.from("trips").insert(trip);
-        if (error) {
-          alert("Erreur publication : " + (error.message || JSON.stringify(error)));
-        } else {
-          alert("Trajet publié !");
-          if (el("publishForm")) el("publishForm").reset();
-          if (el("form-container")) el("form-container").style.display = "none";
-          await loadTrips();
-        }
-      } finally {
-        if (el("publishBtn")) { el("publishBtn").disabled = false; el("publishBtn").textContent = "Publier"; }
-      }
-    } catch (err) {
-      console.error("publishTrip error:", err);
-      alert("Erreur lors de la publication (voir console).");
-    } finally {
-      publishing = false;
-      if (el("publishBtn")) el("publishBtn").disabled = false;
+      if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
+      openProfile();
+      return;
     }
+
+    // récupérer valeurs du form
+    const departEl = el("depart");
+    const arriveeEl = el("arrivee");
+    const depart_autreEl = el("depart_autre");
+    const arrivee_autreEl = el("arrivee_autre");
+
+    const departValue = departEl && departEl.value === "Autre" ? (depart_autreEl ? depart_autreEl.value.trim() : "") : (departEl ? departEl.value : "");
+    const arriveeValue = arriveeEl && arriveeEl.value === "Autre" ? (arrivee_autreEl ? arrivee_autreEl.value.trim() : "") : (arriveeEl ? arriveeEl.value : "");
+    const datetimeVal = el("datetime") ? el("datetime").value : "";
+    if (!datetimeVal) { alert("Choisis une date et heure."); return; }
+    const datetimeISO = localDateTimeLocalToISOStringLocal(datetimeVal);
+
+    const trip = {
+      owner: user.id,
+      nom: profilData.nom,
+      prenom: profilData.prenom,
+      surns: profilData.surns,
+      fams: profilData.fams,
+      promo: profilData.promo,
+      depart: departValue,
+      arrivee: arriveeValue,
+      datetime: datetimeISO,
+      places: parseInt(el("places") ? el("places").value : "1") || 1,
+      description: el("desc") ? el("desc").value.trim() : ""
+    };
+
+    const { data, error } = await supabase.from("trips").insert(trip);
+
+    if (error) {
+      console.error("publish error:", error);
+      alert("Erreur publication : " + (error.message || JSON.stringify(error)));
+      return;
+    }
+
+    alert("Trajet publié !");
+    if (el("publishForm")) el("publishForm").reset();
+    if (el("form-container")) el("form-container").style.display = "none";
+    await loadTrips();
+  } catch (err) {
+    console.error("publishTrip error:", err);
+    alert("Erreur lors de la publication (voir console).");
+  } finally {
+    publishing = false;
+    if (publishBtn) { publishBtn.disabled = false; publishBtn.textContent = "Publier"; }
   }
+}
+
 
 
   /* ---------- Réservations (RPCs) ---------- */
@@ -885,78 +864,85 @@ async function loadTrips() {
   }
 
   // --- Remplacer la fonction reserve existante par celle-ci ---
-  async function reserve(tripId) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return alert("Connecte-toi !");
+async function reserve(tripId) {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if (!user) return alert("Connecte-toi !");
 
-      // Lire le trajet pour vérifier le propriétaire (défensive)
-      const { data: trip, error: tripErr } = await supabase
-        .from("trips")
-        .select("owner, depart, arrivee, datetime, places")
-        .eq("id", tripId)
-        .maybeSingle();
-      if (tripErr) { console.error(tripErr); return alert("Impossible de lire le trajet."); }
-      if (!trip) return alert("Trajet introuvable.");
+    // lire trajet (propriétaire / places / datetime)
+    const { data: trip, error: tripErr } = await supabase
+      .from("trips")
+      .select("owner, depart, arrivee, datetime, places")
+      .eq("id", tripId)
+      .maybeSingle();
+    if (tripErr) { console.error(tripErr); return alert("Impossible de lire le trajet."); }
+    if (!trip) return alert("Trajet introuvable.");
 
-      // Empêcher le propriétaire du trajet de réserver son propre trajet
-      if (!adminMode && trip.owner === user.id) {
-        return alert("Tu ne peux pas réserver ton propre trajet.");
-      }
-
-      // Vérifier que le profil existe ET contient bien les champs obligatoires
-      const { data: profilData, error: profilError } = await supabase
-        .from("profiles")
-        .select("nom, prenom, surns, fams, promo")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
-
-      const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
-      if (missingProfileField) {
-        alert("Complète ton profil (nom, prénom, Surn's, Fam's et Promo) avant de réserver.");
-        // Pré-remplir modal profil si on a un objet (ou vider sinon)
-        if (profilData) {
-          if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
-          if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
-          if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
-          if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
-          if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
-        } else {
-          if (el("profile_nom")) el("profile_nom").value = "";
-          if (el("profile_prenom")) el("profile_prenom").value = "";
-          if (el("profile_surns")) el("profile_surns").value = "";
-          if (el("profile_fams")) el("profile_fams").value = "";
-          if (el("profile_promo")) el("profile_promo").value = "";
-        }
-        if (el("profileEmail")) el("profileEmail").textContent = user.email;
-        openProfile();
-        return;
-      }
-
-      // Appel RPC si tout est OK
-      const { data, error } = await supabase.rpc("reserve_trip", {
-        p_trip_id: tripId,
-        p_user_id: user.id,
-        p_nom: profilData.nom,
-        p_prenom: profilData.prenom,
-        p_surns: profilData.surns,
-        p_fams: profilData.fams,
-        p_promo: profilData.promo
-      });
-
-      if (error) return alert(error.details || error.message || JSON.stringify(error));
-      if (data && data.ok === false) return alert(data.error || "Impossible de réserver.");
-
-      alert("Réservation confirmée !");
-      await loadTrips();
-      await loadMyReservation();
-    } catch (err) {
-      console.error("reserve error:", err);
-      alert("Erreur lors de la réservation (voir console).");
+    // empêcher propriétaire de réserver
+    if (!adminMode && trip.owner === user.id) {
+      return alert("Tu ne peux pas réserver ton propre trajet.");
     }
+
+    // vérifier profil
+    const { data: profilData, error: profilError } = await supabase
+      .from("profiles")
+      .select("nom, prenom, surns, fams, promo")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profilError) { console.error(profilError); return alert("Impossible de lire ton profil (erreur)."); }
+
+    const missingProfileField = !(profilData && profilData.nom && profilData.prenom && profilData.surns && profilData.fams && profilData.promo);
+    if (missingProfileField) {
+      alert("Complète ton profil (nom, prénom, Surn's, Fam's et Promo) avant de réserver.");
+      if (profilData) {
+        if (el("profile_nom")) el("profile_nom").value = profilData.nom || "";
+        if (el("profile_prenom")) el("profile_prenom").value = profilData.prenom || "";
+        if (el("profile_surns")) el("profile_surns").value = profilData.surns || "";
+        if (el("profile_fams")) el("profile_fams").value = profilData.fams || "";
+        if (el("profile_promo")) el("profile_promo").value = profilData.promo || "";
+      } else {
+        if (el("profile_nom")) el("profile_nom").value = "";
+        if (el("profile_prenom")) el("profile_prenom").value = "";
+        if (el("profile_surns")) el("profile_surns").value = "";
+        if (el("profile_fams")) el("profile_fams").value = "";
+        if (el("profile_promo")) el("profile_promo").value = "";
+      }
+      if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
+      openProfile();
+      return;
+    }
+
+    // appeler la RPC 'reserve_trip' (comme prévu côté serveur)
+    const { data, error } = await supabase.rpc("reserve_trip", {
+      p_trip_id: tripId,
+      p_user_id: user.id,
+      p_nom: profilData.nom,
+      p_prenom: profilData.prenom,
+      p_surns: profilData.surns,
+      p_fams: profilData.fams,
+      p_promo: profilData.promo
+    });
+
+    if (error) {
+      console.error("reserve RPC error:", error);
+      return alert(error.message || "Impossible de réserver (RPC).");
+    }
+
+    // RPC peut renvoyer un payload d'erreur métier
+    if (data && data.ok === false) {
+      return alert(data.error || "Impossible de réserver.");
+    }
+
+    alert("Réservation confirmée !");
+    await loadTrips();
+    await loadMyReservation();
+  } catch (err) {
+    console.error("reserve error:", err);
+    alert("Erreur lors de la réservation (voir console).");
   }
+}
+
 
 
   async function loadMyReservation() {
@@ -1216,30 +1202,46 @@ async function loadTrips() {
 async function ensureProfilePresent(user) {
   if (!user) return;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+  try {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
 
-  if (profile) {
-    autofillPublishForm(profile);
-    return;
+    if (error) {
+      console.warn("ensureProfilePresent read error:", error);
+      return;
+    }
+
+    if (profile) {
+      // remplir formulaire de publication si possible
+      autofillPublishForm(profile);
+      return;
+    }
+
+    // créer profil vide (pour que les autres fonctions trouvent la ligne)
+    const { error: insertErr } = await supabase.from("profiles").insert({
+      id: user.id,
+      nom: "",
+      prenom: "",
+      surns: "",
+      fams: "",
+      promo: ""
+    }, { returning: 'minimal' });
+
+    if (insertErr) {
+      console.warn("ensureProfilePresent insert error:", insertErr);
+    } else {
+      // Ouvrir la modal profil pour que l'utilisateur complète
+      if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
+      openProfile();
+    }
+  } catch (err) {
+    console.error("ensureProfilePresent error:", err);
   }
-
-  // créer profil vide
-  await supabase.from("profiles").insert({
-    id: user.id,
-    nom: "",
-    prenom: "",
-    surns: "",
-    fams: "",
-    promo: ""
-  });
-
-  // ouvrir profil direct
-  openProfile();
 }
+
 
 
 
@@ -1254,20 +1256,18 @@ function autofillPublishForm(profile) {
   if (el("promo")) el("promo").value = profile.promo || "";
 }
 
- async function saveProfile(e) {
+async function saveProfile(e) {
   if (e && e.preventDefault) e.preventDefault();
   try {
     const getUser = await supabase.auth.getUser();
-    if (!getUser || !getUser.data || !getUser.data.user) {
-      return alert("Connecte-toi !");
-    }
-    const user = getUser.data.user;
+    const user = getUser?.data?.user;
+    if (!user) return alert("Connecte-toi !");
 
-    const nom = el("profile_nom") ? el("profile_nom").value.trim() : "";
-    const prenom = el("profile_prenom") ? el("profile_prenom").value.trim() : "";
-    const surns = el("profile_surns") ? el("profile_surns").value.trim() : "";
-    const fams = el("profile_fams") ? el("profile_fams").value.trim() : "";
-    const promo = el("profile_promo") ? el("profile_promo").value : "";
+    const nom = (el("profile_nom")?.value || "").trim();
+    const prenom = (el("profile_prenom")?.value || "").trim();
+    const surns = (el("profile_surns")?.value || "").trim();
+    const fams = (el("profile_fams")?.value || "").trim();
+    const promo = (el("profile_promo")?.value || "");
 
     if (!nom || !prenom) return alert("Nom et prénom requis.");
 
@@ -1290,7 +1290,7 @@ function autofillPublishForm(profile) {
     alert("Profil enregistré !");
     closeProfile();
 
-    // Mettre à jour le formulaire de publication seulement si vide (garde le style existant)
+    // Mettre à jour le formulaire de publication si vide
     if (el("nom") && !el("nom").value) el("nom").value = nom;
     if (el("prenom") && !el("prenom").value) el("prenom").value = prenom;
     if (el("surns_pub") && !el("surns_pub").value) el("surns_pub").value = surns;
@@ -1304,6 +1304,7 @@ function autofillPublishForm(profile) {
     alert("Erreur en sauvegardant le profil (voir console).");
   }
 }
+
 
 
 
@@ -1516,6 +1517,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
