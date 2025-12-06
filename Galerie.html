@@ -389,25 +389,61 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   window.__authReady = false;
 
   /* ---------- UI update ---------- */
-  async function updateUI(user) {
-    try {
+ async function updateUI(user) {
+  if (window.__appState.uiUpdating) return;
+  window.__appState.uiUpdating = true;
+
+  try {
+    const el = (id) => document.getElementById(id);
+
+    // Si même utilisateur que la dernière fois -> pas besoin de tout refaire
+    const lastId = window.__appState.lastSessionUserId || null;
+    const newId = user?.id ?? null;
+    if (lastId && newId && lastId === newId) {
+      // update basique d'affichage (email etc.)
       if (user) {
         if (el("loginArea")) el("loginArea").style.display = "none";
         if (el("publishArea")) el("publishArea").style.display = "block";
-        if (el("userEmail")) el("userEmail").textContent = user.email;
-        if (el("profileEmail")) el("profileEmail").textContent = user.email;
-
-        if (typeof ensureProfilePresent === "function") await ensureProfilePresent(user);
-        if (typeof loadTrips === "function") await loadTrips();
-        if (typeof loadMyReservation === "function") await loadMyReservation();
+        if (el("userEmail")) el("userEmail").textContent = user.email || "";
+        if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
       } else {
         if (el("loginArea")) el("loginArea").style.display = "block";
         if (el("publishArea")) el("publishArea").style.display = "none";
       }
-    } catch (err) {
-      console.error("updateUI error:", err);
+      window.__appState.uiUpdating = false;
+      return;
     }
+
+    // Marque la session
+    window.__appState.lastSessionUserId = newId;
+
+    if (user) {
+      // Masquer zone login, afficher zone publication
+      if (el("loginArea")) el("loginArea").style.display = "none";
+      if (el("publishArea")) el("publishArea").style.display = "block";
+      if (el("userEmail")) el("userEmail").textContent = user.email || "";
+      if (el("profileEmail")) el("profileEmail").textContent = user.email || "";
+
+      // Assurer la présence du profil et préremplir
+      await ensureProfilePresent(user);
+
+      // Charger trajets + réservation (utiliser locks internes de ces fonctions)
+      await loadTrips();
+      await loadMyReservation();
+
+    } else {
+      // Pas connecté
+      if (el("loginArea")) el("loginArea").style.display = "block";
+      if (el("publishArea")) el("publishArea").style.display = "none";
+      // masquer modal profil au cas où
+      if (el("profileModal")) el("profileModal").style.display = "none";
+    }
+  } catch (err) {
+    console.error("updateUI error:", err);
+  } finally {
+    window.__appState.uiUpdating = false;
   }
+}
 
   // Un seul listener unifié (après updateUI déclaré)
   let authAlreadyHandled = false;
@@ -426,7 +462,55 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
   }
 });
 
+function attachCriticalHandlers() {
+  const el = (id) => document.getElementById(id);
 
+  // utilitaire safe : remplace si déjà attaché
+  function bindOnce(id, event, handler) {
+    const node = el(id);
+    if (!node) return;
+    // retirer handlers existants pour éviter duplicates
+    node.replaceWith(node.cloneNode(true));
+    const newNode = el(id);
+    if (newNode) newNode.addEventListener(event, handler);
+  }
+
+  // handlers essentiels (override safe)
+  bindOnce("loginBtn", "click", login);
+  bindOnce("signupBtn", "click", signup);
+  bindOnce("publishBtn", "click", publishTrip);
+  bindOnce("logoutBtnMain", "click", async () => { if (confirm("Confirmer la déconnexion ?")) await logout(); });
+  bindOnce("logoutBtnSmall", "click", async () => { if (confirm("Confirmer la déconnexion ?")) await logout(); });
+  bindOnce("saveProfileBtn", "click", saveProfile);
+  bindOnce("openProfileBtn", "click", openProfile);
+  bindOnce("toggleFormBtn", "click", toggleForm);
+  bindOnce("searchBtn", "click", loadTrips);
+  bindOnce("resetFiltersBtn", "click", resetFilters);
+  bindOnce("activateAdminBtn", "click", activateAdmin);
+  bindOnce("editProfileBtn", "click", openProfile);
+
+  // assure les champs "autre" affichent correctement sans refresh
+  ["depart","arrivee","searchDest"].forEach(id => {
+    const node = el(id);
+    if (!node) return;
+    node.addEventListener("change", () => {
+      const inp = document.getElementById(id + "_autre");
+      if (!inp) return;
+      inp.style.display = (node.value === "Autre") ? "block" : "none";
+    });
+  });
+
+  // input debounce search binding (rebind safely)
+  const searchTextEl = el("searchText");
+  if (searchTextEl) {
+    let timer = null;
+    searchTextEl.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => loadTrips(), 300);
+    });
+    searchTextEl.addEventListener("keyup", (e) => { if (e.key === "Enter") loadTrips(); });
+  }
+}
 
 
   // init
@@ -444,17 +528,35 @@ async function ensureSessionAutoRefresh() {
 
 async function initApp() {
   try {
+    // Idempotence
+    if (window.__appState.initialized) {
+      // on rafraîchit l'UI avec la session courante quand même
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
+      await updateUI(user);
+      return;
+    }
+    window.__appState.initialized = true;
+
+    // Attacher handlers essentiels (au cas où certains ont été définis avant DOMReady)
+    attachCriticalHandlers();
+
+    // Vérifier session actuelle
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
 
+    // si on arrive via redirect magique, supabase peut mettre session après load
+    // l'event onAuthStateChange gère le changement, mais on appelle updateUI une première fois ici
     await updateUI(user);
 
+    // si user présent : s'assurer du profil + trips
     if (user) {
       await ensureProfilePresent(user);
       await loadTrips();
       await loadMyReservation();
     }
 
+    // monitorage léger : si la session change, onAuthStateChange (déjà présent dans ton code) s'exécutera
   } catch (err) {
     console.error("initApp error:", err);
   }
@@ -545,30 +647,37 @@ async function signup() {
 }
 
 
+window.__appState = window.__appState || {
+  initialized: false,
+  uiUpdating: false,
+  lastSessionUserId: null
+};
 
-
-    
-  // --- Remplacer logout existante par celle-ci ---
+/* ------------------------------
+  logout (remplace l'ancienne)
+------------------------------- */
 async function logout() {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) return alert("Erreur de déconnexion : " + error.message);
 
-    // Nettoyage immédiat
-    if (document.getElementById("loginArea")) 
-      document.getElementById("loginArea").style.display = "block";
-    if (document.getElementById("publishArea")) 
-      document.getElementById("publishArea").style.display = "none";
+    // Nettoyage UI immédiat et simple (pas de reload)
+    const loginArea = document.getElementById("loginArea");
+    const publishArea = document.getElementById("publishArea");
+    if (loginArea) loginArea.style.display = "block";
+    if (publishArea) publishArea.style.display = "none";
+
+    // Vidage d'éventuels champs sensibles
+    try { if (document.getElementById("password")) document.getElementById("password").value = ""; } catch(e){}
+
+    // marque l'état pour éviter double init inutiles
+    window.__appState.lastSessionUserId = null;
 
   } catch (err) {
     console.error("logout error:", err);
     alert("Erreur lors de la déconnexion.");
   }
 }
-
-
-
-
 
 
   /* ---------- Profile modal ---------- */
@@ -781,17 +890,15 @@ async function loadTrips() {
     return d.toISOString();
   }
 
-// --- Remplacer publishTrip existante par celle-ci ---
 let publishing = false;
 
 async function publishTrip(e) {
-  if (e) e.preventDefault();
+  if (e && typeof e.preventDefault === "function") e.preventDefault();
   if (publishing) return;
-
   publishing = true;
-  const btn = el("publishBtn");
-  btn.disabled = true;
-  btn.textContent = "Publication...";
+
+  const btn = document.getElementById("publishBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Publication..."; }
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -800,23 +907,33 @@ async function publishTrip(e) {
       return;
     }
 
-    // Vérifie profil complet
-    const { data: profil } = await supabase
+    // Récupérer profil (pré-rempli via ensureProfilePresent/autofill)
+    const { data: profil, error: profErr } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .maybeSingle();
 
+    if (profErr) {
+      console.error("publishTrip profile read error:", profErr);
+      alert("Impossible de lire ton profil (voir console).");
+      return;
+    }
+
+    // Si profil manquant ou incomplet, inviter à compléter via modal
     if (!profil || !profil.nom || !profil.prenom || !profil.surns || !profil.fams || !profil.promo) {
       alert("Complète ton profil d'abord !");
+      if (document.getElementById("profileEmail")) document.getElementById("profileEmail").textContent = user.email || "";
       openProfile();
       return;
     }
 
     // Champs formulaire
-    const depart = el("depart").value === "Autre" ? el("depart_autre").value.trim() : el("depart").value;
-    const arrivee = el("arrivee").value === "Autre" ? el("arrivee_autre").value.trim() : el("arrivee").value;
-    const datetimeVal = el("datetime").value;
+    const depart = document.getElementById("depart").value === "Autre" ? (document.getElementById("depart_autre").value || "").trim() : document.getElementById("depart").value;
+    const arrivee = document.getElementById("arrivee").value === "Autre" ? (document.getElementById("arrivee_autre").value || "").trim() : document.getElementById("arrivee").value;
+    const datetimeVal = document.getElementById("datetime").value;
+    const placesVal = parseInt(document.getElementById("places").value || "1", 10);
+    const descVal = (document.getElementById("desc").value || "").trim();
 
     if (!depart || !arrivee || !datetimeVal) {
       alert("Tous les champs sont requis.");
@@ -835,30 +952,32 @@ async function publishTrip(e) {
       depart,
       arrivee,
       datetime: datetimeISO,
-      places: parseInt(el("places").value),
-      description: el("desc").value.trim()
+      places: placesVal,
+      description: descVal
     });
 
     if (error) {
-      console.error("publishTrip error:", error);
+      console.error("publishTrip insert error:", error);
       return alert("Erreur : " + error.message);
     }
 
     alert("Trajet publié !");
-    el("publishForm").reset();
-    el("form-container").style.display = "none";
+    try { document.getElementById("publishForm").reset(); } catch(e){}
+    const fc = document.getElementById("form-container"); if (fc) fc.style.display = "none";
 
+    // Rechargement propre des trajets + réservation
     await loadTrips();
+    await loadMyReservation();
 
   } catch (err) {
     console.error("publishTrip fatal:", err);
     alert("Erreur lors de la publication.");
   } finally {
     publishing = false;
-    btn.disabled = false;
-    btn.textContent = "Publier";
+    if (btn) { btn.disabled = false; btn.textContent = "Publier"; }
   }
 }
+
 
 
 
@@ -1181,7 +1300,6 @@ async function ensureProfilePresent(user) {
   if (!user) return;
 
   try {
-    // Vérifie si profil déjà existant
     const { data: profile, error } = await supabase
       .from("profiles")
       .select("*")
@@ -1189,17 +1307,34 @@ async function ensureProfilePresent(user) {
       .maybeSingle();
 
     if (error) {
-      console.error("ensureProfilePresent error:", error);
+      console.error("ensureProfilePresent - read error:", error);
       return;
     }
 
+    // Si profil trouvé et complet -> préremplir partout
     if (profile) {
+      // Préremplir inputs du modal profil (si présents)
+      if (document.getElementById("profile_nom")) document.getElementById("profile_nom").value = profile.nom || "";
+      if (document.getElementById("profile_prenom")) document.getElementById("profile_prenom").value = profile.prenom || "";
+      if (document.getElementById("profile_surns")) document.getElementById("profile_surns").value = profile.surns || "";
+      if (document.getElementById("profile_fams")) document.getElementById("profile_fams").value = profile.fams || "";
+      if (document.getElementById("profile_promo")) document.getElementById("profile_promo").value = profile.promo || "";
+
+      // Préremplir le formulaire de publication
       autofillPublishForm(profile);
+
+      // Si profil partiellement vide -> forcer ouverture modal pour compléter
+      const requiredMissing = !(profile.nom && profile.prenom && profile.surns && profile.fams && profile.promo);
+      if (requiredMissing) {
+        if (document.getElementById("profileEmail")) document.getElementById("profileEmail").textContent = user.email || "";
+        openProfile();
+      }
+
       return;
     }
 
-    // Crée le profil VIDE (mais auth OK donc pas de 401)
-    await supabase.from("profiles").insert({
+    // Si pas de profil -> créer une entrée vide (évite les erreurs côté serveur)
+    const { error: insertErr } = await supabase.from("profiles").insert({
       id: user.id,
       nom: "",
       prenom: "",
@@ -1208,12 +1343,24 @@ async function ensureProfilePresent(user) {
       promo: ""
     });
 
-    // Ouvre obligatoirement la pop-up
-    if (el("profileEmail")) el("profileEmail").textContent = user.email;
+    if (insertErr) {
+      console.error("ensureProfilePresent insert error:", insertErr);
+      return;
+    }
+
+    // Remplir modal avec email + ouvrir pour forcer completion après première connexion
+    if (document.getElementById("profileEmail")) document.getElementById("profileEmail").textContent = user.email || "";
+    if (document.getElementById("profile_nom")) document.getElementById("profile_nom").value = "";
+    if (document.getElementById("profile_prenom")) document.getElementById("profile_prenom").value = "";
+    if (document.getElementById("profile_surns")) document.getElementById("profile_surns").value = "";
+    if (document.getElementById("profile_fams")) document.getElementById("profile_fams").value = "";
+    if (document.getElementById("profile_promo")) document.getElementById("profile_promo").value = "";
+
+    // Ouvrir la popup (cas redirection email etc.)
     openProfile();
 
   } catch (err) {
-    console.error("ensureProfilePresent (fatal):", err);
+    console.error("ensureProfilePresent fatal:", err);
   }
 }
 
@@ -1225,26 +1372,35 @@ async function ensureProfilePresent(user) {
 // Remplit automatiquement le formulaire de publication
 function autofillPublishForm(profile) {
   if (!profile) return;
+  const el = (id) => document.getElementById(id);
 
   if (el("nom")) el("nom").value = profile.nom || "";
   if (el("prenom")) el("prenom").value = profile.prenom || "";
   if (el("surns_pub")) el("surns_pub").value = profile.surns || "";
   if (el("fams_pub")) el("fams_pub").value = profile.fams || "";
   if (el("promo")) el("promo").value = profile.promo || "";
+
+  // Également préremplir le modal profil (cohérence UI)
+  if (el("profile_nom") && el("profile_nom").value === "") el("profile_nom").value = profile.nom || "";
+  if (el("profile_prenom") && el("profile_prenom").value === "") el("profile_prenom").value = profile.prenom || "";
+  if (el("profile_surns") && el("profile_surns").value === "") el("profile_surns").value = profile.surns || "";
+  if (el("profile_fams") && el("profile_fams").value === "") el("profile_fams").value = profile.fams || "";
+  if (el("profile_promo") && el("profile_promo").value === "") el("profile_promo").value = profile.promo || "";
 }
 
+
 async function saveProfile(e) {
-  if (e) e.preventDefault();
+  if (e && typeof e.preventDefault === "function") e.preventDefault();
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Connecte-toi !");
 
-    const nom = el("profile_nom").value.trim();
-    const prenom = el("profile_prenom").value.trim();
-    const surns = el("profile_surns").value.trim();
-    const fams = el("profile_fams").value.trim();
-    const promo = el("profile_promo").value;
+    const nom = document.getElementById("profile_nom").value.trim();
+    const prenom = document.getElementById("profile_prenom").value.trim();
+    const surns = document.getElementById("profile_surns").value.trim();
+    const fams = document.getElementById("profile_fams").value.trim();
+    const promo = document.getElementById("profile_promo").value;
 
     if (!nom || !prenom || !surns || !fams || !promo)
       return alert("Tous les champs sont obligatoires.");
@@ -1254,17 +1410,20 @@ async function saveProfile(e) {
       .upsert({
         id: user.id,
         nom, prenom, surns, fams, promo
-      });
+      }, { returning: "minimal" });
 
     if (error) {
       console.error("saveProfile error:", error);
       return alert("Erreur : " + error.message);
     }
 
+    // appliquer sur formulaire publication
+    autofillPublishForm({ nom, prenom, surns, fams, promo });
+
     alert("Profil enregistré !");
     closeProfile();
 
-    // Actualise les trajets
+    // rafraîchir l'affichage des trajets + réservation
     await loadTrips();
     await loadMyReservation();
 
@@ -1487,6 +1646,7 @@ initAuthUI();
 
 </body>
 </html>
+
 
 
 
