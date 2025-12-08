@@ -179,6 +179,36 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   header h1 { font-size:1.8rem; }
   .login-panel { flex-direction:column; gap:8px; }
 }
+
+/* === NOTIFICATIONS === */
+#notifContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notif {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(6px);
+  padding: 12px 18px;
+  color: white;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  font-size: 0.95rem;
+  animation: fadeNotif 0.3s ease-out;
+}
+
+@keyframes fadeNotif {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+    
 </style>
 </head>
 <body>
@@ -556,6 +586,8 @@ async function initApp() {
       await loadMyReservation();
     }
 
+    initRealtime();
+      
     // monitorage léger : si la session change, onAuthStateChange (déjà présent dans ton code) s'exécutera
   } catch (err) {
     console.error("initApp error:", err);
@@ -1604,6 +1636,69 @@ safeOn('doSignup','click', signupPassword);
 safeOn('editProfileBtn','click', openProfile);
 
 initAuthUI();
+
+    /* === TEMPS RÉEL SUPABASE === */
+
+function initRealtime() {
+  try {
+    const channel = supabase.channel("trips_realtime");
+
+    // TRIPS : ajout / modification / suppression
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "trips" },
+      (payload) => {
+        loadTrips();
+        loadMyReservation();
+
+        if (payload.eventType === "INSERT") notify("Nouveau trajet publié !");
+        if (payload.eventType === "UPDATE") notify("Un trajet vient d’être modifié !");
+        if (payload.eventType === "DELETE") notify("Un trajet vient d’être supprimé !");
+      }
+    );
+
+    // RÉSERVATIONS
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "reservations" },
+      (payload) => {
+        loadTrips();
+        loadMyReservation();
+
+        if (payload.eventType === "INSERT") notify("Une réservation vient d’être faite !");
+        if (payload.eventType === "UPDATE") notify("Une réservation a été mise à jour !");
+        if (payload.eventType === "DELETE") notify("Une réservation a été annulée !");
+      }
+    );
+
+    channel.subscribe();
+  } catch (err) {
+    console.error("Realtime error:", err);
+  }
+}
+
+
+/* === FONCTION NOTIFICATION === */
+function notify(msg) {
+  const cont = document.getElementById("notifContainer");
+  if (!cont) return;
+
+  const div = document.createElement("div");
+  div.className = "notif";
+  div.textContent = msg;
+
+  cont.appendChild(div);
+
+  // disparition automatique
+  setTimeout(() => {
+    div.style.transition = "0.3s";
+    div.style.opacity = "0";
+    div.style.transform = "translateY(-8px)";
+    setTimeout(() => div.remove(), 300);
+  }, 2500);
+}
+
+    
 })(); // fin IIFE
 </script>
 
@@ -1644,8 +1739,11 @@ initAuthUI();
   </div>
 </div>
 
+<div id="notifContainer"></div>
+    
 </body>
 </html>
+
 
 
 
