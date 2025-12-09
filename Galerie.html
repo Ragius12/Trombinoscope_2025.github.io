@@ -330,6 +330,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     <span class="label-fixed">Places disponibles :</span>
     <select id="places">
       <option>1</option><option>2</option><option>3</option><option>4</option>
+      <option>5</option><option>6</option><option>7</option><option>8</option>
     </select>
 
     <span class="label-fixed">Description :</span>
@@ -650,33 +651,28 @@ async function signup() {
     const btn = el("signupBtn");
     if (btn) { btn.disabled = true; btn.textContent = "Inscription..."; }
 
-    // signup AVEC redirect correct
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { 
-        emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/Galerie.html" 
+        emailRedirectTo: window.location.origin + window.location.pathname 
       }
     });
 
     if (btn) { btn.disabled = false; btn.textContent = "S'inscrire"; }
 
     if (error) {
-      console.error("signup error:", error);
-      const msg = String(error.message || "").toLowerCase();
-      if (msg.includes("already") || msg.includes("registered") || msg.includes("user already exists")) {
+      if (error.message.toLowerCase().includes("already"))
         return alert("Ce compte existe déjà — connecte-toi.");
-      }
       return alert("Inscription impossible : " + error.message);
     }
 
-    alert("Compte créé ! Vérifie ta boîte mail.");
+    alert("Compte créé ! Vérifie ton email !");
   } catch (err) {
-    console.error("signup fatal:", err);
-    alert("Erreur lors de l'inscription (voir console).");
-    if (el("signupBtn")) { el("signupBtn").disabled = false; el("signupBtn").textContent = "S'inscrire"; }
+    alert("Erreur lors de l'inscription.");
   }
 }
+
 
 
 window.__appState = window.__appState || {
@@ -713,9 +709,12 @@ async function logout() {
 
 
   /* ---------- Profile modal ---------- */
-  function openProfile() {
-    if (el("profileModal")) el("profileModal").style.display = "flex";
-  }
+  function closeProfile() {
+  const modal = el("profileModal");
+  if (!modal) return;
+  modal.classList.remove("show");
+}
+
   function closeProfile() {
     if (el("profileModal")) el("profileModal").style.display = "none";
   }
@@ -800,13 +799,19 @@ async function logout() {
 let tripsLoading = false;
 
 async function loadTrips() {
+    showLoader();
   const list = document.getElementById("trajets");
   if (!list) return;
 
-  if (tripsLoading) return; // empêche double refresh
-  tripsLoading = true;
+  if (tripsLoading) return;
+    tripsLoading = true;
+    
+    if (!window.__skipInitialLoading) {
+      list.innerHTML = `<div style="padding:20px;text-align:center;">⏳ Chargement...</div>`;
+    }
+    
+    window.__skipInitialLoading = false;
 
-  list.innerHTML = `<div style="padding:20px;text-align:center;">⏳ Chargement...</div>`;
 
   try {
     await supabase.rpc("cleanup_expired_trips");
@@ -911,6 +916,7 @@ async function loadTrips() {
   }
 
   tripsLoading = false;
+    hideLoader();
 }
 
 
@@ -998,7 +1004,8 @@ async function publishTrip(e) {
     const fc = document.getElementById("form-container"); if (fc) fc.style.display = "none";
 
     // Rechargement propre des trajets + réservation
-    await loadTrips();
+    await ensureProfilePresent(user); 
+    await loadTrips(); 
     await loadMyReservation();
 
   } catch (err) {
@@ -1643,31 +1650,33 @@ function initRealtime() {
   try {
     const channel = supabase.channel("trips_realtime");
 
-    // TRIPS : ajout / modification / suppression
+    let realtimeCooldown = false;
+
+    function safeRefresh(msg) {
+      if (realtimeCooldown) return;
+      realtimeCooldown = true;
+      setTimeout(() => realtimeCooldown = false, 700);
+
+      loadTrips();
+      loadMyReservation();
+      if (msg) notify(msg);
+    }
+
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "trips" },
       (payload) => {
-        loadTrips();
-        loadMyReservation();
-
-        if (payload.eventType === "INSERT") notify("Nouveau trajet publié !");
-        if (payload.eventType === "UPDATE") notify("Un trajet vient d’être modifié !");
-        if (payload.eventType === "DELETE") notify("Un trajet vient d’être supprimé !");
+        if (payload.eventType === "INSERT") safeRefresh("Nouveau trajet !");
+        if (payload.eventType === "UPDATE") safeRefresh("Trajet mis à jour !");
+        if (payload.eventType === "DELETE") safeRefresh("Trajet supprimé !");
       }
     );
 
-    // RÉSERVATIONS
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "reservations" },
       (payload) => {
-        loadTrips();
-        loadMyReservation();
-
-        if (payload.eventType === "INSERT") notify("Une réservation vient d’être faite !");
-        if (payload.eventType === "UPDATE") notify("Une réservation a été mise à jour !");
-        if (payload.eventType === "DELETE") notify("Une réservation a été annulée !");
+        safeRefresh(null); 
       }
     );
 
@@ -1676,6 +1685,7 @@ function initRealtime() {
     console.error("Realtime error:", err);
   }
 }
+
 
 
 /* === FONCTION NOTIFICATION === */
@@ -1740,9 +1750,20 @@ function notify(msg) {
 </div>
 
 <div id="notifContainer"></div>
+<div id="globalLoader" 
+     style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+            background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);z-index:999999;">
+  <div style="font-size:22px;">⏳ Chargement...</div>
+</div>
+
+<script>
+function showLoader(){ document.getElementById("globalLoader").style.display="flex"; }
+function hideLoader(){ document.getElementById("globalLoader").style.display="none"; }
+</script>
     
 </body>
 </html>
+
 
 
 
