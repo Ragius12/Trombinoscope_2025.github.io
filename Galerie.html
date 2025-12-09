@@ -400,8 +400,9 @@ window.closeProfile = function () {
   const modal = document.getElementById("profileModal");
   if (!modal) return;
   modal.classList.remove("show");
-  modal.style.display = "none";
+  modal.style.display = "none"; // assure fermeture
 };
+
 </script>
 
 <script>
@@ -1391,20 +1392,24 @@ async function ensureProfilePresent(user) {
       return;
     }
 
-    // Si pas de profil -> créer une entrée vide (évite les erreurs côté serveur)
-    const { error: insertErr } = await supabase.from("profiles").insert({
+    // SI PROFIL MANQUANT : upsert au lieu d'insert (évite erreur 409)
+if (!profile) {
+  const { error: insertErr } = await supabase
+    .from("profiles")
+    .upsert({
       id: user.id,
       nom: "",
       prenom: "",
       surns: "",
       fams: "",
       promo: ""
-    });
+    }, { onConflict: "id" });
 
-    if (insertErr) {
-      console.error("ensureProfilePresent insert error:", insertErr);
-      return;
-    }
+  if (insertErr) {
+    console.error("ensureProfilePresent upsert error:", insertErr);
+    return;
+  }
+
 
     // Remplir modal avec email + ouvrir pour forcer completion après première connexion
     if (document.getElementById("profileEmail")) document.getElementById("profileEmail").textContent = user.email || "";
@@ -1782,6 +1787,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
