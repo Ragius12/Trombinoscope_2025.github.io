@@ -1370,19 +1370,16 @@ async function ensureProfilePresent(user) {
       return;
     }
 
-    // Si profil trouvé et complet -> préremplir partout
+    // Si profil trouvé -> préremplir
     if (profile) {
-      // Préremplir inputs du modal profil (si présents)
       if (document.getElementById("profile_nom")) document.getElementById("profile_nom").value = profile.nom || "";
       if (document.getElementById("profile_prenom")) document.getElementById("profile_prenom").value = profile.prenom || "";
       if (document.getElementById("profile_surns")) document.getElementById("profile_surns").value = profile.surns || "";
       if (document.getElementById("profile_fams")) document.getElementById("profile_fams").value = profile.fams || "";
       if (document.getElementById("profile_promo")) document.getElementById("profile_promo").value = profile.promo || "";
 
-      // Préremplir le formulaire de publication
       autofillPublishForm(profile);
 
-      // Si profil partiellement vide -> forcer ouverture modal pour compléter
       const requiredMissing = !(profile.nom && profile.prenom && profile.surns && profile.fams && profile.promo);
       if (requiredMissing) {
         if (document.getElementById("profileEmail")) document.getElementById("profileEmail").textContent = user.email || "";
@@ -1392,26 +1389,27 @@ async function ensureProfilePresent(user) {
       return;
     }
 
-    // SI PROFIL MANQUANT : upsert au lieu d'insert (évite erreur 409)
-if (!profile) {
-  const { error: insertErr } = await supabase
-    .from("profiles")
-    .upsert({
-      id: user.id,
-      nom: "",
-      prenom: "",
-      surns: "",
-      fams: "",
-      promo: ""
-    }, { onConflict: "id" });
+    // SI PROFIL MANQUANT → UPSERT (évite erreur 409)
+    const { error: insertErr } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: user.id,
+          nom: "",
+          prenom: "",
+          surns: "",
+          fams: "",
+          promo: ""
+        },
+        { onConflict: "id" }
+      );
 
-  if (insertErr) {
-    console.error("ensureProfilePresent upsert error:", insertErr);
-    return;
-  }
+    if (insertErr) {
+      console.error("ensureProfilePresent upsert error:", insertErr);
+      return;
+    }
 
-
-    // Remplir modal avec email + ouvrir pour forcer completion après première connexion
+    // Prépare le modal vide
     if (document.getElementById("profileEmail")) document.getElementById("profileEmail").textContent = user.email || "";
     if (document.getElementById("profile_nom")) document.getElementById("profile_nom").value = "";
     if (document.getElementById("profile_prenom")) document.getElementById("profile_prenom").value = "";
@@ -1419,13 +1417,14 @@ if (!profile) {
     if (document.getElementById("profile_fams")) document.getElementById("profile_fams").value = "";
     if (document.getElementById("profile_promo")) document.getElementById("profile_promo").value = "";
 
-    // Ouvrir la popup (cas redirection email etc.)
+    // Ouvrir car premier login / redirection email
     openProfile();
 
   } catch (err) {
     console.error("ensureProfilePresent fatal:", err);
   }
 }
+
 
 
 
@@ -1787,6 +1786,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
