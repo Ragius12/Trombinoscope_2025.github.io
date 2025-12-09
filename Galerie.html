@@ -274,7 +274,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       </select>
 
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-        <button type="button" class="btn" id="closeProfileBtn">Fermer</button>
+        <button id="closeProfileBtn" class="btn">Fermer</button>
         <button class="btn" id="saveProfileBtn">Enregistrer</button>
       </div>
     </form>
@@ -623,7 +623,8 @@ async function login() {
     const password = el("password")?.value || "";
 
     if (!email) return alert("Entre ton email.");
-    if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+    if (!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com")
+     return alert("Utilise une adresse @ensam.eu");
     if (!password) return alert("Mot de passe manquant.");
 
     const btn = el("loginBtn");
@@ -661,7 +662,7 @@ async function signup() {
     const password = el("password") ? el("password").value : "";
 
     if (!email || !password) { return alert("Entre un email et un mot de passe."); }
-    if (!email.endsWith("@ensam.eu")) return alert("Utilise une adresse @ensam.eu");
+    if (!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com") return alert("Utilise une adresse @ensam.eu");
 
     const btn = el("signupBtn");
     if (btn) { btn.disabled = true; btn.textContent = "Inscription..."; }
@@ -733,10 +734,12 @@ function openProfile() {
 }
 
   function closeProfile() {
-  const modal = el("profileModal");
+  const modal = document.getElementById("profileModal");
   if (!modal) return;
   modal.classList.remove("show");
+  modal.style.display = "none";
 }
+
 
   window.addEventListener("click", (e) => {
     const modal = el("profileModal");
@@ -1539,7 +1542,7 @@ async function loginPassword() {
     const email = (el("login_email")?.value || "").trim().toLowerCase();
     const password = el("login_password")?.value || "";
 
-    if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
+    if (!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com") return alert("Email @ensam.eu obligatoire");
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return alert("Erreur : " + error.message);
@@ -1558,7 +1561,7 @@ async function signupPassword() {
     const email = (el("signup_email")?.value || "").trim().toLowerCase();
     const password = el("signup_password")?.value || "";
 
-    if (!email.endsWith("@ensam.eu")) return alert("Email @ensam.eu obligatoire");
+    if (!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com") return alert("Email @ensam.eu obligatoire");
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -1786,6 +1789,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
