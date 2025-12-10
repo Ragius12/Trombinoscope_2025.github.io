@@ -821,113 +821,42 @@ function openProfile() {
   /* ---------- loadTrips (défensif) ---------- */
 let tripsLoading = false;
 
+let tripsLoading = false;
+
 async function loadTrips() {
-    showLoader();
+  if (tripsLoading) return;
+  tripsLoading = true;
+
   const list = document.getElementById("trajets");
   if (!list) return;
 
-  if (tripsLoading) return;
-    tripsLoading = true;
-    
-    if (!window.__skipInitialLoading) {
-      list.innerHTML = `<div style="padding:20px;text-align:center;">⏳ Chargement...</div>`;
-    }
-    
-    window.__skipInitialLoading = false;
-
-
   try {
-    await supabase.rpc("cleanup_expired_trips");
+    const { data, error } = await supabase
+      .from("trips")
+      .select("*")
+      .order("datetime", { ascending: true });
 
-    const { data, error } = await supabase.from("trips").select("*");
     if (error) {
-      list.innerHTML = "Erreur : " + (error.message || JSON.stringify(error));
+      list.innerHTML = "Erreur : " + error.message;
       tripsLoading = false;
       return;
     }
 
-    let trips = data || [];
+    const trips = data || [];
 
-    /* FILTRES EXACTS */
-    const searchDest = document.getElementById("searchDest")?.value || "";
-    const searchOther = (document.getElementById("searchOther")?.value || "").trim().toLowerCase();
-    const searchText = (document.getElementById("searchText")?.value || "").trim().toLowerCase();
+    list.innerHTML = "";
+    const { data: { user } } = await supabase.auth.getUser();
 
-    trips = trips.filter(t => {
-      const depart = (t.depart || "").toLowerCase();
-      const arrivee = (t.arrivee || "").toLowerCase();
-      const nom = (t.nom || "").toLowerCase();
-      const prenom = (t.prenom || "").toLowerCase();
-      const desc = (t.description || "").toLowerCase();
-
-      let okDest = true;
-      if (searchDest === "Autre") {
-        okDest = searchOther ? depart.includes(searchOther) || arrivee.includes(searchOther) : true;
-      } else if (searchDest) {
-        okDest = depart === searchDest.toLowerCase() || arrivee === searchDest.toLowerCase();
-      }
-
-      let okText = !searchText ||
-        nom.includes(searchText) ||
-        prenom.includes(searchText) ||
-        desc.includes(searchText) ||
-        depart.includes(searchText) ||
-        arrivee.includes(searchText);
-
-      return okDest && okText;
-    });
-
-    /* TRI EXACT */
-    const now = Date.now();
-    function score(t) {
-      let s = 0;
-      const q = searchText;
-      const dQ = searchDest.toLowerCase();
-
-      const depart = (t.depart || "").toLowerCase();
-      const arrivee = (t.arrivee || "").toLowerCase();
-      const nom = (t.nom || "").toLowerCase();
-      const prenom = (t.prenom || "").toLowerCase();
-      const desc = (t.description || "").toLowerCase();
-
-      if (q) {
-        if (nom === q || prenom === q) s += 50;
-        if (nom.includes(q) || prenom.includes(q)) s += 20;
-        if (desc.includes(q)) s += 10;
-        if (depart.includes(q) || arrivee.includes(q)) s += 15;
-      }
-      if (dQ) {
-        if (depart === dQ || arrivee === dQ) s += 40;
-        if ((depart + arrivee).includes(dQ)) s += 10;
-      }
-
-      const dt = new Date(t.datetime).getTime();
-      if (!isNaN(dt)) {
-        const diff = dt - now;
-        if (diff >= 0) s += Math.max(0, 30 - Math.floor(diff / (1000 * 60 * 60)));
-      }
-
-      return s;
-    }
-
-    trips.sort((a, b) => score(b) - score(a));
-
-    /* PRÉCHARGER une seule fois : qui a réservé quoi ? */
-    const userId = (await supabase.auth.getUser()).data?.user?.id || null;
     let myReservations = [];
-
-    if (userId) {
-      const { data: resList } = await supabase
+    if (user) {
+      const res = await supabase
         .from("reservations")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("status", "active");
-
-      myReservations = resList || [];
+      myReservations = res.data || [];
     }
 
-    /* AFFICHAGE */
-    list.innerHTML = "";
     for (const t of trips) {
       const elem = await createTrajetElement(t, t.id, myReservations);
       list.appendChild(elem);
@@ -935,12 +864,11 @@ async function loadTrips() {
 
   } catch (err) {
     console.error("loadTrips error:", err);
-    list.innerHTML = "Erreur de chargement.";
   }
 
   tripsLoading = false;
-    hideLoader();
 }
+
 
 
 
@@ -1236,50 +1164,51 @@ async function reserve(tripId) {
   }
 
 async function deleteTrip(id) {
-
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user && !adminMode) return alert("Connecte-toi !");
+    if (!adminMode && !user) return alert("Connecte-toi !");
 
-    // Lire le trajet
-    const { data: trip, error: tripErr } = await supabase
+    // lire le trajet
+    const { data: trip, error } = await supabase
       .from("trips")
-      .select("*, reservations(count)")
+      .select("*")
       .eq("id", id)
       .maybeSingle();
 
-    if (tripErr) return alert("Erreur lecture trajet : " + tripErr.message);
+    if (error) return alert(error.message);
     if (!trip) return alert("Trajet introuvable.");
 
-    // Vérification propriétaire
-    if (!adminMode && user.id !== trip.owner) {
+    // Si ADMIN → suppression totale autorisée
+    if (adminMode) {
+      if (!confirm("Supprimer ce trajet (ADMIN) ?")) return;
+
+      await supabase.from("trips").delete().eq("id", id);
+      notify("🚨 Trajet supprimé (ADMIN)");
+      loadTrips();
+      return;
+    }
+
+    // Mode normal → règles de base
+    if (trip.owner !== user.id)
       return alert("Tu n'es pas le publieur de ce trajet.");
-    }
 
-    // 1) Vérifier nombre de réservations
-    if (trip.reservations && trip.reservations.length > 0) {
-      return alert("Impossible de supprimer ce trajet ! Pour la coher's, tu dois supprimer au maximum 48h à l'avance. Préviens tes chicop's en cas de problème.");
-    }
-
-    // 2) Vérification délai 48h
     const dt = new Date(trip.datetime).getTime();
-    if (dt - Date.now() < 48 * 3600 * 1000) {
-      return alert("Impossible de supprimer ce trajet ! Pour la coher's, tu dois supprimer au maximum 48h à l'avance. Préviens tes chicop's en cas de problème.");
-    }
+    const diff48h = dt - Date.now() < 48 * 3600 * 1000;
+
+    if (diff48h)
+      return alert("Impossible : moins de 48h avant le départ.");
 
     if (!confirm("Supprimer ce trajet ?")) return;
 
-    const { error } = await supabase.from("trips").delete().eq("id", id);
-    if (error) return alert(error.message);
-
-    notify("Trajet supprimé.");
-    await loadTrips();
+    await supabase.from("trips").delete().eq("id", id);
+    notify("Trajet supprimé !");
+    loadTrips();
 
   } catch (err) {
-    console.error("deleteTrip error :", err);
-    alert("Erreur suppression (voir console).");
+    console.error("deleteTrip error:", err);
   }
 }
+
 
 
   /* ---------- createTrajetElement ---------- */
@@ -1356,23 +1285,18 @@ async function createTrajetElement(t, id, myReservations = []) {
     actions.appendChild(disabled);
   }
 
-  // Supprimer — admin ou owner AVEC blocage règles
+// --- Bouton SUPPRIMER (un seul, logique) ---
 if (adminMode || (userId && userId === t.owner)) {
 
-  const canDelete =
-    t.places > 0 &&                                 // pas plein = pas forcément résa → sécurité
-    (new Date(t.datetime).getTime() - Date.now() >= 48 * 3600 * 1000);
-
   const del = document.createElement("button");
-  del.className = canDelete ? "delete-btn" : "delete-btn btn-disabled";
+  del.className = "delete-btn";
   del.textContent = "Supprimer";
 
-  if (canDelete) {
-    del.addEventListener("click", () => deleteTrip(t.id));
-  }
+  del.addEventListener("click", () => deleteTrip(t.id));
 
   actions.appendChild(del);
 }
+
 
 
   d.appendChild(info);
@@ -1708,121 +1632,65 @@ initAuthUI();
 
 function initRealtime() {
   try {
-    const channel = supabase.channel("trips_realtime");
+    const channel = supabase.channel("realtime_trips_and_res");
 
     let cooldown = false;
     const safe = (fn) => {
       if (cooldown) return;
       cooldown = true;
-      setTimeout(() => cooldown = false, 600);
+      setTimeout(() => cooldown = false, 350);
       fn();
     };
 
-    const getUserId = async () => {
-      const u = await supabase.auth.getUser();
-      return u?.data?.user?.id || null;
-    };
-
-    /* === TRIPS === */
+    /* === TRIPS (INSERT / UPDATE / DELETE) === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "trips" },
-      async (payload) => {
-        const userId = await getUserId();
+      (payload) => {
+        safe(() => {
+          loadTrips();
+          loadMyReservation();
 
-        if (payload.eventType === "INSERT") {
-          safe(() => {
-            loadTrips();
+          if (payload.eventType === "INSERT") {
             notify("🚗 Nouveau trajet publié !", "info");
-          });
-        }
-
-        if (payload.eventType === "UPDATE") {
-          safe(() => {
-            loadTrips();
+          }
+          if (payload.eventType === "UPDATE") {
             notify("✏️ Trajet mis à jour", "info");
-          });
-        }
-
-        if (payload.eventType === "DELETE") {
-          safe(async () => {
-            const deleted = payload.old;
-            const user = await getUserId();
-
-            // si l'utilisateur avait réservé ce trajet
-            if (deleted && user) {
-              const { data: res } = await supabase
-                .from("reservations")
-                .select("*")
-                .eq("trip_id", deleted.id)
-                .eq("user_id", user)
-                .eq("status", "active");
-
-              if (res && res.length > 0) {
-                notify("❌ Le trajet que tu avais réservé a été supprimé", "error");
-                loadMyReservation();
-              }
-            }
-
-            loadTrips();
-          });
-        }
+          }
+          if (payload.eventType === "DELETE") {
+            notify("❌ Un trajet a été supprimé", "warning");
+          }
+        });
       }
     );
 
-    /* === RESERVATIONS === */
+    /* === RESERVATIONS (INSERT / UPDATE) === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "reservations" },
-      async (payload) => {
-        const userId = await getUserId();
-        if (!userId) return;
+      (payload) => {
+        safe(() => {
+          loadTrips();
+          loadMyReservation();
 
-        // NOUVELLE RÉSERVATION
-        if (payload.eventType === "INSERT") {
-          const res = payload.new;
-
-          // si c'est SON trajet → il est conducteur
-          if (res.owner_id === userId) {
-            notify("🎉 Quelqu’un a réservé ton trajet !", "success");
+          if (payload.eventType === "INSERT") {
+            notify("🟢 Nouvelle réservation !", "success");
           }
 
-          // si c'est LUI qui réserve → éviter double notif
-          if (res.user_id === userId) {
-            notify("🟢 Réservation confirmée", "success");
+          if (payload.eventType === "UPDATE" && payload.new.status === "cancelled") {
+            notify("🔄 Réservation annulée", "info");
           }
-
-          safe(() => {
-            loadTrips();
-            loadMyReservation();
-          });
-        }
-
-        // ANNULATION
-        if (payload.eventType === "UPDATE" && payload.new.status === "cancelled") {
-          const res = payload.new;
-
-          if (res.owner_id === userId) {
-            notify("⚠️ Quelqu’un a annulé sa réservation !", "warning");
-          }
-
-          if (res.user_id === userId) {
-            notify("🔄 Tu as annulé ta réservation.", "info");
-          }
-
-          safe(() => {
-            loadTrips();
-            loadMyReservation();
-          });
-        }
+        });
       }
     );
 
+    /* === ABONNEMENT === */
     channel.subscribe();
   } catch (err) {
-    console.error("Realtime error:", err);
+    console.error("initRealtime ERROR:", err);
   }
 }
+
 
 
 
@@ -1911,6 +1779,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
