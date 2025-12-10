@@ -1023,6 +1023,8 @@ async function publishTrip(e) {
     }
 
     alert("Trajet publié !");
+    notify("Trajet publié !", "success");
+
     try { document.getElementById("publishForm").reset(); } catch(e){}
     const fc = document.getElementById("form-container"); if (fc) fc.style.display = "none";
 
@@ -1123,6 +1125,7 @@ async function reserve(tripId) {
     }
 
     alert("Réservation confirmée !");
+    notify("Réservation confirmée !", "success");
     await loadTrips();
     await loadMyReservation();
   } catch (err) {
@@ -1189,6 +1192,7 @@ async function reserve(tripId) {
         return alert(error?.message || data?.error || "Erreur annulation.");
 
       alert("Réservation annulée !");
+    notify("Réservation annulée !", "info");
       await loadTrips();
       await loadMyReservation();
     } catch (err) {
@@ -1706,33 +1710,111 @@ function initRealtime() {
   try {
     const channel = supabase.channel("trips_realtime");
 
-    let realtimeCooldown = false;
+    let cooldown = false;
+    const safe = (fn) => {
+      if (cooldown) return;
+      cooldown = true;
+      setTimeout(() => cooldown = false, 600);
+      fn();
+    };
 
-    function safeRefresh(msg) {
-      if (realtimeCooldown) return;
-      realtimeCooldown = true;
-      setTimeout(() => realtimeCooldown = false, 700);
+    const getUserId = async () => {
+      const u = await supabase.auth.getUser();
+      return u?.data?.user?.id || null;
+    };
 
-      loadTrips();
-      loadMyReservation();
-      if (msg) notify(msg);
-    }
-
+    /* === TRIPS === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "trips" },
-      (payload) => {
-        if (payload.eventType === "INSERT") safeRefresh("Nouveau trajet !");
-        if (payload.eventType === "UPDATE") safeRefresh("Trajet mis à jour !");
-        if (payload.eventType === "DELETE") safeRefresh("Trajet supprimé !");
+      async (payload) => {
+        const userId = await getUserId();
+
+        if (payload.eventType === "INSERT") {
+          safe(() => {
+            loadTrips();
+            notify("🚗 Nouveau trajet publié !", "info");
+          });
+        }
+
+        if (payload.eventType === "UPDATE") {
+          safe(() => {
+            loadTrips();
+            notify("✏️ Trajet mis à jour", "info");
+          });
+        }
+
+        if (payload.eventType === "DELETE") {
+          safe(async () => {
+            const deleted = payload.old;
+            const user = await getUserId();
+
+            // si l'utilisateur avait réservé ce trajet
+            if (deleted && user) {
+              const { data: res } = await supabase
+                .from("reservations")
+                .select("*")
+                .eq("trip_id", deleted.id)
+                .eq("user_id", user)
+                .eq("status", "active");
+
+              if (res && res.length > 0) {
+                notify("❌ Le trajet que tu avais réservé a été supprimé", "error");
+                loadMyReservation();
+              }
+            }
+
+            loadTrips();
+          });
+        }
       }
     );
 
+    /* === RESERVATIONS === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "reservations" },
-      (payload) => {
-        safeRefresh(null); 
+      async (payload) => {
+        const userId = await getUserId();
+        if (!userId) return;
+
+        // NOUVELLE RÉSERVATION
+        if (payload.eventType === "INSERT") {
+          const res = payload.new;
+
+          // si c'est SON trajet → il est conducteur
+          if (res.owner_id === userId) {
+            notify("🎉 Quelqu’un a réservé ton trajet !", "success");
+          }
+
+          // si c'est LUI qui réserve → éviter double notif
+          if (res.user_id === userId) {
+            notify("🟢 Réservation confirmée", "success");
+          }
+
+          safe(() => {
+            loadTrips();
+            loadMyReservation();
+          });
+        }
+
+        // ANNULATION
+        if (payload.eventType === "UPDATE" && payload.new.status === "cancelled") {
+          const res = payload.new;
+
+          if (res.owner_id === userId) {
+            notify("⚠️ Quelqu’un a annulé sa réservation !", "warning");
+          }
+
+          if (res.user_id === userId) {
+            notify("🔄 Tu as annulé ta réservation.", "info");
+          }
+
+          safe(() => {
+            loadTrips();
+            loadMyReservation();
+          });
+        }
       }
     );
 
@@ -1744,25 +1826,35 @@ function initRealtime() {
 
 
 
+
 /* === FONCTION NOTIFICATION === */
-function notify(msg) {
+function notify(msg, type = "info") {
   const cont = document.getElementById("notifContainer");
   if (!cont) return;
 
+  const colors = {
+    info: "var(--accent)",
+    success: "#4caf50",
+    warning: "#ff9800",
+    error: "#f44336"
+  };
+
   const div = document.createElement("div");
   div.className = "notif";
+  div.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
   div.textContent = msg;
 
   cont.appendChild(div);
 
-  // disparition automatique
+  // auto-disparition
   setTimeout(() => {
     div.style.transition = "0.3s";
     div.style.opacity = "0";
     div.style.transform = "translateY(-8px)";
     setTimeout(() => div.remove(), 300);
-  }, 2500);
+  }, 3000);
 }
+
 
     
 })(); // fin IIFE
@@ -1819,6 +1911,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
