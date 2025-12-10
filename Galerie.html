@@ -1231,32 +1231,52 @@ async function reserve(tripId) {
     }
   }
 
-  async function deleteTrip(id) {
-    if (!confirm("Supprimer ce trajet ?")) return;
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user && !adminMode) return alert("Connecte-toi !");
+async function deleteTrip(id) {
 
-      const { data: trip, error: tripErr } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
-      if (tripErr) return alert("Erreur lecture trajet : " + tripErr.message);
-      if (!trip) return alert("Trajet introuvable.");
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user && !adminMode) return alert("Connecte-toi !");
 
-      if (!adminMode && user.id !== trip.owner) return alert("Seul le publieur (ou une personne ayant les droits serveur) peut supprimer ce trajet.");
+    // Lire le trajet
+    const { data: trip, error: tripErr } = await supabase
+      .from("trips")
+      .select("*, reservations(count)")
+      .eq("id", id)
+      .maybeSingle();
 
-      const { error } = await supabase
-        .from("trips")
-        .delete()
-        .eq("id", id);
+    if (tripErr) return alert("Erreur lecture trajet : " + tripErr.message);
+    if (!trip) return alert("Trajet introuvable.");
 
-      if (error) return alert(error.message);
-
-      alert("Trajet supprimé !");
-      await loadTrips();
-    } catch (err) {
-      console.error("deleteTrip error:", err);
-      alert("Erreur suppression (voir console).");
+    // Vérification propriétaire
+    if (!adminMode && user.id !== trip.owner) {
+      return alert("Tu n'es pas le publieur de ce trajet.");
     }
+
+    // 1) Vérifier nombre de réservations
+    if (trip.reservations && trip.reservations.length > 0) {
+      return alert("Impossible de supprimer ce trajet ! Pour la coher's, tu dois supprimer au maximum 48h à l'avance. Préviens tes chicop's en cas de problème.");
+    }
+
+    // 2) Vérification délai 48h
+    const dt = new Date(trip.datetime).getTime();
+    if (dt - Date.now() < 48 * 3600 * 1000) {
+      return alert("Impossible de supprimer ce trajet ! Pour la coher's, tu dois supprimer au maximum 48h à l'avance. Préviens tes chicop's en cas de problème.");
+    }
+
+    if (!confirm("Supprimer ce trajet ?")) return;
+
+    const { error } = await supabase.from("trips").delete().eq("id", id);
+    if (error) return alert(error.message);
+
+    notify("Trajet supprimé.");
+    await loadTrips();
+
+  } catch (err) {
+    console.error("deleteTrip error :", err);
+    alert("Erreur suppression (voir console).");
   }
+}
+
 
   /* ---------- createTrajetElement ---------- */
 async function createTrajetElement(t, id, myReservations = []) {
@@ -1332,14 +1352,24 @@ async function createTrajetElement(t, id, myReservations = []) {
     actions.appendChild(disabled);
   }
 
-  // Bouton réservations (owner ou admin)
-  if (adminMode || (userId && userId === t.owner)) {
-    const btnRes = document.createElement("button");
-    btnRes.className = "btn";
-    btnRes.textContent = "Réservations";
-    btnRes.addEventListener("click", () => viewReservations(t.id));
-    actions.appendChild(btnRes);
+  // Supprimer — admin ou owner AVEC blocage règles
+if (adminMode || (userId && userId === t.owner)) {
+
+  const canDelete =
+    t.places > 0 &&                                 // pas plein = pas forcément résa → sécurité
+    (new Date(t.datetime).getTime() - Date.now() >= 48 * 3600 * 1000);
+
+  const del = document.createElement("button");
+  del.className = canDelete ? "delete-btn" : "delete-btn btn-disabled";
+  del.textContent = "Supprimer";
+
+  if (canDelete) {
+    del.addEventListener("click", () => deleteTrip(t.id));
   }
+
+  actions.appendChild(del);
+}
+
 
   d.appendChild(info);
   d.appendChild(actions);
@@ -1789,6 +1819,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
