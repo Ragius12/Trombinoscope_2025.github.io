@@ -574,41 +574,44 @@ async function ensureSessionAutoRefresh() {
 
 async function initApp() {
   try {
-    // Idempotence
-    if (window.__appState.initialized) {
-      // on rafraîchit l'UI avec la session courante quand même
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
-      await updateUI(user);
-      return;
-    }
-    window.__appState.initialized = true;
-
-    // Attacher handlers essentiels (au cas où certains ont été définis avant DOMReady)
-    attachCriticalHandlers();
-
-    // Vérifier session actuelle
+    // Toujours récupérer la session courante
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
 
-    // si on arrive via redirect magique, supabase peut mettre session après load
-    // l'event onAuthStateChange gère le changement, mais on appelle updateUI une première fois ici
+    // Si déjà initialisé → on met à jour l'UI mais ON NE STOPPE PLUS
+    if (window.__appState.initialized) {
+      await updateUI(user);
+      
+      // ⚠️ NE JAMAIS QUITTER AVANT D'ACTIVER LE REALTIME
+      initRealtime();
+      return;
+    }
+
+    // Première initialisation
+    window.__appState.initialized = true;
+
+    // Attacher les handlers critiques une seule fois
+    attachCriticalHandlers();
+
+    // Mise à jour initiale de l’UI
     await updateUI(user);
 
-    // si user présent : s'assurer du profil + trips
+    // Si déjà connecté → charger profil + données
     if (user) {
       await ensureProfilePresent(user);
       await loadTrips();
       await loadMyReservation();
     }
 
+    // ⚠️ Activation du realtime (toujours)
     initRealtime();
-      
-    // monitorage léger : si la session change, onAuthStateChange (déjà présent dans ton code) s'exécutera
+
+    // onAuthStateChange continuera le travail si la session change
   } catch (err) {
     console.error("initApp error:", err);
   }
 }
+
 
 
 
@@ -1777,6 +1780,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
