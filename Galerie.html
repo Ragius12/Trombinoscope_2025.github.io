@@ -884,6 +884,7 @@ async function loadTrips() {
 
 
 
+
   /* ---------- utilitaires & actions ---------- */
   function localDateTimeLocalToISOStringLocal(datetimeLocalValue) {
     const d = new Date(datetimeLocalValue);
@@ -962,6 +963,7 @@ async function publishTrip(e) {
       return alert("Erreur : " + error.message);
     }
 
+    await loadTrips();
     alert("Trajet publié !");
     notify("Trajet publié !", "success");
 
@@ -1303,6 +1305,7 @@ async function createTrajetElement(t, id, myReservations = []) {
 }
 
 
+
   /* ---------- admin ---------- */
   function activateAdmin(){
     adminMode = el("adminKey") ? (el("adminKey").value === "Error404trads") : false;
@@ -1640,14 +1643,14 @@ function initRealtime() {
       fn();
     };
 
-    /* === TRIPS (INSERT / UPDATE / DELETE) === */
+    /* === TRAJETS (INSERT / UPDATE / DELETE) === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "trips" },
       (payload) => {
         safe(() => {
-          loadTrips();
-          loadMyReservation();
+          loadTrips(); // Recharger les trajets
+          loadMyReservation(); // Recharger la réservation
 
           if (payload.eventType === "INSERT") {
             notify("🚗 Nouveau trajet publié !", "info");
@@ -1668,8 +1671,8 @@ function initRealtime() {
       { event: "*", schema: "public", table: "reservations" },
       (payload) => {
         safe(() => {
-          loadTrips();
-          loadMyReservation();
+          loadTrips(); // Recharger les trajets
+          loadMyReservation(); // Recharger la réservation
 
           if (payload.eventType === "INSERT") {
             notify("🟢 Nouvelle réservation !", "success");
@@ -1688,6 +1691,7 @@ function initRealtime() {
     console.error("initRealtime ERROR:", err);
   }
 }
+
 
 
 
@@ -1777,6 +1781,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
