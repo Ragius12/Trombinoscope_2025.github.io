@@ -835,7 +835,7 @@ async function loadTrips() {
     const { data, error } = await supabase
       .from("trips")
       .select("*")
-      .order("datetime", { ascending: true });  // Vous pouvez ajuster ce tri selon le statut (plein, en cours, expiré)
+      .order("datetime", { ascending: true });
 
     if (error) {
       list.innerHTML = "Erreur : " + error.message;
@@ -844,17 +844,6 @@ async function loadTrips() {
     }
 
     const trips = data || [];
-
-    // Tri des trajets selon leur statut (expiré, plein, ou en cours)
-    const sortedTrips = trips.sort((a, b) => {
-      if (isExpired(a.datetime) && !isExpired(b.datetime)) return 1;
-      if (!isExpired(a.datetime) && isExpired(b.datetime)) return -1;
-
-      if (a.places <= 0 && b.places > 0) return 1;  // Les trajets pleins vont en bas
-      if (a.places > 0 && b.places <= 0) return -1;  // Les trajets disponibles vont en haut
-
-      return new Date(a.datetime) - new Date(b.datetime); // Conserve le tri par date par défaut
-    });
 
     list.innerHTML = "";
     const { data: { user } } = await supabase.auth.getUser();
@@ -869,7 +858,7 @@ async function loadTrips() {
       myReservations = res.data || [];
     }
 
-    for (const t of sortedTrips) {
+    for (const t of trips) {
       const elem = await createTrajetElement(t, t.id, myReservations);
       list.appendChild(elem);
     }
@@ -880,7 +869,6 @@ async function loadTrips() {
 
   tripsLoading = false;
 }
-
 
 
 
@@ -963,7 +951,6 @@ async function publishTrip(e) {
       return alert("Erreur : " + error.message);
     }
 
-    await loadTrips();
     alert("Trajet publié !");
     notify("Trajet publié !", "success");
 
@@ -1299,11 +1286,24 @@ async function createTrajetElement(t, id, myReservations = []) {
     actions.appendChild(disabled);
   }
 
+// --- Bouton SUPPRIMER (un seul, logique) ---
+if (adminMode || (userId && userId === t.owner)) {
+
+  const del = document.createElement("button");
+  del.className = "delete-btn";
+  del.textContent = "Supprimer";
+
+  del.addEventListener("click", () => deleteTrip(t.id));
+
+  actions.appendChild(del);
+}
+
+
+
   d.appendChild(info);
   d.appendChild(actions);
   return d;
 }
-
 
 
   /* ---------- admin ---------- */
@@ -1643,14 +1643,14 @@ function initRealtime() {
       fn();
     };
 
-    /* === TRAJETS (INSERT / UPDATE / DELETE) === */
+    /* === TRIPS (INSERT / UPDATE / DELETE) === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "trips" },
       (payload) => {
         safe(() => {
-          loadTrips(); // Recharger les trajets
-          loadMyReservation(); // Recharger la réservation
+          loadTrips();
+          loadMyReservation();
 
           if (payload.eventType === "INSERT") {
             notify("🚗 Nouveau trajet publié !", "info");
@@ -1671,8 +1671,8 @@ function initRealtime() {
       { event: "*", schema: "public", table: "reservations" },
       (payload) => {
         safe(() => {
-          loadTrips(); // Recharger les trajets
-          loadMyReservation(); // Recharger la réservation
+          loadTrips();
+          loadMyReservation();
 
           if (payload.eventType === "INSERT") {
             notify("🟢 Nouvelle réservation !", "success");
@@ -1691,7 +1691,6 @@ function initRealtime() {
     console.error("initRealtime ERROR:", err);
   }
 }
-
 
 
 
@@ -1781,31 +1780,3 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
