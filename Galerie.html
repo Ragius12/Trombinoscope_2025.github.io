@@ -1682,9 +1682,10 @@ function initRealtime() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const isOwner = payload.new?.owner === user.id;
+      const ownerId = payload.new?.owner || payload.old?.owner;
+      const isOwner = ownerId === user.id;
 
-      // 🔔 Nouveau trajet → tout le monde SAUF le publieur
+      // Nouveau trajet → tout le monde SAUF le publieur
       if (payload.eventType === "INSERT" && !isOwner) {
         notify(
           `🚗 Nouveau trajet : ${payload.new.depart} → ${payload.new.arrivee}`,
@@ -1692,8 +1693,8 @@ function initRealtime() {
         );
       }
 
-      // ❌ Suppression → seulement le publieur
-      if (payload.eventType === "DELETE" && payload.old?.owner === user.id) {
+      // Suppression → publieur uniquement
+      if (payload.eventType === "DELETE" && isOwner) {
         notify("❌ Ton trajet a été supprimé", "warning");
       }
     }
@@ -1709,35 +1710,20 @@ function initRealtime() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const isMe = payload.new?.user_id === user.id;
+      const reservantId = payload.new?.user_id || payload.old?.user_id;
+      const tripOwnerId = payload.new?.trip_owner || payload.old?.trip_owner;
 
-      // lire le trajet concerné pour connaître le publieur
-      const tripId = payload.new?.trip_id || payload.old?.trip_id;
-      if (!tripId) return;
+      const isReservant = reservantId === user.id;
+      const isOwner = tripOwnerId === user.id;
 
-      const { data: trip } = await supabase
-        .from("trips")
-        .select("owner, depart, arrivee")
-        .eq("id", tripId)
-        .maybeSingle();
-
-      if (!trip) return;
-
-      const isOwner = trip.owner === user.id;
-
-      /* --- INSERT --- */
+      /* --- NOUVELLE RÉSERVATION --- */
       if (payload.eventType === "INSERT") {
-        // 🔔 réservant
-        if (isMe) {
+        if (isReservant) {
           notify("🟢 Réservation confirmée", "success");
         }
 
-        // 🔔 publieur (UNE SEULE FOIS)
-        if (isOwner && !isMe) {
-          notify(
-            `🧍 Nouvelle réservation sur ton trajet ${trip.depart} → ${trip.arrivee}`,
-            "info"
-          );
+        if (isOwner && !isReservant) {
+          notify("🧍 Nouvelle réservation sur ton trajet", "info");
         }
       }
 
@@ -1746,17 +1732,12 @@ function initRealtime() {
         payload.eventType === "UPDATE" &&
         payload.new?.status === "cancelled"
       ) {
-        // 🔔 réservant
-        if (isMe) {
+        if (isReservant) {
           notify("❌ Ta réservation a été annulée", "info");
         }
 
-        // 🔔 publieur
-        if (isOwner && !isMe) {
-          notify(
-            `❌ Une réservation a été annulée sur ton trajet ${trip.depart} → ${trip.arrivee}`,
-            "warning"
-          );
+        if (isOwner && !isReservant) {
+          notify("❌ Une réservation a été annulée sur ton trajet", "warning");
         }
       }
     }
@@ -1764,10 +1745,11 @@ function initRealtime() {
 
   channel.subscribe((status) => {
     if (status === "SUBSCRIBED") {
-      console.log("Realtime connecté");
+      console.log("✅ Realtime connecté");
     }
   });
 }
+
 
 
 
@@ -1862,6 +1844,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
