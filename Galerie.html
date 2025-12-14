@@ -499,6 +499,13 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
 
   // Met à jour les zones connectées / déconnectées
   await updateUI(user);
+
+  // Recharge proprement l'app (profils, trajets…)
+  if (user) {
+    await ensureProfilePresent(user);
+    await loadTrips();
+    await loadMyReservation();
+  }
 });
 
 function attachCriticalHandlers() {
@@ -567,35 +574,43 @@ async function ensureSessionAutoRefresh() {
 
 async function initApp() {
   try {
-    if (window.__appState.initialized) return;
-
-    window.__appState.initialized = true;
-
-    showLoader(); // ✅ un seul loader long
-
-    attachCriticalHandlers();
-
+    // Toujours récupérer la session courante
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
 
+    // Si déjà initialisé → on met à jour l'UI mais ON NE STOPPE PLUS
+    if (window.__appState.initialized) {
+      await updateUI(user);
+      
+      // ⚠️ NE JAMAIS QUITTER AVANT D'ACTIVER LE REALTIME
+      initRealtime();
+      return;
+    }
+
+    // Première initialisation
+    window.__appState.initialized = true;
+
+    // Attacher les handlers critiques une seule fois
+    attachCriticalHandlers();
+
+    // Mise à jour initiale de l’UI
     await updateUI(user);
 
-    // ⚠️ Chargement UNIQUE
-    await Promise.all([
-      loadTrips(),
-      loadMyReservation()
-    ]);
+    // Si déjà connecté → charger profil + données
+    if (user) {
+      await ensureProfilePresent(user);
+      await loadTrips();
+      await loadMyReservation();
+    }
 
-    initRealtime(); // ⚠️ realtime intact
+    // ⚠️ Activation du realtime (toujours)
+    initRealtime();
 
+    // onAuthStateChange continuera le travail si la session change
   } catch (err) {
     console.error("initApp error:", err);
-  } finally {
-    hideLoader();
   }
 }
-
-
 
 
 
@@ -633,6 +648,7 @@ async function login() {
 
     // UI instantanée (plus besoin d'attendre un reload)
     await updateUI(data.user);
+    await initApp();
 
   } catch (err) {
     console.error("login fatal:", err);
@@ -1149,28 +1165,16 @@ async function reserve(tripId) {
   }
 
   async function canViewReservations(t) {
-  try {
-    if (adminMode) return true;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return false;
-
-    if (user.id === t.owner) return true;
-
-    const { data } = await supabase
-      .from("reservations")
-      .select("id")
-      .eq("trip_id", t.id)
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle();
-
-    return !!data;
-  } catch {
-    return false;
+    try {
+      if (adminMode) return true;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      return user.id === t.owner;
+    } catch (err) {
+      console.error("canViewReservations error:", err);
+      return false;
+    }
   }
-}
-
 
   async function viewReservations(tripId) {
     try {
@@ -1318,15 +1322,6 @@ async function createTrajetElement(t, id, myReservations = []) {
 
   d.appendChild(info);
   d.appendChild(actions);
-
-if (await canViewReservations(t)) {
-  const viewBtn = document.createElement("button");
-  viewBtn.className = "btn";
-  viewBtn.textContent = "Voir réservants";
-  viewBtn.addEventListener("click", () => viewReservations(t.id));
-  actions.appendChild(viewBtn);
-}
-    
   return d;
 }
 
@@ -1658,101 +1653,72 @@ initAuthUI();
     /* === TEMPS RÉEL SUPABASE === */
 
 function initRealtime() {
-  if (window.__realtimeChannel) return;
+  try {
+    // 🔴 Empêche les doublons
+    if (window.__realtimeChannel) return;
 
-  const channel = supabase.channel("realtime_trips_and_res");
-  window.__realtimeChannel = channel;
+    const channel = supabase.channel("realtime_trips_and_res");
 
-  let debounce = false;
-  const safeReload = () => {
-    if (debounce) return;
-    debounce = true;
-    setTimeout(() => debounce = false, 400);
-    loadTrips();
-    loadMyReservation();
-  };
+    window.__realtimeChannel = channel;
 
-  /* ================= TRIPS ================= */
-  channel.on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "trips" },
-    async (payload) => {
-      safeReload();
+    let debounce = false;
+    const safeReload = () => {
+      if (debounce) return;
+      debounce = true;
+      setTimeout(() => debounce = false, 400);
+      loadTrips();
+      loadMyReservation();
+    };
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    /* === TRIPS === */
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "trips" },
+      (payload) => {
+        safeReload();
 
-      const ownerId = payload.new?.owner || payload.old?.owner;
-      const isOwner = ownerId === user.id;
-
-      // Nouveau trajet → tout le monde SAUF le publieur
-      if (payload.eventType === "INSERT" && !isOwner) {
-        notify(
-          `🚗 Nouveau trajet : ${payload.new.depart} → ${payload.new.arrivee}`,
-          "success"
-        );
-      }
-
-      // Suppression → publieur uniquement
-      if (payload.eventType === "DELETE" && isOwner) {
-        notify("❌ Ton trajet a été supprimé", "warning");
-      }
-    }
-  );
-
-  /* ================= RESERVATIONS ================= */
-  channel.on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "reservations" },
-    async (payload) => {
-      safeReload();
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const reservantId = payload.new?.user_id || payload.old?.user_id;
-      const tripOwnerId = payload.new?.trip_owner || payload.old?.trip_owner;
-
-      const isReservant = reservantId === user.id;
-      const isOwner = tripOwnerId === user.id;
-
-      /* --- NOUVELLE RÉSERVATION --- */
-      if (payload.eventType === "INSERT") {
-        if (isReservant) {
-          notify("🟢 Réservation confirmée", "success");
+        if (payload.eventType === "INSERT") {
+          notify("🚗 Nouveau trajet publié", "success");
         }
-
-        if (isOwner && !isReservant) {
-          notify("🧍 Nouvelle réservation sur ton trajet", "info");
+        if (payload.eventType === "UPDATE") {
+          notify("✏️ Trajet mis à jour", "info");
+        }
+        if (payload.eventType === "DELETE") {
+          notify("❌ Trajet supprimé", "warning");
         }
       }
+    );
 
-      /* --- ANNULATION --- */
-      if (
-        payload.eventType === "UPDATE" &&
-        payload.new?.status === "cancelled"
-      ) {
-        if (isReservant) {
-          notify("❌ Ta réservation a été annulée", "info");
+    /* === RESERVATIONS === */
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "reservations" },
+      (payload) => {
+        safeReload();
+
+        if (payload.eventType === "INSERT") {
+          notify("🟢 Nouvelle réservation", "success");
         }
 
-        if (isOwner && !isReservant) {
-          notify("❌ Une réservation a été annulée sur ton trajet", "warning");
+        if (
+          payload.eventType === "UPDATE" &&
+          payload.new?.status === "cancelled"
+        ) {
+          notify("🔄 Réservation annulée", "info");
         }
       }
-    }
-  );
+    );
 
-  channel.subscribe((status) => {
-    if (status === "SUBSCRIBED") {
-      console.log("✅ Realtime connecté");
-    }
-  });
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log("Realtime connecté");
+      }
+    });
+
+  } catch (err) {
+    console.error("initRealtime fatal:", err);
+  }
 }
-
-
-
-
 
 
 
@@ -1763,9 +1729,6 @@ function initRealtime() {
 function notify(msg, type = "info") {
   const cont = document.getElementById("notifContainer");
   if (!cont) return;
-
-  // Empêche doublon exact
-  if ([...cont.children].some(n => n.textContent === msg)) return;
 
   const colors = {
     info: "var(--accent)",
@@ -1781,12 +1744,14 @@ function notify(msg, type = "info") {
 
   cont.appendChild(div);
 
+  // auto-disparition
   setTimeout(() => {
+    div.style.transition = "0.3s";
     div.style.opacity = "0";
+    div.style.transform = "translateY(-8px)";
     setTimeout(() => div.remove(), 300);
-  }, 3500);
+  }, 3000);
 }
-
 
 
     
@@ -1844,9 +1809,5 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
-
-
-
-
 
 
