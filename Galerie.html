@@ -573,44 +573,38 @@ async function ensureSessionAutoRefresh() {
 }
 
 async function initApp() {
+  if (window.__appState.initializing) return;
+  window.__appState.initializing = true;
+
+  showLoader();
+
   try {
-    // Toujours récupérer la session courante
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
 
-    // Si déjà initialisé → on met à jour l'UI mais ON NE STOPPE PLUS
-    if (window.__appState.initialized) {
-      await updateUI(user);
-      
-      // ⚠️ NE JAMAIS QUITTER AVANT D'ACTIVER LE REALTIME
+    // Init unique
+    if (!window.__appState.initialized) {
+      window.__appState.initialized = true;
+      attachCriticalHandlers();
       initRealtime();
-      return;
     }
 
-    // Première initialisation
-    window.__appState.initialized = true;
-
-    // Attacher les handlers critiques une seule fois
-    attachCriticalHandlers();
-
-    // Mise à jour initiale de l’UI
     await updateUI(user);
 
-    // Si déjà connecté → charger profil + données
     if (user) {
       await ensureProfilePresent(user);
       await loadTrips();
       await loadMyReservation();
     }
 
-    // ⚠️ Activation du realtime (toujours)
-    initRealtime();
-
-    // onAuthStateChange continuera le travail si la session change
   } catch (err) {
     console.error("initApp error:", err);
+  } finally {
+    hideLoader();
+    window.__appState.initializing = false;
   }
 }
+
 
 
 
@@ -1653,72 +1647,71 @@ initAuthUI();
     /* === TEMPS RÉEL SUPABASE === */
 
 function initRealtime() {
-  try {
-    // 🔴 Empêche les doublons
-    if (window.__realtimeChannel) return;
+  if (window.__realtimeChannel) return;
 
-    const channel = supabase.channel("realtime_trips_and_res");
+  const channel = supabase.channel("realtime_trips_and_res");
+  window.__realtimeChannel = channel;
 
-    window.__realtimeChannel = channel;
+  let debounce = false;
+  const safeReload = () => {
+    if (debounce) return;
+    debounce = true;
+    setTimeout(() => debounce = false, 500);
+    loadTrips();
+    loadMyReservation();
+  };
 
-    let debounce = false;
-    const safeReload = () => {
-      if (debounce) return;
-      debounce = true;
-      setTimeout(() => debounce = false, 400);
-      loadTrips();
-      loadMyReservation();
-    };
+  channel.on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "trips" },
+    async (payload) => {
+      safeReload();
 
-    /* === TRIPS === */
-    channel.on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "trips" },
-      (payload) => {
-        safeReload();
+      const { data: { user } } = await supabase.auth.getUser();
+      const isOwner = user && payload.new?.owner === user.id;
 
-        if (payload.eventType === "INSERT") {
-          notify("🚗 Nouveau trajet publié", "success");
-        }
-        if (payload.eventType === "UPDATE") {
-          notify("✏️ Trajet mis à jour", "info");
-        }
-        if (payload.eventType === "DELETE") {
-          notify("❌ Trajet supprimé", "warning");
+      if (payload.eventType === "INSERT") {
+        // 🔔 Tout le monde voit les nouvelles publications
+        notify(`🚗 Nouveau trajet : ${payload.new.depart} → ${payload.new.arrivee}`, "success");
+      }
+
+      if (payload.eventType === "DELETE") {
+        // ❌ SEUL le publieur voit la suppression
+        if (isOwner) {
+          notify("❌ Ton trajet a été supprimé", "warning");
         }
       }
-    );
+    }
+  );
 
-    /* === RESERVATIONS === */
-    channel.on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "reservations" },
-      (payload) => {
-        safeReload();
+  channel.on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "reservations" },
+    async (payload) => {
+      safeReload();
 
-        if (payload.eventType === "INSERT") {
-          notify("🟢 Nouvelle réservation", "success");
-        }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-        if (
-          payload.eventType === "UPDATE" &&
-          payload.new?.status === "cancelled"
-        ) {
-          notify("🔄 Réservation annulée", "info");
-        }
+      const isConcerned =
+        payload.new?.user_id === user.id ||
+        payload.old?.user_id === user.id;
+
+      if (!isConcerned) return;
+
+      if (payload.eventType === "INSERT") {
+        notify("🟢 Réservation confirmée", "success");
       }
-    );
 
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        console.log("Realtime connecté");
+      if (payload.eventType === "UPDATE" && payload.new?.status === "cancelled") {
+        notify("🔄 Réservation annulée", "info");
       }
-    });
+    }
+  );
 
-  } catch (err) {
-    console.error("initRealtime fatal:", err);
-  }
+  channel.subscribe();
 }
+
 
 
 
@@ -1729,6 +1722,9 @@ function initRealtime() {
 function notify(msg, type = "info") {
   const cont = document.getElementById("notifContainer");
   if (!cont) return;
+
+  // Empêche doublon exact
+  if ([...cont.children].some(n => n.textContent === msg)) return;
 
   const colors = {
     info: "var(--accent)",
@@ -1744,14 +1740,12 @@ function notify(msg, type = "info") {
 
   cont.appendChild(div);
 
-  // auto-disparition
   setTimeout(() => {
-    div.style.transition = "0.3s";
     div.style.opacity = "0";
-    div.style.transform = "translateY(-8px)";
     setTimeout(() => div.remove(), 300);
-  }, 3000);
+  }, 3500);
 }
+
 
 
     
@@ -1809,5 +1803,6 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
