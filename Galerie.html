@@ -499,13 +499,6 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
 
   // Met à jour les zones connectées / déconnectées
   await updateUI(user);
-
-  // Recharge proprement l'app (profils, trajets…)
-  if (user) {
-    await ensureProfilePresent(user);
-    await loadTrips();
-    await loadMyReservation();
-  }
 });
 
 function attachCriticalHandlers() {
@@ -573,37 +566,35 @@ async function ensureSessionAutoRefresh() {
 }
 
 async function initApp() {
-  if (window.__appState.initializing) return;
-  window.__appState.initializing = true;
-
-  showLoader();
-
   try {
+    if (window.__appState.initialized) return;
+
+    window.__appState.initialized = true;
+
+    showLoader(); // ✅ un seul loader long
+
+    attachCriticalHandlers();
+
     const { data: { session } } = await supabase.auth.getSession();
     const user = session?.user ?? null;
 
-    // Init unique
-    if (!window.__appState.initialized) {
-      window.__appState.initialized = true;
-      attachCriticalHandlers();
-      initRealtime();
-    }
-
     await updateUI(user);
 
-    if (user) {
-      await ensureProfilePresent(user);
-      await loadTrips();
-      await loadMyReservation();
-    }
+    // ⚠️ Chargement UNIQUE
+    await Promise.all([
+      loadTrips(),
+      loadMyReservation()
+    ]);
+
+    initRealtime(); // ⚠️ realtime intact
 
   } catch (err) {
     console.error("initApp error:", err);
   } finally {
     hideLoader();
-    window.__appState.initializing = false;
   }
 }
+
 
 
 
@@ -642,7 +633,6 @@ async function login() {
 
     // UI instantanée (plus besoin d'attendre un reload)
     await updateUI(data.user);
-    await initApp();
 
   } catch (err) {
     console.error("login fatal:", err);
@@ -1159,16 +1149,28 @@ async function reserve(tripId) {
   }
 
   async function canViewReservations(t) {
-    try {
-      if (adminMode) return true;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
-      return user.id === t.owner;
-    } catch (err) {
-      console.error("canViewReservations error:", err);
-      return false;
-    }
+  try {
+    if (adminMode) return true;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    if (user.id === t.owner) return true;
+
+    const { data } = await supabase
+      .from("reservations")
+      .select("id")
+      .eq("trip_id", t.id)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    return !!data;
+  } catch {
+    return false;
   }
+}
+
 
   async function viewReservations(tripId) {
     try {
@@ -1316,6 +1318,15 @@ async function createTrajetElement(t, id, myReservations = []) {
 
   d.appendChild(info);
   d.appendChild(actions);
+
+if (await canViewReservations(t)) {
+  const viewBtn = document.createElement("button");
+  viewBtn.className = "btn";
+  viewBtn.textContent = "Voir réservants";
+  viewBtn.addEventListener("click", () => viewReservations(t.id));
+  actions.appendChild(viewBtn);
+}
+    
   return d;
 }
 
@@ -1661,71 +1672,103 @@ function initRealtime() {
     loadMyReservation();
   };
 
-  // 👤 user courant (UNE FOIS)
-  let currentUserId = null;
-  supabase.auth.getUser().then(({ data }) => {
-    currentUserId = data?.user?.id || null;
-  });
-
-  /* === TRIPS === */
+  /* ================= TRIPS ================= */
   channel.on(
     "postgres_changes",
     { event: "*", schema: "public", table: "trips" },
-    (payload) => {
+    async (payload) => {
       safeReload();
 
-      // ➕ nouvelle publication → tout le monde
-      if (payload.eventType === "INSERT") {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const isOwner = payload.new?.owner === user.id;
+
+      // 🔔 Nouveau trajet → tout le monde SAUF le publieur
+      if (payload.eventType === "INSERT" && !isOwner) {
         notify(
           `🚗 Nouveau trajet : ${payload.new.depart} → ${payload.new.arrivee}`,
           "success"
         );
       }
 
-      // ❌ suppression → SEUL le publieur
-      if (
-        payload.eventType === "DELETE" &&
-        payload.old?.owner === currentUserId
-      ) {
+      // ❌ Suppression → seulement le publieur
+      if (payload.eventType === "DELETE" && payload.old?.owner === user.id) {
         notify("❌ Ton trajet a été supprimé", "warning");
       }
     }
   );
 
-  /* === RESERVATIONS === */
+  /* ================= RESERVATIONS ================= */
   channel.on(
     "postgres_changes",
     { event: "*", schema: "public", table: "reservations" },
-    (payload) => {
+    async (payload) => {
       safeReload();
 
-      if (!currentUserId) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      const concerned =
-        payload.new?.user_id === currentUserId ||
-        payload.old?.user_id === currentUserId;
+      const isMe = payload.new?.user_id === user.id;
 
-      if (!concerned) return;
+      // lire le trajet concerné pour connaître le publieur
+      const tripId = payload.new?.trip_id || payload.old?.trip_id;
+      if (!tripId) return;
 
+      const { data: trip } = await supabase
+        .from("trips")
+        .select("owner, depart, arrivee")
+        .eq("id", tripId)
+        .maybeSingle();
+
+      if (!trip) return;
+
+      const isOwner = trip.owner === user.id;
+
+      /* --- INSERT --- */
       if (payload.eventType === "INSERT") {
-        notify("🟢 Réservation confirmée", "success");
+        // 🔔 réservant
+        if (isMe) {
+          notify("🟢 Réservation confirmée", "success");
+        }
+
+        // 🔔 publieur (UNE SEULE FOIS)
+        if (isOwner && !isMe) {
+          notify(
+            `🧍 Nouvelle réservation sur ton trajet ${trip.depart} → ${trip.arrivee}`,
+            "info"
+          );
+        }
       }
 
+      /* --- ANNULATION --- */
       if (
         payload.eventType === "UPDATE" &&
         payload.new?.status === "cancelled"
       ) {
-        notify("🔄 Réservation annulée", "info");
+        // 🔔 réservant
+        if (isMe) {
+          notify("❌ Ta réservation a été annulée", "info");
+        }
+
+        // 🔔 publieur
+        if (isOwner && !isMe) {
+          notify(
+            `❌ Une réservation a été annulée sur ton trajet ${trip.depart} → ${trip.arrivee}`,
+            "warning"
+          );
+        }
       }
     }
   );
 
   channel.subscribe((status) => {
     if (status === "SUBSCRIBED") {
-      console.log("✅ Realtime reconnecté correctement");
+      console.log("Realtime connecté");
     }
   });
 }
+
 
 
 
@@ -1819,6 +1862,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
