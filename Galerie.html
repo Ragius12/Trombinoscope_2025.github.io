@@ -1656,61 +1656,77 @@ function initRealtime() {
   const safeReload = () => {
     if (debounce) return;
     debounce = true;
-    setTimeout(() => debounce = false, 500);
+    setTimeout(() => debounce = false, 400);
     loadTrips();
     loadMyReservation();
   };
 
+  // 👤 user courant (UNE FOIS)
+  let currentUserId = null;
+  supabase.auth.getUser().then(({ data }) => {
+    currentUserId = data?.user?.id || null;
+  });
+
+  /* === TRIPS === */
   channel.on(
     "postgres_changes",
     { event: "*", schema: "public", table: "trips" },
-    async (payload) => {
+    (payload) => {
       safeReload();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      const isOwner = user && payload.new?.owner === user.id;
-
+      // ➕ nouvelle publication → tout le monde
       if (payload.eventType === "INSERT") {
-        // 🔔 Tout le monde voit les nouvelles publications
-        notify(`🚗 Nouveau trajet : ${payload.new.depart} → ${payload.new.arrivee}`, "success");
+        notify(
+          `🚗 Nouveau trajet : ${payload.new.depart} → ${payload.new.arrivee}`,
+          "success"
+        );
       }
 
-      if (payload.eventType === "DELETE") {
-        // ❌ SEUL le publieur voit la suppression
-        if (isOwner) {
-          notify("❌ Ton trajet a été supprimé", "warning");
-        }
+      // ❌ suppression → SEUL le publieur
+      if (
+        payload.eventType === "DELETE" &&
+        payload.old?.owner === currentUserId
+      ) {
+        notify("❌ Ton trajet a été supprimé", "warning");
       }
     }
   );
 
+  /* === RESERVATIONS === */
   channel.on(
     "postgres_changes",
     { event: "*", schema: "public", table: "reservations" },
-    async (payload) => {
+    (payload) => {
       safeReload();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!currentUserId) return;
 
-      const isConcerned =
-        payload.new?.user_id === user.id ||
-        payload.old?.user_id === user.id;
+      const concerned =
+        payload.new?.user_id === currentUserId ||
+        payload.old?.user_id === currentUserId;
 
-      if (!isConcerned) return;
+      if (!concerned) return;
 
       if (payload.eventType === "INSERT") {
         notify("🟢 Réservation confirmée", "success");
       }
 
-      if (payload.eventType === "UPDATE" && payload.new?.status === "cancelled") {
+      if (
+        payload.eventType === "UPDATE" &&
+        payload.new?.status === "cancelled"
+      ) {
         notify("🔄 Réservation annulée", "info");
       }
     }
   );
 
-  channel.subscribe();
+  channel.subscribe((status) => {
+    if (status === "SUBSCRIBED") {
+      console.log("✅ Realtime reconnecté correctement");
+    }
+  });
 }
+
 
 
 
@@ -1803,6 +1819,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
