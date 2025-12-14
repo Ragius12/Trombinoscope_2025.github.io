@@ -705,26 +705,48 @@ window.__appState = window.__appState || {
 ------------------------------- */
 async function logout() {
   try {
-    const { error } = await supabase.auth.signOut();
-    if (error) return alert("Erreur de déconnexion : " + error.message);
+    // 1) Stop realtime AVANT tout
+    if (window.__realtimeChannel) {
+      await supabase.removeChannel(window.__realtimeChannel);
+      window.__realtimeChannel = null;
+    }
 
-    // Nettoyage UI immédiat et simple (pas de reload)
+    // 2) Déconnexion Supabase
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert("Erreur de déconnexion : " + error.message);
+      return;
+    }
+
+    // 3) Nettoyage mémoire locale
+    window.__appState.lastSessionUserId = null;
+    window.__appState.initialized = false;
+
+    // 4) UI immédiate (sans reload)
     const loginArea = document.getElementById("loginArea");
     const publishArea = document.getElementById("publishArea");
     if (loginArea) loginArea.style.display = "block";
     if (publishArea) publishArea.style.display = "none";
 
-    // Vidage d'éventuels champs sensibles
-    try { if (document.getElementById("password")) document.getElementById("password").value = ""; } catch(e){}
+    // 5) Nettoyage visuel
+    const trajets = document.getElementById("trajets");
+    if (trajets) trajets.innerHTML = "Aucune annonce pour le moment.";
 
-    // marque l'état pour éviter double init inutiles
-    window.__appState.lastSessionUserId = null;
+    const myRes = document.getElementById("myReservationArea");
+    if (myRes) myRes.style.display = "none";
+
+    // 6) Sécurité : vider mot de passe
+    const pwd = document.getElementById("password");
+    if (pwd) pwd.value = "";
+
+    notify("Déconnecté avec succès", "info");
 
   } catch (err) {
-    console.error("logout error:", err);
+    console.error("logout fatal:", err);
     alert("Erreur lors de la déconnexion.");
   }
 }
+
 
 
   /* ---------- Profile modal ---------- */
@@ -1632,64 +1654,72 @@ initAuthUI();
 
 function initRealtime() {
   try {
+    // 🔴 Empêche les doublons
+    if (window.__realtimeChannel) return;
+
     const channel = supabase.channel("realtime_trips_and_res");
 
-    let cooldown = false;
-    const safe = (fn) => {
-      if (cooldown) return;
-      cooldown = true;
-      setTimeout(() => cooldown = false, 350);
-      fn();
+    window.__realtimeChannel = channel;
+
+    let debounce = false;
+    const safeReload = () => {
+      if (debounce) return;
+      debounce = true;
+      setTimeout(() => debounce = false, 400);
+      loadTrips();
+      loadMyReservation();
     };
 
-    /* === TRIPS (INSERT / UPDATE / DELETE) === */
+    /* === TRIPS === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "trips" },
       (payload) => {
-        safe(() => {
-          loadTrips();
-          loadMyReservation();
+        safeReload();
 
-          if (payload.eventType === "INSERT") {
-            notify("🚗 Nouveau trajet publié !", "info");
-          }
-          if (payload.eventType === "UPDATE") {
-            notify("✏️ Trajet mis à jour", "info");
-          }
-          if (payload.eventType === "DELETE") {
-            notify("❌ Un trajet a été supprimé", "warning");
-          }
-        });
+        if (payload.eventType === "INSERT") {
+          notify("🚗 Nouveau trajet publié", "success");
+        }
+        if (payload.eventType === "UPDATE") {
+          notify("✏️ Trajet mis à jour", "info");
+        }
+        if (payload.eventType === "DELETE") {
+          notify("❌ Trajet supprimé", "warning");
+        }
       }
     );
 
-    /* === RESERVATIONS (INSERT / UPDATE) === */
+    /* === RESERVATIONS === */
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "reservations" },
       (payload) => {
-        safe(() => {
-          loadTrips();
-          loadMyReservation();
+        safeReload();
 
-          if (payload.eventType === "INSERT") {
-            notify("🟢 Nouvelle réservation !", "success");
-          }
+        if (payload.eventType === "INSERT") {
+          notify("🟢 Nouvelle réservation", "success");
+        }
 
-          if (payload.eventType === "UPDATE" && payload.new.status === "cancelled") {
-            notify("🔄 Réservation annulée", "info");
-          }
-        });
+        if (
+          payload.eventType === "UPDATE" &&
+          payload.new?.status === "cancelled"
+        ) {
+          notify("🔄 Réservation annulée", "info");
+        }
       }
     );
 
-    /* === ABONNEMENT === */
-    channel.subscribe();
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        console.log("Realtime connecté");
+      }
+    });
+
   } catch (err) {
-    console.error("initRealtime ERROR:", err);
+    console.error("initRealtime fatal:", err);
   }
 }
+
 
 
 
@@ -1779,4 +1809,5 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
