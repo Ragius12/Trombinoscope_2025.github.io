@@ -576,6 +576,11 @@ async function initApp() {
   try {
     // Toujours récupérer la session courante
     const { data: { session } } = await supabase.auth.getSession();
+      // éviter double init après redirection email
+    if (session?.user && window.__appState.lastSessionUserId === session.user.id) {
+      initRealtime();
+      return;
+    }
     const user = session?.user ?? null;
 
     // Si déjà initialisé → on met à jour l'UI mais ON NE STOPPE PLUS
@@ -648,7 +653,6 @@ async function login() {
 
     // UI instantanée (plus besoin d'attendre un reload)
     await updateUI(data.user);
-    await initApp();
 
   } catch (err) {
     console.error("login fatal:", err);
@@ -892,7 +896,7 @@ async function loadTrips() {
     }
 
     for (const t of sortedTrips) {
-      const elem = await createTrajetElement(t, t.id, myReservations);
+      const elem = await t, t.id, myReservations);
       list.appendChild(elem);
     }
 
@@ -1201,7 +1205,7 @@ async function reserve(tripId) {
 async function deleteTrip(id) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!adminMode && !user) return alert("Connecte-toi !");
+    if (window.__adminMode) return alert("Connecte-toi !");
 
     // lire le trajet
     const { data: trip, error } = await supabase
@@ -1214,7 +1218,7 @@ async function deleteTrip(id) {
     if (!trip) return alert("Trajet introuvable.");
 
     // Si ADMIN → suppression totale autorisée
-    if (adminMode) {
+    if (window.__adminMode) {
       if (!confirm("Supprimer ce trajet (ADMIN) ?")) return;
 
       await supabase.from("trips").delete().eq("id", id);
@@ -1230,9 +1234,13 @@ async function deleteTrip(id) {
     const dt = new Date(trip.datetime).getTime();
     const diff48h = dt - Date.now() < 48 * 3600 * 1000;
 
-    if (diff48h)
-      return alert("Impossible : moins de 48h avant le départ.");
-
+    if (diff48h) {
+          if (!confirm("Moins de 48h. Bloquer le trajet ?")) return;
+          await supabase.from("trips").update({ blocked: true }).eq("id", id);
+          notify("⛔ Trajet bloqué", "warning");
+          loadTrips();
+          return;
+        }
     if (!confirm("Supprimer ce trajet ?")) return;
 
     await supabase.from("trips").delete().eq("id", id);
@@ -1255,6 +1263,13 @@ async function createTrajetElement(t, id, myReservations = []) {
   const reserved = myReservations.some(r => r.trip_id === t.id);
 
   // Bandeaux
+    if (t.blocked) {
+      const b = document.createElement("div");
+      b.className = "bandeau";
+      b.textContent = "BLOQUÉ";
+      b.style.background = "#ff9800";
+      d.appendChild(b);
+    }
   if (isEnCours(t.datetime)) {
     const b = document.createElement("div");
     b.className = "bandeau";
@@ -1320,6 +1335,15 @@ async function createTrajetElement(t, id, myReservations = []) {
     actions.appendChild(disabled);
   }
 
+// Bouton "Réservations" (owner ou admin)
+if (await canViewReservations(t)) {
+  const viewBtn = document.createElement("button");
+  viewBtn.className = "btn";
+  viewBtn.textContent = "Réservations";
+  viewBtn.addEventListener("click", () => viewReservations(t.id));
+  actions.appendChild(viewBtn);
+}
+    
   d.appendChild(info);
   d.appendChild(actions);
   return d;
@@ -1329,7 +1353,8 @@ async function createTrajetElement(t, id, myReservations = []) {
 
   /* ---------- admin ---------- */
   function activateAdmin(){
-    adminMode = el("adminKey") ? (el("adminKey").value === "Error404trads") : false;
+    adminMode = el("adminKey")?.value === "Error404trads";
+    window.__adminMode = adminMode;
     if (el("adminStatus")) el("adminStatus").textContent = adminMode ? "Accès admin (UI seulement)" : "Mot de passe incorrect";
     loadTrips();
   }
@@ -1678,7 +1703,7 @@ function initRealtime() {
         safeReload();
 
         if (payload.eventType === "INSERT") {
-          notify("🚗 Nouveau trajet publié", "success");
+          notify(`🚗 Nouveau trajet : ${payload.new.depart} → ${payload.new.arrivee}`, "success");
         }
         if (payload.eventType === "UPDATE") {
           notify("✏️ Trajet mis à jour", "info");
@@ -1696,18 +1721,19 @@ function initRealtime() {
       (payload) => {
         safeReload();
 
+        const userId = (await supabase.auth.getUser()).data?.user?.id;
+        
         if (payload.eventType === "INSERT") {
-          notify("🟢 Nouvelle réservation", "success");
+          if (payload.new.user_id === userId) {
+            notify("🟢 Réservation confirmée", "success");
+          }
         }
-
-        if (
-          payload.eventType === "UPDATE" &&
-          payload.new?.status === "cancelled"
-        ) {
-          notify("🔄 Réservation annulée", "info");
+        
+        if (payload.eventType === "UPDATE" && payload.new.status === "cancelled") {
+          if (payload.old.user_id === userId) {
+            notify("🔄 Réservation annulée", "info");
+          }
         }
-      }
-    );
 
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
@@ -1809,5 +1835,6 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
