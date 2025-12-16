@@ -1542,71 +1542,13 @@ function hide(id){ const n = el(id); if(n) n.style.display = "none"; }
 
 // LOGIN
 async function loginPassword() {
-  try {
-    const email = (el("login_email")?.value || "").trim().toLowerCase();
-    const password = el("login_password")?.value || "";
-
-    if (!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com") return alert("Email @ensam.eu obligatoire");
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return alert("Erreur : " + error.message);
-
-    hide("loginModal");
-    await initAuthUI();
-  } catch (err) {
-    console.error("loginPassword error:", err);
-    alert("Erreur lors de la connexion (voir console).");
-  }
+  alert("Utilise le formulaire principal de connexion.");
 }
 
-// SIGNUP
 async function signupPassword() {
-  try {
-    const email = (el("signup_email")?.value || "").trim().toLowerCase();
-    const password = el("signup_password")?.value || "";
-
-    if (!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com") return alert("Email @ensam.eu obligatoire");
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: APP_MAGIC_REDIRECT }
-    });
-
-    if (error) {
-      console.error("signupPassword error:", error);
-      const msg = String(error.message || "").toLowerCase();
-      if (msg.includes("already") || msg.includes("registered") || msg.includes("user already exists")) {
-        alert("Ce compte existe déjà — connecte-toi.");
-      } else {
-        alert("Erreur : " + error.message);
-      }
-      return;
-    }
-
-    // Si user présent et confirmé, insert profile from modal fields
-    const user = data?.user;
-    const isConfirmed = !!(user?.email_confirmed_at || user?.confirmed_at || user?.email_confirmed);
-    if (user && isConfirmed) {
-      await supabase.from("profiles").upsert({
-        id: user.id,
-        nom: (el("signup_nom")?.value || "").trim(),
-        prenom: (el("signup_prenom")?.value || "").trim(),
-        surns: (el("signup_surns")?.value || "").trim(),
-        fams: (el("signup_fams")?.value || "").trim(),
-        promo: (el("signup_promo")?.value || "")
-      }, { returning: 'minimal' });
-    } else {
-      console.log("signupPassword: profil non créé (email non confirmé ou pas de user immédiat).");
-    }
-
-    alert("Compte créé ! Vérifie ton email.");
-    hide("signupModal");
-  } catch (err) {
-    console.error("signupPassword fatal:", err);
-    alert("Erreur lors de la création du compte (voir console).");
-  }
+  alert("Utilise le formulaire principal d’inscription.");
 }
+
 
 
 // EDIT PROFILE
@@ -1836,6 +1778,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
