@@ -577,9 +577,8 @@ async function initApp() {
     // Toujours récupérer la session courante
     const { data: { session } } = await supabase.auth.getSession();
       // éviter double init après redirection email
-    if (session?.user && window.__appState.lastSessionUserId === session.user.id) {
-      initRealtime();
-      return;
+    if (session?.user) {
+      );
     }
     const user = session?.user ?? null;
 
@@ -1619,13 +1618,17 @@ initAuthUI();
 
     /* === TEMPS RÉEL SUPABASE === */
 
-function initRealtime() {
+async function initRealtime() {
   try {
-    // 🔴 Empêche les doublons
-    if (window.__realtimeChannel) return;
+    // 🔧 au lieu de return → on nettoie proprement
+    if (window.__realtimeChannel) {
+      try {
+        await supabase.removeChannel(window.__realtimeChannel);
+      } catch (e) {}
+      window.__realtimeChannel = null;
+    }
 
     const channel = supabase.channel("realtime_trips_and_res");
-
     window.__realtimeChannel = channel;
 
     let debounce = false;
@@ -1636,6 +1639,12 @@ function initRealtime() {
       loadTrips();
       loadMyReservation();
     };
+
+    // 🧠 userId récupéré UNE FOIS (pas async dans callback)
+    let currentUserId = null;
+    supabase.auth.getUser().then(res => {
+      currentUserId = res.data?.user?.id || null;
+    });
 
     /* === TRIPS === */
     channel.on(
@@ -1658,26 +1667,26 @@ function initRealtime() {
 
     /* === RESERVATIONS === */
     channel.on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "reservations" },
-          async (payload) => {
-            safeReload();
-        
-            const userId = (await supabase.auth.getUser()).data?.user?.id;
-        
-            if (payload.eventType === "INSERT") {
-              if (payload.new.user_id === userId) {
-                notify("🟢 Réservation confirmée", "success");
-              }
-            }
-        
-            if (payload.eventType === "UPDATE" && payload.new.status === "cancelled") {
-              if (payload.old.user_id === userId) {
-                notify("🔄 Réservation annulée", "info");
-              }
-            }
+      "postgres_changes",
+      { event: "*", schema: "public", table: "reservations" },
+      (payload) => {
+        safeReload();
+
+        if (payload.eventType === "INSERT") {
+          if (payload.new.user_id === currentUserId) {
+            notify("🟢 Réservation confirmée", "success");
           }
-        );
+        }
+
+        if (
+          payload.eventType === "UPDATE" &&
+          payload.new.status === "cancelled" &&
+          payload.old.user_id === currentUserId
+        ) {
+          notify("🔄 Réservation annulée", "info");
+        }
+      }
+    );
 
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
@@ -1689,10 +1698,6 @@ function initRealtime() {
     console.error("initRealtime fatal:", err);
   }
 }
-
-
-
-
 
 
 /* === FONCTION NOTIFICATION === */
@@ -1779,6 +1784,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
