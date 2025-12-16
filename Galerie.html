@@ -603,18 +603,11 @@ async function initApp() {
   try {
     // Toujours récupérer la session courante
     const { data: { session } } = await supabase.auth.getSession();
-      // éviter double init après redirection email
-    if (session?.user) {
-      initRealtime();
-    }
     const user = session?.user ?? null;
 
-    // Si déjà initialisé → on met à jour l'UI mais ON NE STOPPE PLUS
+    // Si déjà initialisé → on met juste à jour l'UI
     if (window.__appState.initialized) {
       await updateUI(user);
-      
-      // ⚠️ NE JAMAIS QUITTER AVANT D'ACTIVER LE REALTIME
-      initRealtime();
       return;
     }
 
@@ -634,14 +627,16 @@ async function initApp() {
       await loadMyReservation();
     }
 
-    // ⚠️ Activation du realtime (toujours)
-    initRealtime();
+    // ✅ REALTIME : UNE SEULE FOIS, À LA FIN
+    setTimeout(() => {
+      initRealtime();
+    }, 0);
 
-    // onAuthStateChange continuera le travail si la session change
   } catch (err) {
     console.error("initApp error:", err);
   }
 }
+
 
 
 
@@ -1773,6 +1768,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
