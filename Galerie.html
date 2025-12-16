@@ -434,6 +434,33 @@ window.closeProfile = function () {
   let adminMode = false;
   window.__authReady = false;
 
+    function notify(msg, type = "info") {
+  const cont = document.getElementById("notifContainer");
+  if (!cont) return;
+
+  const colors = {
+    info: "var(--accent)",
+    success: "#4caf50",
+    warning: "#ff9800",
+    error: "#f44336"
+  };
+
+  const div = document.createElement("div");
+  div.className = "notif";
+  div.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
+  div.textContent = msg;
+
+  cont.appendChild(div);
+
+  setTimeout(() => {
+    div.style.transition = "0.3s";
+    div.style.opacity = "0";
+    div.style.transform = "translateY(-8px)";
+    setTimeout(() => div.remove(), 300);
+  }, 3000);
+}
+
+
   /* ---------- UI update ---------- */
  async function updateUI(user) {
   if (window.__appState.uiUpdating) return;
@@ -1618,17 +1645,13 @@ initAuthUI();
 
     /* === TEMPS RÉEL SUPABASE === */
 
-async function initRealtime() {
+function initRealtime() {
   try {
-    // 🔧 au lieu de return → on nettoie proprement
-    if (window.__realtimeChannel) {
-      try {
-        await supabase.removeChannel(window.__realtimeChannel);
-      } catch (e) {}
-      window.__realtimeChannel = null;
-    }
+    // 🔴 Empêche les doublons
+    if (window.__realtimeChannel) return;
 
     const channel = supabase.channel("realtime_trips_and_res");
+
     window.__realtimeChannel = channel;
 
     let debounce = false;
@@ -1639,12 +1662,6 @@ async function initRealtime() {
       loadTrips();
       loadMyReservation();
     };
-
-    // 🧠 userId récupéré UNE FOIS (pas async dans callback)
-    let currentUserId = null;
-    supabase.auth.getUser().then(res => {
-      currentUserId = res.data?.user?.id || null;
-    });
 
     /* === TRIPS === */
     channel.on(
@@ -1669,21 +1686,21 @@ async function initRealtime() {
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "reservations" },
-      (payload) => {
+      async (payload) => {
         safeReload();
 
+        const userId = (await supabase.auth.getUser()).data?.user?.id;
+
         if (payload.eventType === "INSERT") {
-          if (payload.new.user_id === currentUserId) {
+          if (payload.new.user_id === userId) {
             notify("🟢 Réservation confirmée", "success");
           }
         }
 
-        if (
-          payload.eventType === "UPDATE" &&
-          payload.new.status === "cancelled" &&
-          payload.old.user_id === currentUserId
-        ) {
-          notify("🔄 Réservation annulée", "info");
+        if (payload.eventType === "UPDATE" && payload.new.status === "cancelled") {
+          if (payload.old.user_id === userId) {
+            notify("🔄 Réservation annulée", "info");
+          }
         }
       }
     );
@@ -1699,34 +1716,6 @@ async function initRealtime() {
   }
 }
 
-
-/* === FONCTION NOTIFICATION === */
-function notify(msg, type = "info") {
-  const cont = document.getElementById("notifContainer");
-  if (!cont) return;
-
-  const colors = {
-    info: "var(--accent)",
-    success: "#4caf50",
-    warning: "#ff9800",
-    error: "#f44336"
-  };
-
-  const div = document.createElement("div");
-  div.className = "notif";
-  div.style.borderLeft = `4px solid ${colors[type] || colors.info}`;
-  div.textContent = msg;
-
-  cont.appendChild(div);
-
-  // auto-disparition
-  setTimeout(() => {
-    div.style.transition = "0.3s";
-    div.style.opacity = "0";
-    div.style.transform = "translateY(-8px)";
-    setTimeout(() => div.remove(), 300);
-  }, 3000);
-}
 
 
     
@@ -1784,6 +1773,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
