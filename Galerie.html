@@ -1204,6 +1204,7 @@ async function reserve(tripId) {
 
 async function deleteTrip(id) {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Connecte-toi !");
 
     // lire le trajet
@@ -1778,6 +1779,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
