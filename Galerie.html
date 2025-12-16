@@ -520,20 +520,32 @@ window.closeProfile = function () {
 
   // Un seul listener unifié (après updateUI déclaré)
   let authAlreadyHandled = false;
-
 supabase.auth.onAuthStateChange(async (_event, session) => {
   const user = session?.user ?? null;
 
-  // Met à jour les zones connectées / déconnectées
   await updateUI(user);
 
-  // Recharge proprement l'app (profils, trajets…)
   if (user) {
     await ensureProfilePresent(user);
     await loadTrips();
     await loadMyReservation();
+
+    // 🔥 REALTIME : ICI ET NULLE PART AILLEURS
+    if (!window.__realtimeStarted) {
+      window.__realtimeStarted = true;
+      initRealtime();
+    }
+
+  } else {
+    // logout → reset propre
+    window.__realtimeStarted = false;
+    if (window.__realtimeChannel) {
+      await supabase.removeChannel(window.__realtimeChannel);
+      window.__realtimeChannel = null;
+    }
   }
 });
+
 
 function attachCriticalHandlers() {
   const el = (id) => document.getElementById(id);
@@ -626,11 +638,6 @@ async function initApp() {
       await loadTrips();
       await loadMyReservation();
     }
-
-    // ✅ REALTIME : UNE SEULE FOIS, À LA FIN
-    setTimeout(() => {
-      initRealtime();
-    }, 0);
 
   } catch (err) {
     console.error("initApp error:", err);
@@ -1768,6 +1775,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
