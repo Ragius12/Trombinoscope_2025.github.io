@@ -578,7 +578,7 @@ async function initApp() {
     const { data: { session } } = await supabase.auth.getSession();
       // éviter double init après redirection email
     if (session?.user) {
-      );
+      initRealtime();
     }
     const user = session?.user ?? null;
 
@@ -1784,6 +1784,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
