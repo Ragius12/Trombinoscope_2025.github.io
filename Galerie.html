@@ -1247,13 +1247,35 @@ async function deleteTrip(id) {
 
     // Si ADMIN → suppression totale autorisée
     if (adminMode) {
-      if (!confirm("Supprimer ce trajet (ADMIN) ?")) return;
+  if (!confirm("Supprimer ce trajet (ADMIN) ?")) return;
 
-      await supabase.from("trips").delete().eq("id", id);
-      notify("🚨 Trajet supprimé (ADMIN)");
-      loadTrips();
-      return;
-    }
+  // 🔥 SUPPRESSION VISUELLE IMMÉDIATE (ANTI-REAPPARITION)
+  const el = document.querySelector(`.trajet button.delete-btn`)
+    ?.closest(".trajet");
+  if (el) {
+    el.style.transition = "opacity 0.3s, transform 0.3s";
+    el.style.opacity = "0";
+    el.style.transform = "scale(0.95)";
+    setTimeout(() => el.remove(), 300);
+  }
+
+  // 🔥 SUPPRESSION BDD
+  const { error } = await supabase
+    .from("trips")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("Erreur suppression : " + error.message);
+    return;
+  }
+
+  notify("🚨 Trajet supprimé (ADMIN)", "warning");
+
+  // ⛔ PAS DE loadTrips() ICI
+  // → le REALTIME gère le refresh proprement
+  return;
+}
 
     // Mode normal → règles de base
     if (trip.owner !== user.id)
@@ -1775,6 +1797,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
