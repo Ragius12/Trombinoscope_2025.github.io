@@ -916,7 +916,7 @@ async function loadTrips() {
     let myReservations = [];
     if (user) {
       const res = await supabase
-        
+        .from("reservations")
         .select("*")
         .eq("user_id", user.id)
         .eq("status", "active");
@@ -1775,6 +1775,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
