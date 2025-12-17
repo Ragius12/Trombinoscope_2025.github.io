@@ -1142,7 +1142,8 @@ async function reserve(tripId) {
       }
 
       const { data, error } = await supabase
-        
+          
+        .from("reservations")
         .select("*, trips(*)")
         .eq("user_id", user.id)
         .eq("status", "active")
@@ -1774,6 +1775,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
