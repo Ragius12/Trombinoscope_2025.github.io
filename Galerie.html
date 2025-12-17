@@ -1211,7 +1211,7 @@ async function reserve(tripId) {
       const { data, error } = await supabase
         .from("reservations")
         .select("*")
-        .eq("trip_id", tripId);
+        .eq("trip_id", tripId)
         .eq("status", "active");
 
       if (error) return alert(error.message);
@@ -1774,6 +1774,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
