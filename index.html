@@ -593,9 +593,9 @@ sb.auth.onAuthStateChange(async (event, session) => {
       .eq("id", session.user.id)
       .single();
 
-    if (data?.profile_complete) {
-      updateProfileBadge(data);
-    }
+    if (data?.nom && data?.prenom && data?.promo) {
+	  updateProfileBadge(data);
+	}
   }
 
   if (event === "SIGNED_IN") {
@@ -683,7 +683,6 @@ window.saveProfile = async () => {
     surns: qs("pSurns").value.trim(),
     fams: qs("pFams").value.trim(),
     promo: qs("pPromo").value,
-    profile_complete: true
   };
 
   if (!payload.nom || !payload.prenom || !payload.promo) {
@@ -698,8 +697,6 @@ window.saveProfile = async () => {
     console.error(error);
     return showToast("Erreur lors de la sauvegarde", "error");
   }
-
-  localStorage.setItem("profile_done", "1");
   closeProfileModal();
   updateProfileBadge(payload);
   showToast("Profil sauvegardé ✨", "success");
@@ -741,14 +738,17 @@ async function hasCompleteProfile() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return false;
 
-  const { data } = await sb
+  const { data, error } = await sb
     .from("profiles")
-    .select("profile_complete")
+    .select("nom, prenom, promo")
     .eq("id", session.user.id)
     .single();
 
-  return data?.profile_complete === true;
+  if (error || !data) return false;
+
+  return Boolean(data.nom && data.prenom && data.promo);
 }
+
 	
 function showToast(msg, type="success"){
   const t = qs("toast");
@@ -763,6 +763,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
