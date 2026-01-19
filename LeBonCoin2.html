@@ -3,8 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <title>Le bon Coin² – Blablac'Arts</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  window.supabase = createClient(
+    "https://wwjsqkktwxciyvzoisyz.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+  );
+</script>
+  
 <style>
 body{
   margin:0;
@@ -159,77 +166,98 @@ input,select,textarea{
 </div>
 
 <script>
-const supabase = supabase.createClient(
+/* ============================
+   SUPABASE CLIENT (SAFE)
+============================ */
+const sb = window.sb || supabase.createClient(
   "https://TON-PROJET.supabase.co",
   "PUBLIC-ANON-KEY"
 )
+window.sb = sb
 
 let user = null
 
-function openModal(){
-  document.getElementById('modal').style.display = 'flex'
-}
-
-function closeModal(){
-  document.getElementById('modal').style.display = 'none'
-}
-
+/* ============================
+   INIT
+============================ */
 async function init(){
-  user = (await supabase.auth.getUser()).data.user
+  const { data } = await sb.auth.getUser()
+  user = data.user
   loadAds()
 
-  supabase.channel('ads')
-    .on('postgres_changes',{event:'*',schema:'public',table:'ads'},loadAds)
+  sb.channel('ads')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'ads'
+    }, loadAds)
     .subscribe()
 }
 
-async function publish(){
+/* ============================
+   MODAL (GLOBAL)
+============================ */
+window.openModal = function(){
+  document.getElementById('modal').style.display = 'flex'
+}
+
+window.closeModal = function(){
+  document.getElementById('modal').style.display = 'none'
+}
+
+/* ============================
+   PUBLISH
+============================ */
+window.publish = async function(){
   if(!user) return alert("Connexion requise")
 
-  await supabase.from('ads').insert({
-    owner:user.id,
-    type:type.value,
-    title:title.value,
-    description:description.value,
-    price:price.value,
-    location:location.value,
-    surface:surface.value||null,
-    rooms:rooms.value||null
+  await sb.from('ads').insert({
+    owner: user.id,
+    type: type.value,
+    title: title.value,
+    description: description.value,
+    price: price.value,
+    location: location.value,
+    surface: surface.value || null,
+    rooms: rooms.value || null
   })
 
   closeModal()
 }
 
+/* ============================
+   LOAD ADS
+============================ */
 async function loadAds(){
-  let q = supabase.from('ads').select('*').order('created_at',{ascending:false})
-  if(filterType.value) q=q.eq('type',filterType.value)
-  if(search.value) q=q.ilike('title',`%${search.value}%`)
+  let q = sb.from('ads')
+    .select('*')
+    .order('created_at', { ascending:false })
+
+  if(filterType.value)
+    q = q.eq('type', filterType.value)
+
+  if(search.value)
+    q = q.ilike('title', `%${search.value}%`)
 
   const { data } = await q
-  ads.innerHTML=''
-
-  if(!data.length){ ads.innerHTML='Aucune annonce.'; return }
+  ads.innerHTML = ''
 
   data.forEach(a=>{
-    ads.innerHTML+=`
-      <div class="card ${user&&a.owner===user.id?'mine':''}">
+    ads.innerHTML += `
+      <div class="card">
         <b>${a.title}</b><br>
-        <span class="price">${a.price} €</span><br>
-        ${a.description||''}<br>
-        ${a.location||''}
-        ${a.surface?`<br>🏠 ${a.surface} m² – ${a.rooms} pièces`:''}
-        ${user&&a.owner===user.id?
-          `<br><button class="btn" onclick="del(${a.id})">Supprimer</button>`:''}
-      </div>`
+        💰 ${a.price} €<br>
+        ${a.description || ''}<br>
+        ${a.location || ''}
+      </div>
+    `
   })
-}
-
-async function del(id){
-  await supabase.from('ads').delete().eq('id',id)
 }
 
 init()
 </script>
 
+
 </body>
 </html>
+
