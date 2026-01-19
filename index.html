@@ -187,16 +187,6 @@
 
   </style>
 
-  <!-- SUPABASE -->
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-    window.supabase = createClient(
-      "https://wwjsqkktwxciyvzoisyz.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
-    );
-  </script>
-
 </head>
 
 	<body>
@@ -390,191 +380,150 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     Vespula 84 — Promotion 2025
   </footer>
 
-  <script type="module"> 
-	  const sb = window.supabase; 
-	  
-	(async () => {
-  const { data, error } = await sb.auth.getSession();
+  <script type="module">
+/* ===============================
+   SUPABASE INIT (UNE SEULE FOIS)
+================================ */
+<script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  if (data?.session) {
-    console.log("✅ Session restaurée depuis email link");
-  }
-})();
+    window.supabase = createClient(
+      "https://wwjsqkktwxciyvzoisyz.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+    );
+
 const qs = id => document.getElementById(id);
 
-// =====================
-// AUTH UI REFRESH
-// =====================
-async function refreshAuth(){
-  const { data:{session} } = await sb.auth.getSession();
+/* ===============================
+   AUTH CALLBACK (OBLIGATOIRE)
+   -> récupère la session depuis
+   le lien email
+================================ */
+await sb.auth.getSession();
 
-  if(!session){
-    qs("btnSignup").style.display="inline";
-    qs("btnLogin").style.display="inline";
-    qs("userEmail").style.display="none";
-    qs("btnProfile").style.display="none";
-    qs("btnLogout").style.display="none";
+/* ===============================
+   AUTH STATE UI
+================================ */
+async function refreshAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (!session) {
+    qs("btnSignup").style.display = "inline";
+    qs("btnLogin").style.display  = "inline";
+    qs("btnLogout").style.display = "none";
+    qs("btnProfile").style.display = "none";
+    qs("userEmail").style.display = "none";
     return;
   }
 
-  qs("btnSignup").style.display="none";
-  qs("btnLogin").style.display="none";
-  qs("userEmail").style.display="inline";
-  qs("btnProfile").style.display="inline";
-  qs("btnLogout").style.display="inline";
-  qs("userEmail").innerText=session.user.email;
-
-  const { data } = await sb
-    .from("profiles")
-    .select("prenom")
-    .eq("id",session.user.id)
-    .maybeSingle();
-
-  if(data?.prenom){
-    localStorage.setItem("profileCompleted","true");
-  }
+  qs("btnSignup").style.display = "none";
+  qs("btnLogin").style.display  = "none";
+  qs("btnLogout").style.display = "inline";
+  qs("btnProfile").style.display = "inline";
+  qs("userEmail").style.display = "inline";
+  qs("userEmail").innerText = session.user.email;
 }
 
 refreshAuth();
 sb.auth.onAuthStateChange(refreshAuth);
 
-// =====================
-// AUTH MODAL
-// =====================
-qs("btnSignup").onclick = ()=>openAuth("signup");
-qs("btnLogin").onclick  = ()=>openAuth("login");
+/* ===============================
+   AUTH MODAL (GLOBAL)
+================================ */
+window.openAuth = function(mode) {
+  qs("authModal").style.display = "flex";
+  qs("authTitle").innerText = mode === "signup"
+    ? "Inscription"
+    : "Connexion";
 
-function openAuth(mode){
-  qs("authModal").style.display="flex";
-  qs("authTitle").innerText = mode==="signup"?"Inscription":"Connexion";
-  qs("authConfirm").onclick = ()=>mode==="signup"?signup():login();
-}
-
-function closeAuthModal(){
-  qs("authModal").style.display="none";
-}
-
-// =====================
-// PROFILE MODAL (FIX CROIX)
-// =====================
-const profileModal = qs("profileModal");
-const closeBtn = profileModal.querySelector(".closeModal");
-closeBtn.style.display = "block";
-closeBtn.onclick = ()=>profileModal.style.display="none";
-
-qs("btnProfile").onclick = ()=>{
-  profileModal.style.display="flex";
+  qs("authConfirm").onclick = () =>
+    mode === "signup" ? signup() : login();
 };
 
-// =====================
-// SIGNUP / LOGIN
-// =====================
-async function signup(){
-  const email = authEmail.value.trim();
-  const password = authPassword.value;
+window.closeAuthModal = function () {
+  qs("authModal").style.display = "none";
+};
 
-  if(!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com"){
-    alert("❌ Email ENSAM requis");
+/* ===============================
+   LOGIN / SIGNUP
+================================ */
+async function login() {
+  const email = qs("authEmail").value;
+  const password = qs("authPassword").value;
+
+  const { error } = await sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert(error.message);
     return;
   }
+
+  closeAuthModal();
+}
+
+async function signup() {
+  const email = qs("authEmail").value;
+  const password = qs("authPassword").value;
 
   const { error } = await sb.auth.signUp({
     email,
     password,
-    options:{
-      emailRedirectTo:location.href
+    options: {
+      emailRedirectTo: location.href
     }
   });
 
-  if(error){
-    alert("❌ "+error.message);
+  if (error) {
+    alert(error.message);
     return;
   }
 
-  alert("📧 Inscription réussie.\n➡️ Clique sur le lien reçu par mail pour te connecter.");
+  alert("📧 Clique sur le lien reçu par email pour confirmer");
   closeAuthModal();
 }
 
-async function login(){
-  const { error } = await sb.auth.signInWithPassword({
-    email: authEmail.value,
-    password: authPassword.value
-  });
-
-  if(error){
-    alert("❌ "+error.message);
-    return;
-  }
-
-  alert("✅ Connecté");
-  closeAuthModal();
-}
-
-// =====================
-// LOGOUT
-// =====================
-qs("btnLogout").onclick = async ()=>{
-  localStorage.removeItem("profileCompleted");
+/* ===============================
+   LOGOUT
+================================ */
+qs("btnLogout")?.addEventListener("click", async () => {
   await sb.auth.signOut();
-  location.reload();
-};
+});
 
-// =====================
-// SAVE PROFILE
-// =====================
-window.saveProfile = async ()=>{
-  const { data:{user} } = await sb.auth.getUser();
-  if(!user) return alert("Non connecté");
+/* ===============================
+   PAGE ACCESS GUARD
+   -> certaines pages bloquées
+================================ */
+const blockedPages = [
+  "blablacarts",
+  "leboincoin2"
+];
 
-  await sb.from("profiles").upsert({
-    id:user.id,
-    prenom:pPrenom.value,
-    nom:pNom.value,
-    anniversaire:pBirth.value,
-    surns:pSurns.value,
-    fams:pFams.value,
-    promo:pPromo.value
-  });
+window.openPage = async function(page) {
+  const { data: { session } } = await sb.auth.getSession();
 
-  localStorage.setItem("profileCompleted","true");
-  profileModal.style.display="none";
-  alert("✅ Profil enregistré");
-};
-
-// =====================
-// PAGE GUARD (CORRECT)
-// =====================
-const PROTECTED = ["Galerie.html","LeBonCoin2.html"];
-
-window.openPage = path =>{
-
-  // pages NON protégées : ouverture directe (CRUCIAL)
-  if(!PROTECTED.some(p=>path.includes(p))){
-    window.open(path,"_blank");
+  if (!blockedPages.includes(page)) {
+    console.log("✅ page libre :", page);
     return;
   }
 
-  // pages protégées
-  sb.auth.getSession().then(({data:{session}})=>{
-    if(!session){
-      alert("🔐 Connecte-toi pour accéder à cette section");
-      openAuth("login");
-      return;
-    }
+  if (!session) {
+    openAuth("login");
+    return;
+  }
 
-    if(localStorage.getItem("profileCompleted")!=="true"){
-      alert("⚠️ Complète ton profil pour accéder à cette fonctionnalité");
-      profileModal.style.display="flex";
-      return;
-    }
-
-    window.open(path,"_blank");
-  });
+  // ici tu peux ajouter plus tard :
+  // check profil complété
+  console.log("➡️ accès autorisé :", page);
 };
 </script>
 
+
 </body>
 </html>
+
 
 
 
