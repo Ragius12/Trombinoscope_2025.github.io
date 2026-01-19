@@ -330,14 +330,23 @@ window.loadAds=async()=>{
   })
 }
 
-const init=async()=>{
-  user=(await sb.auth.getUser()).data.user
-  if(!user){document.body.innerHTML="<h2 style='text-align:center;margin-top:80px'>Connexion requise</h2>";return}
+const init = async () => {
+  const { data: { session } } = await sb.auth.getSession()
+
+  if (!session || !session.user) {
+    document.body.innerHTML =
+      "<h2 style='text-align:center;margin-top:80px'>Connexion requise</h2>"
+    return
+  }
+
+  user = session.user
   updateFields()
   loadAds()
 }
+
 init()
 </script>
 
 </body>
 </html>
+
