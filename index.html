@@ -534,16 +534,28 @@ window.saveProfile = async()=>{
 // =====================
 // PAGE GUARD (CLÉS DU FIX)
 // =====================
+const PROTECTED_PAGES = [
+  "Galerie.html",
+  "LeBonCoin2.html"
+];
+
 window.openPage = path =>{
   sb.auth.getSession().then(({data:{session}})=>{
+    
+    // pages publiques même sans connexion
     if(!session){
-      alert("Veuillez vous connecter");
+      window.open(path,"_blank");
       return;
     }
 
-    if(localStorage.getItem("profileCompleted") !== "true"){
+    const isProtected = PROTECTED_PAGES.some(p => path.includes(p));
+
+    if(
+      isProtected &&
+      localStorage.getItem("profileCompleted") !== "true"
+    ){
       alert("⚠️ Complète ton profil pour accéder à cette fonctionnalité");
-      qs("profileModal").style.display="flex";
+      document.getElementById("profileModal").style.display="flex";
       return;
     }
 
@@ -556,6 +568,7 @@ window.openPage = path =>{
 
 </body>
 </html>
+
 
 
 
