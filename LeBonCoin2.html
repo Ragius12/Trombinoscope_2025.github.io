@@ -7,86 +7,45 @@
 <style>
 body{
   margin:0;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(180deg,#1b2340,#11162a);
+  font-family:"Segoe UI",Arial,sans-serif;
+  background:linear-gradient(180deg,#1b2340,#11162a);
   color:#f0f0f0;
 }
-
-h1{
-  text-align:center;
-  padding:30px;
-  font-size:2.2em;
-  letter-spacing:1px;
-}
-
-.container{
-  max-width:1000px;
-  margin:auto;
-  padding:20px;
-}
-
+h1{text-align:center;padding:30px;font-size:2.2em}
+.container{max-width:1000px;margin:auto;padding:20px}
 .block{
-  background: rgba(255,255,255,0.06);
+  background:rgba(255,255,255,0.06);
   border-radius:16px;
   padding:25px;
   margin-bottom:25px;
-  box-shadow: inset 0 0 40px rgba(255,255,255,0.03);
 }
-
-.block h2{ margin-top:0; }
-
 .btn{
-  background:#ffd76a;
-  color:#000;
-  border:none;
-  padding:10px 18px;
-  border-radius:10px;
-  font-weight:bold;
-  cursor:pointer;
+  background:#ffd76a;color:#000;border:none;
+  padding:10px 18px;border-radius:10px;
+  font-weight:bold;cursor:pointer
 }
-
-.btn.secondary{
-  background:#2b3150;
-  color:white;
-}
-
+.btn.secondary{background:#2b3150;color:white}
 input,select,textarea{
-  width:100%;
-  margin:6px 0;
-  padding:10px;
-  border-radius:8px;
-  border:none;
-  background:#2b3150;
-  color:white;
+  width:100%;margin:6px 0;padding:10px;
+  border-radius:8px;border:none;
+  background:#2b3150;color:white
 }
-
 .card{
-  background:#222a4a;
-  border-radius:14px;
-  padding:15px;
-  margin-bottom:15px;
+  background:#222a4a;border-radius:14px;
+  padding:15px;margin-bottom:15px
 }
-
-.price{
-  color:#7dffb3;
-  font-weight:bold;
+.price{color:#7dffb3;font-weight:bold}
+.slider img{
+  width:100%;border-radius:10px;margin-bottom:8px
 }
-
-/* MODAL */
 .modal{
-  position:fixed;
-  inset:0;
+  position:fixed;inset:0;
   background:rgba(0,0,0,0.7);
-  display:none;
-  align-items:center;
-  justify-content:center;
+  display:none;align-items:center;justify-content:center
 }
-
 .modal-content{
-  background:#1f2545;
-  border-radius:16px;
-  padding:25px;
-  width:380px;
+  background:#1f2545;border-radius:16px;
+  padding:25px;width:400px
 }
 </style>
 </head>
@@ -97,123 +56,139 @@ input,select,textarea{
 
 <div class="container">
 
-  <div class="block" style="text-align:center">
-    <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
-  </div>
-
-  <div class="block">
-    <h2>Rechercher une annonce</h2>
-
-    <select id="filterType" onchange="loadAds()">
-      <option value="">Toutes catégories</option>
-      <option value="kgibs">🏠 Kgib’s</option>
-      <option value="objets">📦 Objets</option>
-      <option value="tech">💻 Tech</option>
-      <option value="services">🛠️ Services</option>
-      <option value="art">🎨 Art</option>
-      <option value="autre">✨ Autre</option>
-    </select>
-
-    <input id="search" placeholder="Recherche libre..." oninput="loadAds()">
-  </div>
-
-  <div class="block">
-    <div id="ads">Chargement...</div>
-  </div>
+<div class="block" style="text-align:center">
+  <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
 </div>
 
+<div class="block">
+  <h2>Rechercher</h2>
+  <select id="filterType" onchange="loadAds()">
+    <option value="">Toutes catégories</option>
+    <option value="kgibs">🏠 Kgib’s</option>
+    <option value="objets">📦 Objets</option>
+    <option value="tech">💻 Tech</option>
+    <option value="services">🛠️ Services</option>
+    <option value="art">🎨 Art</option>
+    <option value="autre">✨ Autre</option>
+  </select>
+  <input id="search" placeholder="Recherche..." oninput="loadAds()">
+</div>
+
+<div class="block">
+  <div id="ads">Chargement...</div>
+</div>
+</div>
+
+<!-- MODAL -->
 <div class="modal" id="modal">
-  <div class="modal-content">
-    <h2>Nouvelle annonce</h2>
+<div class="modal-content">
+<h2>Nouvelle annonce</h2>
 
-    <select id="type">
-      <option value="kgibs">🏠 Kgib’s</option>
-      <option value="objets">📦 Objets</option>
-      <option value="tech">💻 Tech</option>
-      <option value="services">🛠️ Services</option>
-      <option value="art">🎨 Art</option>
-      <option value="autre">✨ Autre</option>
-    </select>
+<select id="type" onchange="updateFields()">
+  <option value="kgibs">🏠 Kgib’s</option>
+  <option value="objets">📦 Objets</option>
+  <option value="tech">💻 Tech</option>
+  <option value="services">🛠️ Services</option>
+  <option value="art">🎨 Art</option>
+  <option value="autre">✨ Autre</option>
+</select>
 
-    <input id="title" placeholder="Titre">
-    <textarea id="description" placeholder="Description"></textarea>
-    <input id="price" type="number" placeholder="Prix (€)">
-    <input id="location" placeholder="Localisation">
-    <input id="surface" placeholder="Surface (Kgib’s)">
-    <input id="rooms" placeholder="Pièces">
+<input id="title" placeholder="Titre">
+<textarea id="description" placeholder="Description"></textarea>
 
-    <button class="btn" onclick="publish()">Publier</button>
-    <button class="btn secondary" onclick="closeModal()">Annuler</button>
-  </div>
+<div id="dynamicFields"></div>
+
+<input type="file" id="images" multiple accept="image/*">
+
+<button class="btn" onclick="publish()">Publier</button>
+<button class="btn secondary" onclick="closeModal()">Annuler</button>
+</div>
 </div>
 
-<!-- =========================
-     SCRIPT UNIQUE (ESM)
-========================= -->
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-/* SUPABASE */
 const sb = createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 )
 
-let user = null
+let user=null
 
-/* GLOBAL FUNCTIONS */
-window.openModal = () => modal.style.display = "flex"
-window.closeModal = () => modal.style.display = "none"
+window.openModal=()=>modal.style.display="flex"
+window.closeModal=()=>modal.style.display="none"
 
-window.publish = async () => {
+window.updateFields=()=>{
+  const t=type.value
+  dynamicFields.innerHTML=""
+  if(t==="kgibs"){
+    dynamicFields.innerHTML+=`
+      <input id="price" placeholder="Prix (€)">
+      <input id="surface" placeholder="Surface (m²)">
+      <input id="rooms" placeholder="Pièces">
+      <input id="location" placeholder="Localisation">
+    `
+  }else{
+    dynamicFields.innerHTML+=`
+      <input id="price" placeholder="Prix (€)">
+      <input id="state" placeholder="État (neuf, bon état...)">
+    `
+  }
+}
+
+window.publish=async()=>{
   if(!user) return alert("Connexion requise")
 
+  const urls=[]
+  for(const file of images.files){
+    const path=`${user.id}/${Date.now()}-${file.name}`
+    await sb.storage.from("ads-images").upload(path,file)
+    const { data } = sb.storage.from("ads-images").getPublicUrl(path)
+    urls.push(data.publicUrl)
+  }
+
   await sb.from("ads").insert({
-    owner: user.id,
-    type: type.value,
-    title: title.value,
-    description: description.value,
-    price: price.value,
-    location: location.value,
-    surface: surface.value || null,
-    rooms: rooms.value || null
+    owner:user.id,
+    type:type.value,
+    title:title.value,
+    description:description.value,
+    price:price?.value||null,
+    surface:surface?.value||null,
+    rooms:rooms?.value||null,
+    state:state?.value||null,
+    location:location?.value||null,
+    images:urls
   })
 
   closeModal()
 }
 
-window.loadAds = async () => {
-  let q = sb.from("ads").select("*").order("created_at",{ascending:false})
-
-  if(filterType.value) q = q.eq("type", filterType.value)
-  if(search.value) q = q.ilike("title", `%${search.value}%`)
-
+window.loadAds=async()=>{
+  let q=sb.from("ads").select("*").order("created_at",{ascending:false})
+  if(filterType.value) q=q.eq("type",filterType.value)
+  if(search.value) q=q.ilike("title",`%${search.value}%`)
   const { data } = await q
-  ads.innerHTML = data.length ? "" : "Aucune annonce."
+  ads.innerHTML=data.length?"":"Aucune annonce."
 
   data.forEach(a=>{
-    ads.innerHTML += `
-      <div class="card">
-        <b>${a.title}</b><br>
-        <span class="price">${a.price} €</span><br>
-        ${a.description || ""}<br>
-        ${a.location || ""}
+    ads.innerHTML+=`
+    <div class="card">
+      <b>${a.title}</b><br>
+      <span class="price">${a.price||""} €</span>
+      <div class="slider">
+        ${(a.images||[]).map(i=>`<img src="${i}">`).join("")}
       </div>
-    `
+      ${a.description||""}
+    </div>`
   })
 }
 
-/* INIT */
-const init = async () => {
-  const { data } = await sb.auth.getUser()
-  user = data.user
+const init=async()=>{
+  user=(await sb.auth.getUser()).data.user
+  updateFields()
   loadAds()
-
-  sb.channel("ads")
-    .on("postgres_changes",{event:"*",schema:"public",table:"ads"},loadAds)
-    .subscribe()
+  sb.channel("ads").on("postgres_changes",{event:"*",schema:"public",table:"ads"},loadAds).subscribe()
 }
-
 init()
 </script>
 
