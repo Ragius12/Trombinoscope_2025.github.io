@@ -46,13 +46,12 @@ input,select,textarea{
 }
 .modal-content{
   background:#1f2545;border-radius:16px;
-  padding:25px;width:400px
+  padding:25px;width:420px
 }
-.topbar{
+.actions{
+  margin-top:10px;
   display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px
+  gap:10px
 }
 </style>
 </head>
@@ -63,12 +62,7 @@ input,select,textarea{
 
 <div class="container">
 
-<div class="block topbar">
-  <div id="userInfo">Connexion…</div>
-  <button class="btn danger" onclick="logout()">Déconnexion</button>
-</div>
-
-<div class="block" style="text-align:center">
+<div class="block">
   <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
 </div>
 
@@ -80,7 +74,7 @@ input,select,textarea{
 
 <div class="modal" id="modal">
 <div class="modal-content">
-<h2>Nouvelle annonce</h2>
+<h2 id="modalTitle">Nouvelle annonce</h2>
 
 <select id="type" onchange="updateFields()">
   <option value="kgibs">🏠 Kgib’s</option>
@@ -112,14 +106,23 @@ const sb = createClient(
 );
 
 let user=null
+let editId=null
 const $=id=>document.getElementById(id)
 
-window.openModal=()=> $("modal").style.display="flex"
+window.openModal=()=>{
+  resetModal()
+  $("modal").style.display="flex"
+}
 window.closeModal=()=> $("modal").style.display="none"
 
-window.logout=async()=>{
-  await sb.auth.signOut()
-  location.reload()
+function resetModal(){
+  editId=null
+  $("modalTitle").innerText="Nouvelle annonce"
+  $("title").value=""
+  $("description").value=""
+  $("images").value=""
+  $("type").value="kgibs"
+  updateFields()
 }
 
 window.updateFields=()=>{
@@ -136,49 +139,81 @@ window.updateFields=()=>{
 }
 
 window.publish=async()=>{
-  if(!$("title").value) return alert("Titre obligatoire")
+  try{
+    const type=$("type").value
+    if(!$("title").value) return alert("Titre obligatoire")
+    if(!Number($("price")?.value)) return alert("Prix obligatoire")
 
-  const type=$("type").value
-  const price=Number($("price")?.value)
-  if(!price) return alert("Prix obligatoire")
+    if(type==="kgibs"){
+      if(!$("surface").value||!$("rooms").value||!$("location").value)
+        return alert("Champs Kgib’s obligatoires")
+    }else{
+      if(!$("state").value) return alert("État obligatoire")
+    }
 
-  if(type==="kgibs"){
-    if(!$("surface").value||!$("rooms").value||!$("location").value)
-      return alert("Tous les champs Kgib’s sont obligatoires")
-  }else{
-    if(!$("state").value) return alert("État obligatoire")
+    const urls=[]
+    for(const file of $("images").files){
+      const path=`${user.id}/${Date.now()}-${file.name}`
+      const { error } = await sb.storage.from("ads-images").upload(
+        path,
+        file,
+        {
+          contentType: file.type || "image/png",
+          upsert: false
+        }
+      )
+      if(error) return alert(error.message)
+      urls.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl)
+    }
+
+    const payload={
+      owner:user.id,
+      type,
+      title:$("title").value,
+      description:$("description").value||null,
+      price:Number($("price").value),
+      surface:Number($("surface")?.value)||null,
+      rooms:Number($("rooms")?.value)||null,
+      state:$("state")?.value||null,
+      location:$("location")?.value||null,
+      images:urls.length?urls:undefined
+    }
+
+    editId
+      ? await sb.from("ads").update(payload).eq("id",editId)
+      : await sb.from("ads").insert(payload)
+
+    loadAds()
+    closeModal()
+  } finally {
+    resetModal()
   }
+}
 
-  const urls=[]
-  for(const file of $("images").files){
-    const path=`${user.id}/${Date.now()}-${file.name}`
-    const { error } = await sb.storage
-      .from("ads-images")
-      .upload(path, file, { contentType:file.type })
-    if(error) return alert(error.message)
-    urls.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl)
-  }
+window.editAd=a=>{
+  editId=a.id
+  $("modalTitle").innerText="Modifier annonce"
+  $("modal").style.display="flex"
+  $("type").value=a.type
+  updateFields()
+  $("title").value=a.title
+  $("description").value=a.description||""
+  $("price").value=a.price||""
+  $("surface") && ($("surface").value=a.surface||"")
+  $("rooms") && ($("rooms").value=a.rooms||"")
+  $("location") && ($("location").value=a.location||"")
+  $("state") && ($("state").value=a.state||"")
+}
 
-  await sb.from("ads").insert({
-    owner:user.id,
-    type,
-    title:$("title").value,
-    description:$("description").value||null,
-    price,
-    surface:Number($("surface")?.value)||null,
-    rooms:Number($("rooms")?.value)||null,
-    state:$("state")?.value||null,
-    location:$("location")?.value||null,
-    images:urls
-  })
-
-  closeModal()
+window.deleteAd=async id=>{
+  if(!confirm("Supprimer cette annonce ?")) return
+  await sb.from("ads").delete().eq("id",id)
   loadAds()
 }
 
 window.loadAds=async()=>{
   const {data}=await sb.from("ads").select("*").order("created_at",{ascending:false})
-  $("ads").innerHTML = data?.length ? "" : "Aucune annonce."
+  $("ads").innerHTML=data?.length?"":"Aucune annonce."
   data?.forEach(a=>{
     $("ads").innerHTML+=`
     <div class="card">
@@ -188,18 +223,21 @@ window.loadAds=async()=>{
         ${(a.images||[]).map(i=>`<img src="${encodeURI(i)}">`).join("")}
       </div>
       ${a.description||""}
+      ${a.owner===user.id?`
+      <div class="actions">
+        <button class="btn secondary" onclick='editAd(${JSON.stringify(a)})'>Modifier</button>
+        <button class="btn danger" onclick="deleteAd(${a.id})">Supprimer</button>
+      </div>`:""}
     </div>`
   })
 }
 
 const init=async()=>{
-  const {data}=await sb.auth.getUser()
-  user=data.user
+  user=(await sb.auth.getUser()).data.user
   if(!user){
-    document.body.innerHTML="<h2 style='text-align:center;margin-top:80px'>Connexion requise via Blablac'Arts</h2>"
+    document.body.innerHTML="<h2 style='text-align:center;margin-top:80px'>Connexion requise</h2>"
     return
   }
-  $("userInfo").innerText=`Connecté : ${user.email}`
   updateFields()
   loadAds()
 }
