@@ -293,7 +293,7 @@ window.loadAds=async()=>{
   const {data}=await sb.from("ads").select("*").order("created_at",{ascending:false})
   $("ads").innerHTML=""
   data?.forEach(a=>{
-    const contactLink = a.contact.includes("@")
+    const contactLink = a.contact && a.contact.includes("@")
       ? `mailto:${a.contact}`
       : `https://wa.me/${a.contact.replace(/\D/g,"")}`
 
@@ -346,3 +346,4 @@ updateFields();loadAds()
 
 </body>
 </html>
+
