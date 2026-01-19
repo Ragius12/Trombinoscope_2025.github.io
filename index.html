@@ -556,11 +556,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="module">
+	await sb.auth.getSession();
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 	const sb = createClient(
 	  "https://wwjsqkktwxciyvzoisyz.supabase.co",
 	  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 	);
+	window.sb = sb;
+		(async () => {
+	  const { data: { session } } = await sb.auth.getSession();
+	  updateUI(session);
+	
+	  if (session) {
+	    const { data } = await sb
+	      .from("profiles")
+	      .select("nom, prenom, promo")
+	      .eq("id", session.user.id)
+	      .single();
+	
+	    if (data?.nom && data?.prenom && data?.promo) {
+	      updateProfileBadge(data);
+	    }
+	  }
+	})();
+
 	const qs = id => document.getElementById(id);
 
 function updateUI(session) {
@@ -635,6 +654,9 @@ async function login() {
 
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) return alert(error.message);
+  if (!session.user.email_confirmed_at) {
+  showToast("Merci de confirmer ton email 📧", "warn");
+}
 
   closeAuthModal();
 }
@@ -643,12 +665,33 @@ async function signup() {
   const email = qs("authEmail").value;
   const password = qs("authPassword").value;
 
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) return alert(error.message);
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/index.html"
+    }
+  });
 
-  alert("📧 Vérifie ton email");
+  if (error) {
+    if (error.message.includes("already registered")) {
+      showToast("Compte existant, connecte-toi 🔐", "warn");
+      openAuth("login");
+      return;
+    }
+    return showToast(error.message, "error");
+  }
+
+  if (data?.user?.email_confirmed_at) {
+    showToast("Compte déjà activé, connexion possible ✔️", "success");
+    openAuth("login");
+  } else {
+    showToast("📧 Mail de confirmation envoyé", "success");
+  }
+
   closeAuthModal();
 }
+
 
 qs("btnLogin").onclick  = () => openAuth("login");
 qs("btnSignup").onclick = () => openAuth("signup");
@@ -763,6 +806,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
