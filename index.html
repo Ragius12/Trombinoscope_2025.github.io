@@ -279,13 +279,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 		  
         <div class="card" onclick="openPage('Galerie.html')">
-			<span class="closeModal" onclick="closeAuthModal()">✕</span>
           <div class="label">Blablac'Arts</div>
           <div class="desc">Publiez et réservez tous vos déplacements pour la coher's.</div>
         </div>
 		  
 		<div class="card" onclick="openPage('LeBonCoin2.html')">
-			<span class="closeModal" onclick="closeAuthModal()">✕</span>
           <div class="label">En préparation...</div>
           <div class="desc">[...]</div>
         </div>
@@ -296,7 +294,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 		  
         <div class="card" onclick="openPage('https://drive.google.com/drive/folders/1Celq4ZJYpbztZrv9gtaSDMB2Ck7nrzyh?usp=drive_link')">
-			<span class="closeModal" onclick="closeAuthModal()">✕</span>
           <div class="label">Thuysses DDB</div>
           <div class="desc">L'art de ne pas sacquer.</div>
         </div>
@@ -379,10 +376,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <footer style="text-align: center; font-family: 'Old English Text MT', 'Gothic', 'Blackletter', serif;">
     Vespula 84 — Promotion 2025
   </footer>
-
-/* ===============================
-   SUPABASE INIT (UNE SEULE FOIS)
-================================ */
 	
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="module">
@@ -393,16 +386,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	);
 	const qs = id => document.getElementById(id);
 
-/* ===============================
-   AUTH CALLBACK (OBLIGATOIRE)
-   -> récupère la session depuis
-   le lien email
-================================ */
 await sb.auth.getSession();
 
-/* ===============================
-   AUTH STATE UI
-================================ */
 async function refreshAuth() {
   const { data: { session } } = await sb.auth.getSession();
 
@@ -426,9 +411,6 @@ async function refreshAuth() {
 refreshAuth();
 sb.auth.onAuthStateChange(refreshAuth);
 
-/* ===============================
-   AUTH MODAL (GLOBAL)
-================================ */
 window.openAuth = function(mode) {
   qs("authModal").style.display = "flex";
   qs("authTitle").innerText = mode === "signup"
@@ -443,9 +425,6 @@ window.closeAuthModal = function () {
   qs("authModal").style.display = "none";
 };
 
-/* ===============================
-   LOGIN / SIGNUP
-================================ */
 async function login() {
   const email = qs("authEmail").value;
   const password = qs("authPassword").value;
@@ -484,20 +463,13 @@ async function signup() {
   closeAuthModal();
 }
 
-/* ===============================
-   LOGOUT
-================================ */
 qs("btnLogout")?.addEventListener("click", async () => {
   await sb.auth.signOut();
 });
 
-/* ===============================
-   PAGE ACCESS GUARD
-   -> certaines pages bloquées
-================================ */
 const blockedPages = [
-  "blablacarts",
-  "leboincoin2"
+  "Galerie.html",
+  "LeBonCoin2.html"
 ];
 
 window.openPage = async function(page) {
@@ -522,6 +494,7 @@ window.openPage = async function(page) {
 
 </body>
 </html>
+
 
 
 
