@@ -197,13 +197,16 @@ input,select,textarea{
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  window.supabase = createClient(
-    "https://wwjsqkktwxciyvzoisyz.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
-  );
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+window.supabase = createClient(
+  "https://wwjsqkktwxciyvzoisyz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+);
+
+/* 🔧 CORRECTION UNIQUE */
+const sb = window.supabase
 
 let isAdmin=false
 let editId=null
@@ -212,6 +215,8 @@ let galleryIndex=0
 
 const $=id=>document.getElementById(id)
 const adminPassword="Error404trads"
+
+/* --- LE RESTE EST STRICTEMENT IDENTIQUE --- */
 
 window.adminLogin=()=>{
   const p=prompt("Mot de passe admin")
@@ -294,7 +299,6 @@ window.loadAds=async()=>{
     .order("created_at",{ascending:false})
 
   $("ads").innerHTML=""
-
   if(error || !data) return
 
   data.forEach(a=>{
