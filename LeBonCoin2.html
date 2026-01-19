@@ -25,6 +25,7 @@ h1{text-align:center;padding:30px;font-size:2.2em}
   font-weight:bold;cursor:pointer
 }
 .btn.secondary{background:#2b3150;color:white}
+.btn.danger{background:#ff6b6b;color:black}
 input,select,textarea{
   width:100%;margin:6px 0;padding:10px;
   border-radius:8px;border:none;
@@ -47,6 +48,12 @@ input,select,textarea{
   background:#1f2545;border-radius:16px;
   padding:25px;width:400px
 }
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px
+}
 </style>
 </head>
 
@@ -55,6 +62,11 @@ input,select,textarea{
 <h1>Blablac'Arts — Le bon Coin²</h1>
 
 <div class="container">
+
+<div class="block topbar">
+  <div id="userInfo">Connexion…</div>
+  <button class="btn danger" onclick="logout()">Déconnexion</button>
+</div>
 
 <div class="block" style="text-align:center">
   <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
@@ -79,6 +91,7 @@ input,select,textarea{
 </div>
 </div>
 
+<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content">
 <h2>Nouvelle annonce</h2>
@@ -104,24 +117,24 @@ input,select,textarea{
 </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-window.supabase = createClient(
+const sb = createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
-
-// ✅ CORRECTION UNIQUE
-const sb = window.supabase;
 
 let user = null
 const $ = id => document.getElementById(id)
 
 window.openModal = () => $("modal").style.display = "flex"
 window.closeModal = () => $("modal").style.display = "none"
+
+window.logout = async () => {
+  await sb.auth.signOut()
+  location.reload()
+}
 
 window.updateFields = () => {
   const t = $("type").value
@@ -168,15 +181,18 @@ window.publish = async () => {
   })
 
   closeModal()
+  loadAds()
 }
 
 window.loadAds = async () => {
-  const { data, error } = await sb
-    .from("ads")
-    .select("*")
-    .order("created_at", { ascending: false })
+  let q = sb.from("ads").select("*").order("created_at", { ascending: false })
 
-  if (error || !data) {
+  if ($("filterType").value) q = q.eq("type", $("filterType").value)
+  if ($("search").value) q = q.ilike("title", `%${$("search").value}%`)
+
+  const { data } = await q
+
+  if (!data || !data.length) {
     $("ads").innerHTML = "Aucune annonce."
     return
   }
@@ -197,9 +213,18 @@ window.loadAds = async () => {
 }
 
 const init = async () => {
-  user = (await sb.auth.getUser()).data.user
+  const { data } = await sb.auth.getUser()
+  user = data.user
+
+  if (!user) {
+    document.body.innerHTML = "<h2 style='text-align:center;margin-top:80px'>Connexion requise via Blablac'Arts</h2>"
+    return
+  }
+
+  $("userInfo").innerText = `Connecté : ${user.email}`
   updateFields()
   loadAds()
+
   sb.channel("ads")
     .on("postgres_changes",{event:"*",schema:"public",table:"ads"},loadAds)
     .subscribe()
