@@ -79,7 +79,6 @@ input,select,textarea{
 </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content">
 <h2>Nouvelle annonce</h2>
@@ -110,11 +109,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const sb = createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
-  "TON_ANON_KEY_ICI"
+  "VOTRE_ANON_KEY_SUPABASE"
 )
 
 let user = null
-
 const $ = id => document.getElementById(id)
 
 window.openModal = () => $("modal").style.display = "flex"
@@ -134,7 +132,7 @@ window.updateFields = () => {
   } else {
     $("dynamicFields").innerHTML = `
       <input id="price" placeholder="Prix (€)">
-      <input id="state" placeholder="État (neuf, bon état...)">
+      <input id="state" placeholder="État">
     `
   }
 }
@@ -147,14 +145,8 @@ window.publish = async () => {
   for (const file of $("images").files) {
     const path = `${user.id}/${Date.now()}-${file.name}`
     const { error } = await sb.storage.from("ads-images").upload(path, file)
-
-    if (error) {
-      alert("Erreur upload image : " + error.message)
-      return
-    }
-
-    const { data } = sb.storage.from("ads-images").getPublicUrl(path)
-    urls.push(data.publicUrl)
+    if (error) return alert(error.message)
+    urls.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl)
   }
 
   await sb.from("ads").insert({
@@ -174,13 +166,17 @@ window.publish = async () => {
 }
 
 window.loadAds = async () => {
-  let q = sb.from("ads").select("*").order("created_at", { ascending: false })
+  const { data, error } = await sb
+    .from("ads")
+    .select("*")
+    .order("created_at", { ascending: false })
 
-  if ($("filterType").value) q = q.eq("type", $("filterType").value)
-  if ($("search").value) q = q.ilike("title", `%${$("search").value}%`)
+  if (error || !data) {
+    $("ads").innerHTML = "Aucune annonce."
+    return
+  }
 
-  const { data } = await q
-  $("ads").innerHTML = data.length ? "" : "Aucune annonce."
+  $("ads").innerHTML = ""
 
   data.forEach(a => {
     $("ads").innerHTML += `
@@ -203,6 +199,7 @@ const init = async () => {
     .on("postgres_changes",{event:"*",schema:"public",table:"ads"},loadAds)
     .subscribe()
 }
+
 init()
 </script>
 
