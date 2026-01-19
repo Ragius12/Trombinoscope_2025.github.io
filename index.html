@@ -208,7 +208,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- MODAL AUTH -->
 <div id="authModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
   <div style="background:white;padding:20px;border-radius:10px;width:360px">
-    <h3 id="authTitle"></h3>
+	<span class="closeModal" onclick="closeAuthModal()">✕</span>
+    <h3 id="authTitle">Inscription</h3>
     <input id="authEmail" placeholder="Email ENSAM" style="width:100%;margin:6px 0">
     <input id="authPassword" type="password" placeholder="Mot de passe" style="width:100%;margin:6px 0">
     <button id="authConfirm" style="width:100%;margin-top:10px">Valider</button>
@@ -219,6 +220,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div id="profileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10001;align-items:center;justify-content:center">
 	<span class="closeModal" style="display:none">✕</span>
   <div style="background:white;padding:20px;border-radius:10px;width:380px">
+	<span class="closeModal" onclick="closeProfileModal()">✕</span>
     <h3>Compléter votre profil</h3>
     <input id="pPrenom" placeholder="Prénom" required>
     <input id="pNom" placeholder="Nom" required>
@@ -421,9 +423,16 @@ window.openAuth = function(mode) {
     mode === "signup" ? signup() : login();
 };
 
-window.closeAuthModal = function () {
-  qs("authModal").style.display = "none";
+window.closeAuthModal = function() {
+  document.getElementById("authModal").style.display = "none";
 };
+
+window.closeProfileModal = function() {
+  document.getElementById("profileModal").style.display = "none";
+};
+
+document.getElementById("btnLogin").addEventListener("click", () => openAuth("login"));
+document.getElementById("btnSignup").addEventListener("click", () => openAuth("signup"));
 
 async function login() {
   const email = qs("authEmail").value;
@@ -494,6 +503,7 @@ window.openPage = async function(page) {
 
 </body>
 </html>
+
 
 
 
