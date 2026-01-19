@@ -91,7 +91,6 @@ input,select,textarea{
 </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content">
 <h2>Nouvelle annonce</h2>
@@ -185,12 +184,10 @@ window.publish = async () => {
 }
 
 window.loadAds = async () => {
-  let q = sb.from("ads").select("*").order("created_at", { ascending: false })
-
-  if ($("filterType").value) q = q.eq("type", $("filterType").value)
-  if ($("search").value) q = q.ilike("title", `%${$("search").value}%`)
-
-  const { data } = await q
+  const { data } = await sb
+    .from("ads")
+    .select("*")
+    .order("created_at", { ascending: false })
 
   if (!data || !data.length) {
     $("ads").innerHTML = "Aucune annonce."
@@ -205,7 +202,7 @@ window.loadAds = async () => {
         <b>${a.title}</b><br>
         <span class="price">${a.price ?? ""} €</span>
         <div class="slider">
-          ${(a.images || []).map(i => `<img src="${i}">`).join("")}
+          ${(a.images || []).map(i => `<img src="${encodeURI(i)}">`).join("")}
         </div>
         ${a.description || ""}
       </div>`
