@@ -395,7 +395,7 @@ const sb = window.supabase;
 const qs = id => document.getElementById(id);
 
 // =====================
-// AUTH REFRESH (NON BLOQUANT)
+// AUTH UI REFRESH
 // =====================
 async function refreshAuth(){
   const { data:{session} } = await sb.auth.getSession();
@@ -422,7 +422,7 @@ async function refreshAuth(){
     .eq("id",session.user.id)
     .maybeSingle();
 
-  if(data && data.prenom){
+  if(data?.prenom){
     localStorage.setItem("profileCompleted","true");
   }
 }
@@ -433,13 +433,13 @@ sb.auth.onAuthStateChange(refreshAuth);
 // =====================
 // AUTH MODAL
 // =====================
-qs("btnSignup").onclick=()=>openAuth("signup");
-qs("btnLogin").onclick=()=>openAuth("login");
+qs("btnSignup").onclick = ()=>openAuth("signup");
+qs("btnLogin").onclick  = ()=>openAuth("login");
 
 function openAuth(mode){
   qs("authModal").style.display="flex";
-  qs("authTitle").innerText=mode==="signup"?"Inscription":"Connexion";
-  qs("authConfirm").onclick=()=>mode==="signup"?signup():login();
+  qs("authTitle").innerText = mode==="signup"?"Inscription":"Connexion";
+  qs("authConfirm").onclick = ()=>mode==="signup"?signup():login();
 }
 
 function closeAuthModal(){
@@ -447,14 +447,15 @@ function closeAuthModal(){
 }
 
 // =====================
-// PROFILE MODAL (FERMABLE)
+// PROFILE MODAL (FIX CROIX)
 // =====================
-document.querySelectorAll(".closeModal").forEach(el=>{
-  el.onclick=()=>qs("profileModal").style.display="none";
-});
+const profileModal = qs("profileModal");
+const closeBtn = profileModal.querySelector(".closeModal");
+closeBtn.style.display = "block";
+closeBtn.onclick = ()=>profileModal.style.display="none";
 
-qs("btnProfile").onclick=()=>{
-  qs("profileModal").style.display="flex";
+qs("btnProfile").onclick = ()=>{
+  profileModal.style.display="flex";
 };
 
 // =====================
@@ -465,20 +466,24 @@ async function signup(){
   const password = authPassword.value;
 
   if(!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com"){
-    return alert("❌ Email non autorisé.\nUtilise ton mail ENSAM.");
+    alert("❌ Email ENSAM requis");
+    return;
   }
 
   const { error } = await sb.auth.signUp({
     email,
     password,
     options:{
-      emailRedirectTo:"https://ragius12.github.io/Trombinoscope_2025.github.io/"
+      emailRedirectTo:location.href
     }
   });
 
-  if(error) return alert("❌ "+error.message);
+  if(error){
+    alert("❌ "+error.message);
+    return;
+  }
 
-  alert("📧 Vérifie ton mail ENSAM pour valider ton compte");
+  alert("📧 Inscription réussie.\n➡️ Clique sur le lien reçu par mail pour te connecter.");
   closeAuthModal();
 }
 
@@ -489,11 +494,7 @@ async function login(){
   });
 
   if(error){
-    if(error.message.includes("confirmed")){
-      alert("📧 Email non confirmé");
-    }else{
-      alert("❌ "+error.message);
-    }
+    alert("❌ "+error.message);
     return;
   }
 
@@ -502,9 +503,9 @@ async function login(){
 }
 
 // =====================
-// LOGOUT CLEAN
+// LOGOUT
 // =====================
-qs("btnLogout").onclick=async()=>{
+qs("btnLogout").onclick = async ()=>{
   localStorage.removeItem("profileCompleted");
   await sb.auth.signOut();
   location.reload();
@@ -513,8 +514,9 @@ qs("btnLogout").onclick=async()=>{
 // =====================
 // SAVE PROFILE
 // =====================
-window.saveProfile = async()=>{
+window.saveProfile = async ()=>{
   const { data:{user} } = await sb.auth.getUser();
+  if(!user) return alert("Non connecté");
 
   await sb.from("profiles").upsert({
     id:user.id,
@@ -527,35 +529,34 @@ window.saveProfile = async()=>{
   });
 
   localStorage.setItem("profileCompleted","true");
-  qs("profileModal").style.display="none";
+  profileModal.style.display="none";
   alert("✅ Profil enregistré");
 };
 
 // =====================
-// PAGE GUARD (CLÉS DU FIX)
+// PAGE GUARD (CORRECT)
 // =====================
-const PROTECTED_PAGES = [
-  "Galerie.html",
-  "LeBonCoin2.html"
-];
+const PROTECTED = ["Galerie.html","LeBonCoin2.html"];
 
 window.openPage = path =>{
+
+  // pages NON protégées : ouverture directe (CRUCIAL)
+  if(!PROTECTED.some(p=>path.includes(p))){
+    window.open(path,"_blank");
+    return;
+  }
+
+  // pages protégées
   sb.auth.getSession().then(({data:{session}})=>{
-    
-    // pages publiques même sans connexion
     if(!session){
-      window.open(path,"_blank");
+      alert("🔐 Connecte-toi pour accéder à cette section");
+      openAuth("login");
       return;
     }
 
-    const isProtected = PROTECTED_PAGES.some(p => path.includes(p));
-
-    if(
-      isProtected &&
-      localStorage.getItem("profileCompleted") !== "true"
-    ){
+    if(localStorage.getItem("profileCompleted")!=="true"){
       alert("⚠️ Complète ton profil pour accéder à cette fonctionnalité");
-      document.getElementById("profileModal").style.display="flex";
+      profileModal.style.display="flex";
       return;
     }
 
@@ -564,10 +565,9 @@ window.openPage = path =>{
 };
 </script>
 
-
-
 </body>
 </html>
+
 
 
 
