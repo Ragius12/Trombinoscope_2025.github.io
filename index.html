@@ -394,64 +394,47 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 const sb = window.supabase;
 const qs = id => document.getElementById(id);
 
-let authRefreshing = false;
-
+// =====================
+// AUTH REFRESH (NON BLOQUANT)
+// =====================
 async function refreshAuth(){
-  if(authRefreshing) return;
-  authRefreshing = true;
+  const { data:{session} } = await sb.auth.getSession();
 
-  try{
-    const { data:{session}, error } = await sb.auth.getSession();
-    if(error) throw error;
+  if(!session){
+    qs("btnSignup").style.display="inline";
+    qs("btnLogin").style.display="inline";
+    qs("userEmail").style.display="none";
+    qs("btnProfile").style.display="none";
+    qs("btnLogout").style.display="none";
+    return;
+  }
 
-    if(session){
-      qs("btnSignup").style.display="none";
-      qs("btnLogin").style.display="none";
-      qs("userEmail").style.display="inline";
-      qs("btnProfile").style.display="inline";
-      qs("btnLogout").style.display="inline";
-      qs("userEmail").innerText=session.user.email;
+  qs("btnSignup").style.display="none";
+  qs("btnLogin").style.display="none";
+  qs("userEmail").style.display="inline";
+  qs("btnProfile").style.display="inline";
+  qs("btnLogout").style.display="inline";
+  qs("userEmail").innerText=session.user.email;
 
-      // ⛔️ VERROU LOCAL : si déjà complété, on ne montre PLUS le modal
-      if(localStorage.getItem("profileCompleted") === "true"){
-        return;
-      }
+  const { data } = await sb
+    .from("profiles")
+    .select("prenom")
+    .eq("id",session.user.id)
+    .maybeSingle();
 
-      const { data } = await sb
-        .from("profiles")
-        .select("*")
-        .eq("id",session.user.id)
-        .maybeSingle();
-
-      if(!data || !data.prenom){
-        qs("profileModal").style.display="flex";
-      }else{
-        // sécurité supplémentaire
-        localStorage.setItem("profileCompleted","true");
-      }
-    }
-  }catch(e){
-    if(e.name !== "AbortError"){
-      console.error(e);
-    }
-  }finally{
-    authRefreshing = false;
+  if(data && data.prenom){
+    localStorage.setItem("profileCompleted","true");
   }
 }
 
 refreshAuth();
 sb.auth.onAuthStateChange(refreshAuth);
 
+// =====================
+// AUTH MODAL
+// =====================
 qs("btnSignup").onclick=()=>openAuth("signup");
 qs("btnLogin").onclick=()=>openAuth("login");
-
-function closeAuthModal(){
-  qs("authModal").style.display="none";
-}
-
-function closeProfileModal(){
-  qs("profileModal").style.display="none";
-}
 
 function openAuth(mode){
   qs("authModal").style.display="flex";
@@ -459,6 +442,24 @@ function openAuth(mode){
   qs("authConfirm").onclick=()=>mode==="signup"?signup():login();
 }
 
+function closeAuthModal(){
+  qs("authModal").style.display="none";
+}
+
+// =====================
+// PROFILE MODAL (FERMABLE)
+// =====================
+document.querySelectorAll(".closeModal").forEach(el=>{
+  el.onclick=()=>qs("profileModal").style.display="none";
+});
+
+qs("btnProfile").onclick=()=>{
+  qs("profileModal").style.display="flex";
+};
+
+// =====================
+// SIGNUP / LOGIN
+// =====================
 async function signup(){
   const email = authEmail.value.trim();
   const password = authPassword.value;
@@ -467,51 +468,51 @@ async function signup(){
     return alert("❌ Email non autorisé.\nUtilise ton mail ENSAM.");
   }
 
-  try{
-    const { error } = await sb.auth.signUp({
-      email,
-      password,
-      options:{
-        emailRedirectTo:"https://ragius12.github.io/Trombinoscope_2025.github.io/"
-      }
-    });
+  const { error } = await sb.auth.signUp({
+    email,
+    password,
+    options:{
+      emailRedirectTo:"https://ragius12.github.io/Trombinoscope_2025.github.io/"
+    }
+  });
 
-    if(error) throw error;
+  if(error) return alert("❌ "+error.message);
 
-    alert("📧 Inscription réussie !\n➡️ Vérifie tes mails Outlook pour valider ton compte.");
-    closeAuthModal();
-
-  }catch(e){
-    alert("❌ " + e.message);
-  }
+  alert("📧 Vérifie ton mail ENSAM pour valider ton compte");
+  closeAuthModal();
 }
 
 async function login(){
-  try{
-    const { error } = await sb.auth.signInWithPassword({
-      email: authEmail.value,
-      password: authPassword.value
-    });
+  const { error } = await sb.auth.signInWithPassword({
+    email: authEmail.value,
+    password: authPassword.value
+  });
 
-    if(error) throw error;
-
-    alert("✅ Connexion réussie !");
-    closeAuthModal();
-
-  }catch(e){
-    if(e.message.includes("Email not confirmed")){
-      alert("📧 Ton email n’est pas encore validé.\n➡️ Vérifie tes mails Outlook.");
+  if(error){
+    if(error.message.includes("confirmed")){
+      alert("📧 Email non confirmé");
     }else{
-      alert("❌ " + e.message);
+      alert("❌ "+error.message);
     }
+    return;
   }
+
+  alert("✅ Connecté");
+  closeAuthModal();
 }
 
-qs("btnLogout").onclick=()=>{
+// =====================
+// LOGOUT CLEAN
+// =====================
+qs("btnLogout").onclick=async()=>{
   localStorage.removeItem("profileCompleted");
-  sb.auth.signOut();
+  await sb.auth.signOut();
+  location.reload();
 };
 
+// =====================
+// SAVE PROFILE
+// =====================
 window.saveProfile = async()=>{
   const { data:{user} } = await sb.auth.getUser();
 
@@ -525,23 +526,37 @@ window.saveProfile = async()=>{
     promo:pPromo.value
   });
 
-  // ✅ FLAG LOCAL UNE FOIS POUR TOUTES
   localStorage.setItem("profileCompleted","true");
-
   qs("profileModal").style.display="none";
+  alert("✅ Profil enregistré");
 };
 
+// =====================
+// PAGE GUARD (CLÉS DU FIX)
+// =====================
 window.openPage = path =>{
   sb.auth.getSession().then(({data:{session}})=>{
-    if(!session) return alert("Veuillez vous connecter");
+    if(!session){
+      alert("Veuillez vous connecter");
+      return;
+    }
+
+    if(localStorage.getItem("profileCompleted") !== "true"){
+      alert("⚠️ Complète ton profil pour accéder à cette fonctionnalité");
+      qs("profileModal").style.display="flex";
+      return;
+    }
+
     window.open(path,"_blank");
   });
 };
 </script>
 
 
+
 </body>
 </html>
+
 
 
 
