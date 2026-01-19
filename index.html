@@ -581,26 +581,25 @@ function updateUI(session) {
   qs("userEmail").innerText = session.user.email;
 }
 
-sb.auth.onAuthStateChange((event, session) => {
+sb.auth.onAuthStateChange(async (event, session) => {
   updateUI(session);
 
   if (session) {
     document.getElementById("profileEmail").innerText = session.user.email;
+
+    const { data } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
+
+    if (data?.profile_complete) {
+      updateProfileBadge(data);
+    }
   }
-	if (session) {
-	  const { data } = await sb
-	    .from("profiles")
-	    .select("*")
-	    .eq("id", session.user.id)
-	    .single();
-	
-	  if (data?.profile_complete) {
-	    updateProfileBadge(data);
-	  }
-	}
+
   if (event === "SIGNED_IN") {
-    const hasProfile = localStorage.getItem("profile_done");
-    if (!hasProfile) {
+    if (!(await hasCompleteProfile())) {
       document.getElementById("profileModal").style.display = "flex";
     }
   }
@@ -735,6 +734,8 @@ window.openPage = async page => {
   window.location.href = page;
 };
 
+window.openPage = openPage;
+
 
 async function hasCompleteProfile() {
   const { data: { session } } = await sb.auth.getSession();
@@ -762,6 +763,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
