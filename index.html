@@ -212,9 +212,174 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
-<!-- ⚠️ ICI REPREND EXACTEMENT TON HTML ORIGINAL -->
-<!-- hero, shell, cards, canvas, scripts existants : STRICTEMENT IDENTIQUES -->
-<!-- RIEN N’A ÉTÉ SUPPRIMÉ -->
+	<!-- Google Tag Manager (noscript) -->
+	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
+	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
+	
+  <canvas id="bgCanvas"></canvas>
+  <div class="hero">
+    <main class="shell">
+      <section class="brand">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;">
+          <div class="logo">
+            <img src="Buzzy.png" alt="bourdon" class="left">
+            <span class="tooltip">Sal's chicop's, je suis Vespula Jr.!</span>
+          </div>
+          <div>
+            <h1 class="title">Prom's 225</h1>
+            <div class="subtitle">Fratern's !!</div>
+            <img src="Promotion.png" alt="Photo de la promo 2025" class="promo-photo">
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="card" onclick="openPage('jeu.html')">
+          <div class="label">Le Jeu</div>
+          <div class="desc">Amusez-vous à apprendre les 180 visages de la promo !</div>
+        </div>
+        <div class="card" onclick="openPage('trombinoscope.html')">
+          <div class="label">Trombinoscope</div>
+          <div class="desc">Infals des chicop's.</div>
+        </div>
+        <div class="card" onclick="openPage('carnet.html')">
+          <div class="label">Carn's</div>
+          <div class="desc">Pages du carn's à bucquer.</div>
+        </div>
+        <div class="card" onclick="openPage('monomes.html')">
+          <div class="label">Monômes</div>
+          <div class="desc">Monômes, paroles et musiques trad's.</div>
+        </div>
+        <div class="card" onclick="openPage('Galerie.html')">
+          <div class="label">Blablac'Arts</div>
+          <div class="desc">Publiez et réservez tous vos déplacements pour la coher's.</div>
+        </div>
+		<div class="card" onclick="openPage('LeBonCoin2.html')">
+          <div class="label">En préparation...</div>
+          <div class="desc">[...]</div>
+        </div>
+        <div class="card" onclick="openPage('documents.html')">
+          <div class="label">Documents import's</div>
+          <div class="desc">Livret d'acceuil, Lago...</div>
+        </div>
+        <div class="card" onclick="openPage('https://drive.google.com/drive/folders/1Celq4ZJYpbztZrv9gtaSDMB2Ck7nrzyh?usp=drive_link')">
+          <div class="label">Thuysses DDB</div>
+          <div class="desc">L'art de ne pas sacquer.</div>
+        </div>
+		<div class="card" onclick="openPage('https://savoir.ensam.eu/moodle/')">
+          <div class="label">Savoir Ensam</div>
+          <div class="desc">Un peu de Birse ça fait pas de mal ?</div>
+        </div>
+		
+		<div class="card" id="liseCard" onclick="openLiseFast()">
+			  <div class="label">Connexion à Lise</div>
+			  <div id="statusLise" style="margin-top:8px;font-size:0.9em;opacity:0.7;">
+				Planning, notes, abscences...
+			  </div>
+			</div>
+
+			<script>
+			async function openLiseFast() {
+			  const status = document.getElementById("statusLise");
+			  status.textContent = "Connexion à Outlook...";
+			  status.style.opacity = 1;
+
+			  // durée max de validité locale (ex: 6 mois)
+			  const VALIDITY = 1000 * 60 * 60 * 24 * 30 * 6; 
+			  const lastConnect = localStorage.getItem("liseConnectTime");
+			  const now = Date.now();
+
+			  if (lastConnect && now - lastConnect < VALIDITY) {
+				status.textContent = "Session Outlook récente ✔️";
+				window.open("https://lise.ensam.eu/", "_blank");
+				return;
+			  }
+
+			  // tentative d'auto-connexion Outlook
+			  status.textContent = "Ouverture de la session Outlook...";
+			  const win = window.open("https://outlook.office.com/mail/", "_blank", "width=500,height=500,opacity=0");
+			  
+			  // Attente de 5 secondes (permet de réactiver la session SSO)
+			  await new Promise(r => setTimeout(r, 5000));
+
+			  try { win.close(); } catch(e) {}
+
+			  // enregistre une "session locale" longue durée
+			  localStorage.setItem("liseConnectTime", Date.now());
+			  status.textContent = "Redirection vers Lise...";
+			  window.open("https://lise.ensam.eu/", "_blank");
+
+			  setTimeout(() => {
+				status.textContent = "Connecté ✔️ (valide 30 jours)";
+				status.style.opacity = 0.7;
+			  }, 1000);
+			}
+			</script>
+		<div class="card" onclick="openPage('https://boquette.borgia-app.com/members/')">
+          <div class="label">Borgia</div>
+          <div class="desc">Tou à moindre prix !</div>
+        </div>
+      </section>
+
+	<script>
+	function simulateLogin(){
+	  const user = prompt("Entrez votre adresse Outlook ENSAM (ex: prenom.nom@ensam.eu)");
+	  if(user){
+		localStorage.setItem("ensamUser", user);
+		document.getElementById("ensamUser").textContent = user;
+	  }
+	}
+	window.addEventListener("load", ()=>{
+	  const u = localStorage.getItem("ensamUser");
+	  if(u) document.getElementById("ensamUser").textContent = u;
+	});
+	</script>
+	
+	
+      <div class="footer">Fait avec coher's par l'un de vos chicop’s, brassez moi en privé pour de potentiels problèmes !<BR> Version 1.3 - Ajout des chants et hymnes (usinés par i7An225) et ajout de Blablac'Arts.</div>
+    </main>
+  </div>
+
+  <footer style="text-align: center; font-family: 'Old English Text MT', 'Gothic', 'Blackletter', serif;">
+    Vespula 84 — Promotion 2025
+  </footer>
+
+  <script>
+    function openPage(path){window.open(path,'_blank');}
+
+    const c=document.getElementById('bgCanvas');
+    const ctx=c.getContext('2d');
+    let w=c.width=innerWidth,h=c.height=innerHeight;
+    const p=[];
+    function rand(min,max){return Math.random()*(max-min)+min;}
+    for(let i=0;i<100;i++)
+      p.push({x:rand(0,w),y:rand(0,h),r:rand(1,3),vx:rand(-0.4,0.4),
+              vy:rand(-0.4,0.4),hue:rand(180,300)});
+    function draw(){
+      ctx.clearRect(0,0,w,h);
+      for(let i of p){
+        i.x+=i.vx;i.y+=i.vy;
+        if(i.x<0||i.x>w)i.vx*=-1;
+        if(i.y<0||i.y>h)i.vy*=-1;
+        ctx.beginPath();ctx.arc(i.x,i.y,i.r,0,Math.PI*2);
+        ctx.fillStyle=`hsla(${i.hue},70%,60%,0.5)`;ctx.fill();
+      }
+      for(let i=0;i<p.length;i++){
+        for(let j=i+1;j<p.length;j++){
+          const a=p[i],b=p[j];
+          const dx=a.x-b.x,dy=a.y-b.y;const d2=dx*dx+dy*dy;
+          if(d2<25000){
+            ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+            ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+    window.addEventListener('resize',()=>{w=c.width=innerWidth;h=c.height=innerHeight;});
+  </script>
 
 <script type="module">
 const sb = window.supabase;
@@ -295,4 +460,5 @@ window.openPage = path =>{
 
 </body>
 </html>
+
 
