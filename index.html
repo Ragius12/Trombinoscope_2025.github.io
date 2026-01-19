@@ -388,11 +388,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	);
 	const qs = id => document.getElementById(id);
 
-await sb.auth.getSession();
-
-async function refreshAuth() {
-  const { data: { session } } = await sb.auth.getSession();
-
+function updateUI(session) {
   if (!session) {
     qs("btnSignup").style.display = "inline";
     qs("btnLogin").style.display  = "inline";
@@ -410,43 +406,48 @@ async function refreshAuth() {
   qs("userEmail").innerText = session.user.email;
 }
 
-refreshAuth();
-sb.auth.onAuthStateChange(refreshAuth);
+/* écouteur UNIQUE */
+sb.auth.onAuthStateChange((event, session) => {
+  updateUI(session);
 
-window.openAuth = function(mode) {
+  // première connexion → forcer profil
+  if (event === "SIGNED_IN") {
+    const hasProfile = localStorage.getItem("profile_done");
+    if (!hasProfile) {
+      qs("profileModal").style.display = "flex";
+    }
+  }
+});
+
+/* =========================
+   MODALS
+========================= */
+
+window.openAuth = mode => {
   qs("authModal").style.display = "flex";
-  qs("authTitle").innerText = mode === "signup"
-    ? "Inscription"
-    : "Connexion";
-
+  qs("authTitle").innerText = mode === "signup" ? "Inscription" : "Connexion";
   qs("authConfirm").onclick = () =>
     mode === "signup" ? signup() : login();
 };
 
-window.closeAuthModal = function() {
-  document.getElementById("authModal").style.display = "none";
+window.closeAuthModal = () => {
+  qs("authModal").style.display = "none";
 };
 
-window.closeProfileModal = function() {
-  document.getElementById("profileModal").style.display = "none";
+window.closeProfileModal = () => {
+  qs("profileModal").style.display = "none";
 };
 
-document.getElementById("btnLogin").addEventListener("click", () => openAuth("login"));
-document.getElementById("btnSignup").addEventListener("click", () => openAuth("signup"));
+/* =========================
+   AUTH ACTIONS
+========================= */
 
 async function login() {
   const email = qs("authEmail").value;
   const password = qs("authPassword").value;
 
-  const { error } = await sb.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) return alert(error.message);
 
   closeAuthModal();
 }
@@ -455,37 +456,44 @@ async function signup() {
   const email = qs("authEmail").value;
   const password = qs("authPassword").value;
 
-  const { error } = await sb.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: location.href
-    }
-  });
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) return alert(error.message);
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  alert("📧 Clique sur le lien reçu par email pour confirmer");
+  alert("📧 Vérifie ton email");
   closeAuthModal();
 }
 
-qs("btnLogout")?.addEventListener("click", async () => {
+qs("btnLogin").onclick  = () => openAuth("login");
+qs("btnSignup").onclick = () => openAuth("signup");
+
+qs("btnLogout").onclick = async () => {
   await sb.auth.signOut();
-});
+};
 
-const blockedPages = [
-  "Galerie.html",
-  "LeBonCoin2.html"
-];
+qs("btnProfile").onclick = () => {
+  qs("profileModal").style.display = "flex";
+};
 
-window.openPage = async function(page) {
+/* =========================
+   PROFIL
+========================= */
+
+window.saveProfile = () => {
+  localStorage.setItem("profile_done", "1");
+  closeProfileModal();
+};
+
+/* =========================
+   NAVIGATION
+========================= */
+
+const blockedPages = ["Galerie.html", "LeBonCoin2.html"];
+
+window.openPage = async page => {
   const { data: { session } } = await sb.auth.getSession();
 
   if (!blockedPages.includes(page)) {
-    console.log("✅ page libre :", page);
+    window.location.href = page;
     return;
   }
 
@@ -494,15 +502,14 @@ window.openPage = async function(page) {
     return;
   }
 
-  // ici tu peux ajouter plus tard :
-  // check profil complété
-  console.log("➡️ accès autorisé :", page);
+  window.location.href = page;
 };
 </script>
 
 
 </body>
 </html>
+
 
 
 
