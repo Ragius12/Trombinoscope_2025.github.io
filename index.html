@@ -299,25 +299,66 @@
   opacity:1;
 }
 
-  </style>
+.avatar{
+  width:38px;height:38px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#ffd700,#ffb300);
+  color:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+}
 
+.badge{
+  background:#0f122a;
+  color:#ffd700;
+  border:1px solid rgba(255,215,0,.3);
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+}
+
+.toast{
+  position:fixed;
+  bottom:24px;
+  right:24px;
+  background:#0f122a;
+  color:#fff;
+  padding:14px 18px;
+  border-radius:14px;
+  opacity:0;
+  transform:translateY(10px);
+  pointer-events:none;
+  transition:.4s;
+  z-index:20000;
+}
+.toast.show{opacity:1;transform:none}
+.toast.success{border-left:4px solid #00ff99}
+.toast.warn{border-left:4px solid #ffd700}
+.toast.error{border-left:4px solid #ff4d4d}
+
+  </style>
 </head>
 
+	
 <body>
-
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <!-- AUTH BAR (AJOUTÉE, SANS TOUCHER AU RESTE) -->
-<div id="authBar" style="position:fixed;top:16px;right:20px;z-index:9999;display:flex;gap:10px">
+<div id="authBar" style="position:fixed;top:16px;right:20px;z-index:9999;display:flex;gap:10px;align-items:center">
+  <div id="avatar" class="avatar" style="display:none"></div>
+  <span id="profileBadge" class="badge" style="display:none">✔</span>
   <button id="btnSignup">S’inscrire</button>
   <button id="btnLogin">Se connecter</button>
   <span id="userEmail" style="display:none"></span>
-  <button id="btnProfile" style="display:none">Modifier mon profil</button>
+  <button id="btnProfile" style="display:none">Profil</button>
   <button id="btnLogout" style="display:none">Se déconnecter</button>
 </div>
+
 
 <!-- MODAL AUTH -->
 <div id="authModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
@@ -538,7 +579,17 @@ sb.auth.onAuthStateChange((event, session) => {
   if (session) {
     document.getElementById("profileEmail").innerText = session.user.email;
   }
-
+	if (session) {
+	  const { data } = await sb
+	    .from("profiles")
+	    .select("*")
+	    .eq("id", session.user.id)
+	    .single();
+	
+	  if (data?.profile_complete) {
+	    updateProfileBadge(data);
+	  }
+	}
   if (event === "SIGNED_IN") {
     const hasProfile = localStorage.getItem("profile_done");
     if (!hasProfile) {
@@ -603,14 +654,50 @@ qs("btnProfile").onclick = () => {
   qs("profileModal").style.display = "flex";
 };
 
+function updateProfileBadge(profile){
+  qs("profileBadge").style.display = "inline";
+  qs("avatar").style.display = "flex";
+  qs("avatar").innerText =
+    (profile.prenom[0] || "") + (profile.nom[0] || "");
+}
+
 /* =========================
    PROFIL
 ========================= */
 
-window.saveProfile = () => {
+window.saveProfile = async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return showToast("Non connecté", "error");
+
+  const payload = {
+    id: session.user.id,
+    nom: qs("pNom").value.trim(),
+    prenom: qs("pPrenom").value.trim(),
+    surns: qs("pSurns").value.trim(),
+    fams: qs("pFams").value.trim(),
+    promo: qs("pPromo").value,
+    profile_complete: true
+  };
+
+  if (!payload.nom || !payload.prenom || !payload.promo) {
+    return showToast("Merci de remplir Nom, Prénom et Promo", "warn");
+  }
+
+  const { error } = await sb
+    .from("profiles")
+    .upsert(payload, { onConflict: "id" });
+
+  if (error) {
+    console.error(error);
+    return showToast("Erreur lors de la sauvegarde", "error");
+  }
+
   localStorage.setItem("profile_done", "1");
   closeProfileModal();
+  updateProfileBadge(payload);
+  showToast("Profil sauvegardé ✨", "success");
 };
+;
 
 /* =========================
    NAVIGATION
@@ -631,13 +718,43 @@ window.openPage = async page => {
     return;
   }
 
+  if (!(await hasCompleteProfile())) {
+    qs("profileModal").style.display = "flex";
+    showToast("Complète ton profil pour continuer", "warn");
+    return;
+  }
+
   window.location.href = page;
 };
+
+
+async function hasCompleteProfile() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return false;
+
+  const { data } = await sb
+    .from("profiles")
+    .select("profile_complete")
+    .eq("id", session.user.id)
+    .single();
+
+  return data?.profile_complete === true;
+}
+	
+function showToast(msg, type="success"){
+  const t = qs("toast");
+  t.innerText = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(()=>t.classList.remove("show"),3000);
+}
+
 </script>
 
+<div id="toast" class="toast"></div>
 
 </body>
 </html>
+
 
 
 
