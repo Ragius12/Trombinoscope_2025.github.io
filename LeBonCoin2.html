@@ -110,84 +110,98 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const sb = createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+  "TON_ANON_KEY_ICI"
 )
 
-let user=null
+let user = null
 
-window.openModal=()=>modal.style.display="flex"
-window.closeModal=()=>modal.style.display="none"
+const $ = id => document.getElementById(id)
 
-window.updateFields=()=>{
-  const t=type.value
-  dynamicFields.innerHTML=""
-  if(t==="kgibs"){
-    dynamicFields.innerHTML+=`
+window.openModal = () => $("modal").style.display = "flex"
+window.closeModal = () => $("modal").style.display = "none"
+
+window.updateFields = () => {
+  const t = $("type").value
+  $("dynamicFields").innerHTML = ""
+
+  if (t === "kgibs") {
+    $("dynamicFields").innerHTML = `
       <input id="price" placeholder="Prix (€)">
       <input id="surface" placeholder="Surface (m²)">
       <input id="rooms" placeholder="Pièces">
       <input id="location" placeholder="Localisation">
     `
-  }else{
-    dynamicFields.innerHTML+=`
+  } else {
+    $("dynamicFields").innerHTML = `
       <input id="price" placeholder="Prix (€)">
       <input id="state" placeholder="État (neuf, bon état...)">
     `
   }
 }
 
-window.publish=async()=>{
-  if(!user) return alert("Connexion requise")
+window.publish = async () => {
+  if (!user) return alert("Connexion requise")
 
-  const urls=[]
-  for(const file of images.files){
-    const path=`${user.id}/${Date.now()}-${file.name}`
-    await sb.storage.from("ads-images").upload(path,file)
+  const urls = []
+
+  for (const file of $("images").files) {
+    const path = `${user.id}/${Date.now()}-${file.name}`
+    const { error } = await sb.storage.from("ads-images").upload(path, file)
+
+    if (error) {
+      alert("Erreur upload image : " + error.message)
+      return
+    }
+
     const { data } = sb.storage.from("ads-images").getPublicUrl(path)
     urls.push(data.publicUrl)
   }
 
   await sb.from("ads").insert({
-    owner:user.id,
-    type:type.value,
-    title:title.value,
-    description:description.value,
-    price:price?.value||null,
-    surface:surface?.value||null,
-    rooms:rooms?.value||null,
-    state:state?.value||null,
-    location:location?.value||null,
-    images:urls
+    owner: user.id,
+    type: $("type").value,
+    title: $("title").value,
+    description: $("description").value,
+    price: $("price")?.value || null,
+    surface: $("surface")?.value || null,
+    rooms: $("rooms")?.value || null,
+    state: $("state")?.value || null,
+    location: $("location")?.value || null,
+    images: urls
   })
 
   closeModal()
 }
 
-window.loadAds=async()=>{
-  let q=sb.from("ads").select("*").order("created_at",{ascending:false})
-  if(filterType.value) q=q.eq("type",filterType.value)
-  if(search.value) q=q.ilike("title",`%${search.value}%`)
-  const { data } = await q
-  ads.innerHTML=data.length?"":"Aucune annonce."
+window.loadAds = async () => {
+  let q = sb.from("ads").select("*").order("created_at", { ascending: false })
 
-  data.forEach(a=>{
-    ads.innerHTML+=`
-    <div class="card">
-      <b>${a.title}</b><br>
-      <span class="price">${a.price||""} €</span>
-      <div class="slider">
-        ${(a.images||[]).map(i=>`<img src="${i}">`).join("")}
-      </div>
-      ${a.description||""}
-    </div>`
+  if ($("filterType").value) q = q.eq("type", $("filterType").value)
+  if ($("search").value) q = q.ilike("title", `%${$("search").value}%`)
+
+  const { data } = await q
+  $("ads").innerHTML = data.length ? "" : "Aucune annonce."
+
+  data.forEach(a => {
+    $("ads").innerHTML += `
+      <div class="card">
+        <b>${a.title}</b><br>
+        <span class="price">${a.price ?? ""} €</span>
+        <div class="slider">
+          ${(a.images || []).map(i => `<img src="${i}">`).join("")}
+        </div>
+        ${a.description || ""}
+      </div>`
   })
 }
 
-const init=async()=>{
-  user=(await sb.auth.getUser()).data.user
+const init = async () => {
+  user = (await sb.auth.getUser()).data.user
   updateFields()
   loadAds()
-  sb.channel("ads").on("postgres_changes",{event:"*",schema:"public",table:"ads"},loadAds).subscribe()
+  sb.channel("ads")
+    .on("postgres_changes",{event:"*",schema:"public",table:"ads"},loadAds)
+    .subscribe()
 }
 init()
 </script>
