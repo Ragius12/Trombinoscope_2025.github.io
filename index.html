@@ -562,25 +562,31 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	  "https://wwjsqkktwxciyvzoisyz.supabase.co",
 	  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 	);
-	window.sb = sb;
-		(async () => {
-	  const { data: { session } } = await sb.auth.getSession();
-	  updateUI(session);
 	
-	  if (session) {
-	    const { data } = await sb
-	      .from("profiles")
-	      .select("nom, prenom, promo")
-	      .eq("id", session.user.id)
-	      .single();
-	
-	    if (data?.nom && data?.prenom && data?.promo) {
-	      updateProfileBadge(data);
-	    }
-	  }
-	})();
+  window.sb = sb; // IMPORTANT
 
-	const qs = id => document.getElementById(id);
+  // ✅ ICI seulement
+  await sb.auth.getSession();
+
+  const qs = id => document.getElementById(id);
+
+  // Restauration de session au chargement
+  (async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    updateUI(session);
+
+    if (session) {
+      const { data } = await sb
+        .from("profiles")
+        .select("nom, prenom, promo")
+        .eq("id", session.user.id)
+        .single();
+
+      if (data?.nom && data?.prenom && data?.promo) {
+        updateProfileBadge(data);
+      }
+    }
+  })();
 
 function updateUI(session) {
   if (!session) {
@@ -806,6 +812,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
