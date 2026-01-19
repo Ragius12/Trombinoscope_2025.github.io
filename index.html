@@ -185,6 +185,120 @@
   font-weight:bold;
 }
 
+/* === MODAL PROFIL DARK === */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(5,6,20,0.75);
+  backdrop-filter:blur(6px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10001;
+}
+
+.profile-modal{
+  width:420px;
+  max-width:90%;
+  background:linear-gradient(180deg,#0b0d1e,#060714);
+  border-radius:22px;
+  padding:26px;
+  color:#e6eef9;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  border:1px solid rgba(255,215,0,.25);
+  position:relative;
+  animation:modalIn .35s ease;
+}
+
+@keyframes modalIn{
+  from{opacity:0;transform:translateY(20px) scale(.96);}
+  to{opacity:1;transform:none;}
+}
+
+.profile-modal h2{
+  margin:0 0 6px;
+  font-family:'Cinzel',serif;
+  color:#ffd700;
+}
+
+.emailLine{
+  font-size:13px;
+  color:#bfc7d6;
+  margin-bottom:18px;
+}
+
+.form{
+  display:grid;
+  gap:10px;
+}
+
+.profile-modal input,
+.profile-modal select{
+  background:#0f122a;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;
+  padding:12px 14px;
+  color:#fff;
+  font-size:14px;
+  outline:none;
+}
+
+.profile-modal input:focus,
+.profile-modal select:focus{
+  border-color:#ffd700;
+  box-shadow:0 0 0 2px rgba(255,215,0,.25);
+}
+
+.profile-modal input::placeholder{
+  color:#8e97b3;
+}
+
+.actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:18px;
+}
+
+.btn{
+  border:none;
+  padding:10px 16px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.btn.primary{
+  background:linear-gradient(135deg,#ffd700,#ffb300);
+  color:#000;
+}
+
+.btn.primary:hover{
+  box-shadow:0 6px 20px rgba(255,215,0,.45);
+}
+
+.btn.ghost{
+  background:#14173a;
+  color:#e6eef9;
+}
+
+.btn.ghost:hover{
+  background:#1a1f55;
+}
+
+.profile-modal .closeModal{
+  position:absolute;
+  top:14px;
+  right:16px;
+  font-size:18px;
+  cursor:pointer;
+  opacity:.7;
+}
+
+.profile-modal .closeModal:hover{
+  opacity:1;
+}
+
   </style>
 
 </head>
@@ -217,24 +331,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 
 <!-- MODAL PROFIL OBLIGATOIRE -->
-<div id="profileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10001;align-items:center;justify-content:center">
-	<span class="closeModal" style="display:none">✕</span>
-  <div style="background:white;padding:20px;border-radius:10px;width:380px">
-	<span class="closeModal" onclick="closeProfileModal()">✕</span>
-    <h3>Compléter votre profil</h3>
-    <input id="pPrenom" placeholder="Prénom" required>
-    <input id="pNom" placeholder="Nom" required>
-    <input id="pBirth" type="date" value="2004-01-01" required>
-    <input id="pSurns" placeholder="Surn’s" required>
-    <input id="pFams" placeholder="Fam’s" required>
-    <select id="pPromo">
-      <option>An223</option>
-      <option>An224</option>
-      <option>An225</option>
-    </select>
-    <button onclick="saveProfile()" style="width:100%;margin-top:10px">Enregistrer</button>
+<div id="profileModal" class="modal-overlay">
+  <div class="profile-modal">
+    <span class="closeModal" onclick="closeProfileModal()">✕</span>
+
+    <h2>Compléter ton profil</h2>
+    <p class="emailLine">
+      Ton adresse <span id="profileEmail"></span>
+    </p>
+
+    <div class="form">
+      <input id="pNom" placeholder="Nom" autocomplete="family-name">
+      <input id="pPrenom" placeholder="Prénom" autocomplete="given-name">
+      <input id="pSurns" placeholder="Surn’s">
+      <input id="pFams" placeholder="Fam’s">
+
+      <select id="pPromo">
+        <option value="">— Promo —</option>
+        <option>An223</option>
+        <option>An224</option>
+        <option>An225</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" onclick="closeProfileModal()">Fermer</button>
+      <button class="btn primary" onclick="saveProfile()">Enregistrer</button>
+    </div>
   </div>
 </div>
+
 
 	<!-- Google Tag Manager (noscript) -->
 	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
@@ -406,18 +532,21 @@ function updateUI(session) {
   qs("userEmail").innerText = session.user.email;
 }
 
-/* écouteur UNIQUE */
 sb.auth.onAuthStateChange((event, session) => {
   updateUI(session);
 
-  // première connexion → forcer profil
+  if (session) {
+    document.getElementById("profileEmail").innerText = session.user.email;
+  }
+
   if (event === "SIGNED_IN") {
     const hasProfile = localStorage.getItem("profile_done");
     if (!hasProfile) {
-      qs("profileModal").style.display = "flex";
+      document.getElementById("profileModal").style.display = "flex";
     }
   }
 });
+
 
 /* =========================
    MODALS
@@ -509,6 +638,7 @@ window.openPage = async page => {
 
 </body>
 </html>
+
 
 
 
