@@ -154,6 +154,37 @@
       .logo img.left{width:60px;}
       .grid{gap:10px;}
     }
+
+/* === AUTH UI === */
+#authBar button{
+  background:linear-gradient(135deg,#ffd700,#ffb300);
+  border:none;
+  padding:8px 14px;
+  border-radius:8px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(255,215,0,0.35);
+}
+
+#authBar button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(255,215,0,0.55);
+}
+
+#authBar span{
+  font-weight:600;
+  color:#ffd700;
+}
+
+.closeModal{
+  position:absolute;
+  top:8px;
+  right:12px;
+  cursor:pointer;
+  font-size:18px;
+  font-weight:bold;
+}
+
   </style>
 
   <!-- SUPABASE -->
@@ -196,6 +227,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- MODAL PROFIL OBLIGATOIRE -->
 <div id="profileModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10001;align-items:center;justify-content:center">
+	<span class="closeModal" style="display:none">✕</span>
   <div style="background:white;padding:20px;border-radius:10px;width:380px">
     <h3>Compléter votre profil</h3>
     <input id="pPrenom" placeholder="Prénom" required>
@@ -235,38 +267,51 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </section>
 
       <section class="grid">
+		  
         <div class="card" onclick="openPage('jeu.html')">
+			<span class="closeModal" onclick="closeAuthModal()">✕</span>
           <div class="label">Le Jeu</div>
           <div class="desc">Amusez-vous à apprendre les 180 visages de la promo !</div>
         </div>
+		  
         <div class="card" onclick="openPage('trombinoscope.html')">
           <div class="label">Trombinoscope</div>
           <div class="desc">Infals des chicop's.</div>
         </div>
+		  
         <div class="card" onclick="openPage('carnet.html')">
           <div class="label">Carn's</div>
           <div class="desc">Pages du carn's à bucquer.</div>
         </div>
+		  
         <div class="card" onclick="openPage('monomes.html')">
           <div class="label">Monômes</div>
           <div class="desc">Monômes, paroles et musiques trad's.</div>
         </div>
+		  
         <div class="card" onclick="openPage('Galerie.html')">
+			<span class="closeModal" onclick="closeAuthModal()">✕</span>
           <div class="label">Blablac'Arts</div>
           <div class="desc">Publiez et réservez tous vos déplacements pour la coher's.</div>
         </div>
+		  
 		<div class="card" onclick="openPage('LeBonCoin2.html')">
+			<span class="closeModal" onclick="closeAuthModal()">✕</span>
           <div class="label">En préparation...</div>
           <div class="desc">[...]</div>
         </div>
+		  
         <div class="card" onclick="openPage('documents.html')">
           <div class="label">Documents import's</div>
           <div class="desc">Livret d'acceuil, Lago...</div>
         </div>
+		  
         <div class="card" onclick="openPage('https://drive.google.com/drive/folders/1Celq4ZJYpbztZrv9gtaSDMB2Ck7nrzyh?usp=drive_link')">
+			<span class="closeModal" onclick="closeAuthModal()">✕</span>
           <div class="label">Thuysses DDB</div>
           <div class="desc">L'art de ne pas sacquer.</div>
         </div>
+		  
 		<div class="card" onclick="openPage('https://savoir.ensam.eu/moodle/')">
           <div class="label">Savoir Ensam</div>
           <div class="desc">Un peu de Birse ça fait pas de mal ?</div>
@@ -316,6 +361,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 			  }, 1000);
 			}
 			</script>
+		  
 		<div class="card" onclick="openPage('https://boquette.borgia-app.com/members/')">
           <div class="label">Borgia</div>
           <div class="desc">Tou à moindre prix !</div>
@@ -386,18 +432,40 @@ const sb = window.supabase;
 
 const qs = id => document.getElementById(id);
 
-async function refreshAuth(){
-  const { data:{session} } = await sb.auth.getSession();
-  if(session){
-    qs("btnSignup").style.display="none";
-    qs("btnLogin").style.display="none";
-    qs("userEmail").style.display="inline";
-    qs("btnProfile").style.display="inline";
-    qs("btnLogout").style.display="inline";
-    qs("userEmail").innerText=session.user.email;
+let authRefreshing = false;
 
-    const { data } = await sb.from("profiles").select("*").eq("id",session.user.id).single();
-    if(!data || !data.prenom) qs("profileModal").style.display="flex";
+async function refreshAuth(){
+  if(authRefreshing) return;
+  authRefreshing = true;
+
+  try{
+    const { data:{session}, error } = await sb.auth.getSession();
+    if(error) throw error;
+
+    if(session){
+      qs("btnSignup").style.display="none";
+      qs("btnLogin").style.display="none";
+      qs("userEmail").style.display="inline";
+      qs("btnProfile").style.display="inline";
+      qs("btnLogout").style.display="inline";
+      qs("userEmail").innerText=session.user.email;
+
+      const { data } = await sb
+        .from("profiles")
+        .select("*")
+        .eq("id",session.user.id)
+        .maybeSingle();
+
+      if(!data || !data.prenom){
+        qs("profileModal").style.display="flex";
+      }
+    }
+  }catch(e){
+    if(e.name !== "AbortError"){
+      console.error(e);
+    }
+  }finally{
+    authRefreshing = false;
   }
 }
 
@@ -407,6 +475,14 @@ sb.auth.onAuthStateChange(refreshAuth);
 qs("btnSignup").onclick=()=>openAuth("signup");
 qs("btnLogin").onclick=()=>openAuth("login");
 
+function closeAuthModal(){
+  qs("authModal").style.display="none";
+}
+
+function closeProfileModal(){
+  qs("profileModal").style.display="none";
+}
+	
 function openAuth(mode){
   qs("authModal").style.display="flex";
   qs("authTitle").innerText=mode==="signup"?"Inscription":"Connexion";
@@ -414,24 +490,52 @@ function openAuth(mode){
 }
 
 async function signup(){
-  const email=authEmail.value;
-  if(!email.endsWith("@ensam.eu") && email!=="thomas.bourdon12112004@gmail.com")
-    return alert("Email non autorisé");
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
 
-  await sb.auth.signUp({
-    email,
-    password:authPassword.value,
-    options:{ emailRedirectTo:"https://ragius12.github.io/Trombinoscope_2025.github.io/" }
-  });
-  alert("Mail envoyé !");
+  if(!email.endsWith("@ensam.eu") && email !== "thomas.bourdon12112004@gmail.com"){
+    return alert("❌ Email non autorisé.\nUtilise ton mail ENSAM.");
+  }
+
+  try{
+    const { error } = await sb.auth.signUp({
+      email,
+      password,
+      options:{
+        emailRedirectTo:"https://ragius12.github.io/Trombinoscope_2025.github.io/"
+      }
+    });
+
+    if(error) throw error;
+
+    alert("📧 Inscription réussie !\n➡️ Vérifie tes mails Outlook pour valider ton compte.");
+    closeAuthModal();
+
+  }catch(e){
+    alert("❌ " + e.message);
+  }
 }
 
+
 async function login(){
-  const { error } = await sb.auth.signInWithPassword({
-    email:authEmail.value,
-    password:authPassword.value
-  });
-  if(error) alert(error.message);
+  try{
+    const { error } = await sb.auth.signInWithPassword({
+      email: authEmail.value,
+      password: authPassword.value
+    });
+
+    if(error) throw error;
+
+    alert("✅ Connexion réussie !");
+    closeAuthModal();
+
+  }catch(e){
+    if(e.message.includes("Email not confirmed")){
+      alert("📧 Ton email n’est pas encore validé.\n➡️ Vérifie tes mails Outlook.");
+    }else{
+      alert("❌ " + e.message);
+    }
+  }
 }
 
 qs("btnLogout").onclick=()=>sb.auth.signOut();
@@ -460,5 +564,6 @@ window.openPage = path =>{
 
 </body>
 </html>
+
 
 
