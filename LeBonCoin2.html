@@ -7,74 +7,155 @@
 <style>
 body{
   margin:0;
-  font-family:"Segoe UI",Arial,sans-serif;
-  background:linear-gradient(180deg,#1b2340,#11162a);
-  color:#f0f0f0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#eef1f5;
+  color:#222
 }
-h1{text-align:center;padding:30px;font-size:2.2em}
-.container{max-width:1000px;margin:auto;padding:20px}
-.block{
-  background:rgba(255,255,255,0.06);
-  border-radius:16px;
-  padding:25px;
-  margin-bottom:25px;
+header{
+  background:#1b2340;
+  color:#ffd76a;
+  padding:18px;
+  text-align:center;
+  font-size:1.9em;
+  font-weight:bold
 }
+.container{max-width:1100px;margin:auto;padding:20px}
 .btn{
-  background:#ffd76a;color:#000;border:none;
-  padding:10px 18px;border-radius:10px;
-  font-weight:bold;cursor:pointer
+  background:#ffd76a;
+  border:none;
+  padding:8px 14px;
+  font-weight:bold;
+  cursor:pointer;
+  border-radius:6px
 }
 .btn.secondary{background:#2b3150;color:white}
-.btn.danger{background:#ff6b6b;color:black}
-input,select,textarea{
-  width:100%;margin:6px 0;padding:10px;
-  border-radius:8px;border:none;
-  background:#2b3150;color:white
+.btn.danger{background:#d9534f;color:white}
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px
 }
 .card{
-  background:#222a4a;border-radius:14px;
-  padding:15px;margin-bottom:15px
+  background:white;
+  border-radius:8px;
+  padding:15px;
+  margin-bottom:18px;
+  display:flex;
+  gap:15px;
+  box-shadow:0 2px 5px rgba(0,0,0,.1)
 }
-.price{color:#7dffb3;font-weight:bold}
-.slider img{
-  width:100%;border-radius:10px;margin-bottom:8px
+.card img{
+  width:180px;
+  height:130px;
+  object-fit:cover;
+  border-radius:6px;
+  cursor:pointer
 }
+.card-content{flex:1}
+.price{
+  color:#1b2340;
+  font-weight:bold;
+  font-size:1.2em
+}
+.actions{margin-top:10px;display:flex;gap:8px}
+
 .modal{
   position:fixed;inset:0;
-  background:rgba(0,0,0,0.7);
-  display:none;align-items:center;justify-content:center
+  background:rgba(0,0,0,.7);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10
 }
 .modal-content{
-  background:#1f2545;border-radius:16px;
-  padding:25px;width:420px
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  width:420px
 }
-.actions{
-  margin-top:10px;
+input,select,textarea{
+  width:100%;
+  padding:8px;
+  margin:6px 0
+}
+.gallery-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:20
+}
+.gallery{
+  background:#111;
+  padding:10px;
+  border-radius:10px;
+  max-width:90%;
+  max-height:90%
+}
+.gallery img{
+  max-width:80vw;
+  max-height:70vh;
+  display:block;
+  margin:auto
+}
+.thumbs{
   display:flex;
-  gap:10px
+  gap:6px;
+  margin-top:8px;
+  justify-content:center
 }
+.thumbs img{
+  width:50px;
+  height:40px;
+  object-fit:cover;
+  cursor:pointer;
+  opacity:.7
+}
+.thumbs img.active{opacity:1;border:2px solid #ffd76a}
+.close{
+  position:absolute;
+  top:20px;right:30px;
+  color:white;
+  font-size:28px;
+  cursor:pointer
+}
+.arrow{
+  position:absolute;
+  top:50%;
+  font-size:40px;
+  color:white;
+  cursor:pointer;
+  user-select:none
+}
+.arrow.left{left:20px}
+.arrow.right{right:20px}
 </style>
 </head>
 
 <body>
 
-<h1>Blablac'Arts — Le bon Coin²</h1>
+<header>Blablac'Arts — Le bon Coin²</header>
 
 <div class="container">
 
-<div class="block">
+<div class="topbar">
   <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
+  <div>
+    <button class="btn secondary" onclick="adminLogin()">Admin</button>
+    <button class="btn danger" onclick="logout()">Déconnexion</button>
+  </div>
 </div>
 
-<div class="block">
-  <div id="ads">Chargement...</div>
-</div>
+<div id="ads">Chargement...</div>
 
 </div>
 
+<!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content">
-<h2 id="modalTitle">Nouvelle annonce</h2>
+<h3 id="modalTitle">Nouvelle annonce</h3>
 
 <select id="type" onchange="updateFields()">
   <option value="kgibs">🏠 Kgib’s</option>
@@ -97,22 +178,42 @@ input,select,textarea{
 </div>
 </div>
 
+<!-- GALLERY -->
+<div class="gallery-overlay" id="gallery">
+<div class="close" onclick="closeGallery()">✕</div>
+<div class="arrow left" onclick="prevImg()">‹</div>
+<div class="arrow right" onclick="nextImg()">›</div>
+<div class="gallery">
+<img id="galleryImg">
+<div class="thumbs" id="thumbs"></div>
+</div>
+</div>
+
 <script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const sb = createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
-);
+  "TON_ANON_KEY_ICI"
+)
 
-let user=null
-let editId=null
+let user=null, editId=null, isAdmin=false
+let galleryImgs=[], galleryIndex=0
 const $=id=>document.getElementById(id)
 
-window.openModal=()=>{
-  resetModal()
-  $("modal").style.display="flex"
+const adminPassword="Error404trads"
+
+window.adminLogin=()=>{
+  const p=prompt("Mot de passe admin")
+  if(p===adminPassword){isAdmin=true;alert("Mode admin activé");loadAds()}
 }
+
+window.logout=async()=>{
+  await sb.auth.signOut()
+  location.reload()
+}
+
+window.openModal=()=>{$("modal").style.display="flex";resetModal()}
 window.closeModal=()=> $("modal").style.display="none"
 
 function resetModal(){
@@ -126,8 +227,7 @@ function resetModal(){
 }
 
 window.updateFields=()=>{
-  const t=$("type").value
-  $("dynamicFields").innerHTML = t==="kgibs" ? `
+  $("dynamicFields").innerHTML = $("type").value==="kgibs" ? `
     <input id="price" type="number" placeholder="Prix € *">
     <input id="surface" type="number" placeholder="Surface m² *">
     <input id="rooms" type="number" placeholder="Pièces *">
@@ -139,110 +239,105 @@ window.updateFields=()=>{
 }
 
 window.publish=async()=>{
-  try{
-    const type=$("type").value
-    if(!$("title").value) return alert("Titre obligatoire")
-    if(!Number($("price")?.value)) return alert("Prix obligatoire")
+  if(!$("title").value) return alert("Titre obligatoire")
+  if(!Number($("price")?.value)) return alert("Prix obligatoire")
 
-    if(type==="kgibs"){
-      if(!$("surface").value||!$("rooms").value||!$("location").value)
-        return alert("Champs Kgib’s obligatoires")
-    }else{
-      if(!$("state").value) return alert("État obligatoire")
-    }
-
-    const urls=[]
-    for(const file of $("images").files){
-      const path=`${user.id}/${Date.now()}-${file.name}`
-      const { error } = await sb.storage.from("ads-images").upload(
-        path,
-        file,
-        {
-          contentType: file.type || "image/png",
-          upsert: false
-        }
-      )
-      if(error) return alert(error.message)
-      urls.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl)
-    }
-
-    const payload={
-      owner:user.id,
-      type,
-      title:$("title").value,
-      description:$("description").value||null,
-      price:Number($("price").value),
-      surface:Number($("surface")?.value)||null,
-      rooms:Number($("rooms")?.value)||null,
-      state:$("state")?.value||null,
-      location:$("location")?.value||null,
-      images:urls.length?urls:undefined
-    }
-
-    editId
-      ? await sb.from("ads").update(payload).eq("id",editId)
-      : await sb.from("ads").insert(payload)
-
-    loadAds()
-    closeModal()
-  } finally {
-    resetModal()
+  const urls=[]
+  for(const file of $("images").files){
+    const path=`${user.id}/${Date.now()}-${file.name}`
+    const { error } = await sb.storage.from("ads-images").upload(path,file)
+    if(error) return alert(error.message)
+    urls.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl)
   }
+
+  const payload={
+    owner:user.id,
+    type:$("type").value,
+    title:$("title").value,
+    description:$("description").value||null,
+    price:Number($("price").value),
+    surface:Number($("surface")?.value)||null,
+    rooms:Number($("rooms")?.value)||null,
+    state:$("state")?.value||null,
+    location:$("location")?.value||null,
+    images:urls
+  }
+
+  editId
+    ? await sb.from("ads").update(payload).eq("id",editId)
+    : await sb.from("ads").insert(payload)
+
+  closeModal()
+  resetModal()
+  loadAds()
 }
 
 window.editAd=a=>{
   editId=a.id
-  $("modalTitle").innerText="Modifier annonce"
   $("modal").style.display="flex"
+  $("modalTitle").innerText="Modifier annonce"
   $("type").value=a.type
   updateFields()
   $("title").value=a.title
   $("description").value=a.description||""
   $("price").value=a.price||""
-  $("surface") && ($("surface").value=a.surface||"")
-  $("rooms") && ($("rooms").value=a.rooms||"")
-  $("location") && ($("location").value=a.location||"")
-  $("state") && ($("state").value=a.state||"")
+  $("surface")&&($("surface").value=a.surface||"")
+  $("rooms")&&($("rooms").value=a.rooms||"")
+  $("location")&&($("location").value=a.location||"")
+  $("state")&&($("state").value=a.state||"")
 }
 
 window.deleteAd=async id=>{
-  if(!confirm("Supprimer cette annonce ?")) return
+  if(!confirm("Supprimer cette annonce ?"))return
   await sb.from("ads").delete().eq("id",id)
   loadAds()
 }
 
+window.openGallery=(imgs,i)=>{
+  galleryImgs=imgs;galleryIndex=i
+  $("gallery").style.display="flex"
+  renderGallery()
+}
+window.closeGallery=()=> $("gallery").style.display="none"
+window.prevImg=()=>{galleryIndex=(galleryIndex-1+galleryImgs.length)%galleryImgs.length;renderGallery()}
+window.nextImg=()=>{galleryIndex=(galleryIndex+1)%galleryImgs.length;renderGallery()}
+function renderGallery(){
+  $("galleryImg").src=galleryImgs[galleryIndex]
+  $("thumbs").innerHTML=""
+  galleryImgs.forEach((i,idx)=>{
+    $("thumbs").innerHTML+=`<img src="${i}" class="${idx===galleryIndex?"active":""}" onclick="openGallery(${JSON.stringify(galleryImgs)},${idx})">`
+  })
+}
+
 window.loadAds=async()=>{
   const {data}=await sb.from("ads").select("*").order("created_at",{ascending:false})
-  $("ads").innerHTML=data?.length?"":"Aucune annonce."
-  data?.forEach(a=>{
+  $("ads").innerHTML=""
+  data.forEach(a=>{
     $("ads").innerHTML+=`
     <div class="card">
-      <b>${a.title}</b><br>
-      <span class="price">${a.price} €</span>
-      <div class="slider">
-        ${(a.images||[]).map(i=>`<img src="${encodeURI(i)}">`).join("")}
+      ${a.images?.[0]?`<img src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)},0)'>`:""}
+      <div class="card-content">
+        <b>${a.title}</b><br>
+        <span class="price">${a.price} €</span><br>
+        ${a.description||""}
+        ${(a.owner===user.id||isAdmin)?`
+        <div class="actions">
+          <button class="btn secondary" onclick='editAd(${JSON.stringify(a)})'>Modifier</button>
+          <button class="btn danger" onclick="deleteAd(${a.id})">Supprimer</button>
+        </div>`:""}
       </div>
-      ${a.description||""}
-      ${a.owner===user.id?`
-      <div class="actions">
-        <button class="btn secondary" onclick='editAd(${JSON.stringify(a)})'>Modifier</button>
-        <button class="btn danger" onclick="deleteAd(${a.id})">Supprimer</button>
-      </div>`:""}
     </div>`
   })
 }
 
 const init=async()=>{
   user=(await sb.auth.getUser()).data.user
-  if(!user){
-    document.body.innerHTML="<h2 style='text-align:center;margin-top:80px'>Connexion requise</h2>"
-    return
-  }
+  if(!user){document.body.innerHTML="<h2 style='text-align:center;margin-top:80px'>Connexion requise</h2>";return}
   updateFields()
   loadAds()
 }
-
 init()
 </script>
+
 </body>
 </html>
