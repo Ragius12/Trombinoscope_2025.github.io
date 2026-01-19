@@ -3,15 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Le bon Coin² – Blablac'Arts</title>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  window.supabase = createClient(
-    "https://wwjsqkktwxciyvzoisyz.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
-  );
-</script>
-  
+
 <style>
 body{
   margin:0;
@@ -41,9 +33,7 @@ h1{
   box-shadow: inset 0 0 40px rgba(255,255,255,0.03);
 }
 
-.block h2{
-  margin-top:0;
-}
+.block h2{ margin-top:0; }
 
 .btn{
   background:#ffd76a;
@@ -77,10 +67,6 @@ input,select,textarea{
   margin-bottom:15px;
 }
 
-.card.mine{
-  outline:2px solid #ffd76a;
-}
-
 .price{
   color:#7dffb3;
   font-weight:bold;
@@ -111,12 +97,10 @@ input,select,textarea{
 
 <div class="container">
 
-  <!-- ACTION -->
   <div class="block" style="text-align:center">
     <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
   </div>
 
-  <!-- FILTRE -->
   <div class="block">
     <h2>Rechercher une annonce</h2>
 
@@ -133,13 +117,11 @@ input,select,textarea{
     <input id="search" placeholder="Recherche libre..." oninput="loadAds()">
   </div>
 
-  <!-- LISTE -->
   <div class="block">
-    <div id="ads">Aucune annonce pour le moment.</div>
+    <div id="ads">Chargement...</div>
   </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <h2>Nouvelle annonce</h2>
@@ -165,53 +147,28 @@ input,select,textarea{
   </div>
 </div>
 
-<script>
-/* ============================
-   SUPABASE CLIENT (SAFE)
-============================ */
-const sb = window.sb || supabase.createClient(
-  "https://TON-PROJET.supabase.co",
-  "PUBLIC-ANON-KEY"
+<!-- =========================
+     SCRIPT UNIQUE (ESM)
+========================= -->
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+
+/* SUPABASE */
+const sb = createClient(
+  "https://wwjsqkktwxciyvzoisyz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 )
-window.sb = sb
 
 let user = null
 
-/* ============================
-   INIT
-============================ */
-async function init(){
-  const { data } = await sb.auth.getUser()
-  user = data.user
-  loadAds()
+/* GLOBAL FUNCTIONS */
+window.openModal = () => modal.style.display = "flex"
+window.closeModal = () => modal.style.display = "none"
 
-  sb.channel('ads')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'ads'
-    }, loadAds)
-    .subscribe()
-}
-
-/* ============================
-   MODAL (GLOBAL)
-============================ */
-window.openModal = function(){
-  document.getElementById('modal').style.display = 'flex'
-}
-
-window.closeModal = function(){
-  document.getElementById('modal').style.display = 'none'
-}
-
-/* ============================
-   PUBLISH
-============================ */
-window.publish = async function(){
+window.publish = async () => {
   if(!user) return alert("Connexion requise")
 
-  await sb.from('ads').insert({
+  await sb.from("ads").insert({
     owner: user.id,
     type: type.value,
     title: title.value,
@@ -225,39 +182,40 @@ window.publish = async function(){
   closeModal()
 }
 
-/* ============================
-   LOAD ADS
-============================ */
-async function loadAds(){
-  let q = sb.from('ads')
-    .select('*')
-    .order('created_at', { ascending:false })
+window.loadAds = async () => {
+  let q = sb.from("ads").select("*").order("created_at",{ascending:false})
 
-  if(filterType.value)
-    q = q.eq('type', filterType.value)
-
-  if(search.value)
-    q = q.ilike('title', `%${search.value}%`)
+  if(filterType.value) q = q.eq("type", filterType.value)
+  if(search.value) q = q.ilike("title", `%${search.value}%`)
 
   const { data } = await q
-  ads.innerHTML = ''
+  ads.innerHTML = data.length ? "" : "Aucune annonce."
 
   data.forEach(a=>{
     ads.innerHTML += `
       <div class="card">
         <b>${a.title}</b><br>
-        💰 ${a.price} €<br>
-        ${a.description || ''}<br>
-        ${a.location || ''}
+        <span class="price">${a.price} €</span><br>
+        ${a.description || ""}<br>
+        ${a.location || ""}
       </div>
     `
   })
 }
 
+/* INIT */
+const init = async () => {
+  const { data } = await sb.auth.getUser()
+  user = data.user
+  loadAds()
+
+  sb.channel("ads")
+    .on("postgres_changes",{event:"*",schema:"public",table:"ads"},loadAds)
+    .subscribe()
+}
+
 init()
 </script>
 
-
 </body>
 </html>
-
