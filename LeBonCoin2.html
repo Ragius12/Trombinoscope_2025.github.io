@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Le bon Coin² – Blablac'Arts</title>
+<title>Blablac'Arts — Le bon Coin²</title>
 
 <style>
 body{
@@ -12,7 +12,7 @@ body{
   color:#222
 }
 header{
-  background:#1b2340;
+  background:linear-gradient(135deg,#1b2340,#2b3150);
   color:#ffd76a;
   padding:18px;
   text-align:center;
@@ -26,43 +26,62 @@ header{
   padding:8px 14px;
   font-weight:bold;
   cursor:pointer;
-  border-radius:6px
+  border-radius:6px;
+  transition:.2s
 }
+.btn:hover{filter:brightness(.95)}
 .btn.secondary{background:#2b3150;color:white}
 .btn.danger{background:#d9534f;color:white}
+
 .topbar{
   display:flex;
   justify-content:space-between;
   align-items:center;
   margin-bottom:20px
 }
+
 .card{
   background:white;
-  border-radius:8px;
+  border-radius:10px;
   padding:15px;
   margin-bottom:18px;
   display:flex;
-  gap:15px;
-  box-shadow:0 2px 5px rgba(0,0,0,.1)
+  justify-content:space-between;
+  gap:18px;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  transition:.2s
 }
-.card img{
-  width:180px;
-  height:130px;
+.card:hover{transform:translateY(-2px)}
+
+.card-left{flex:1}
+.card-right img{
+  width:190px;
+  height:140px;
   object-fit:cover;
-  border-radius:6px;
+  border-radius:8px;
   cursor:pointer
 }
-.card-content{flex:1}
+
 .price{
   color:#1b2340;
   font-weight:bold;
-  font-size:1.2em
+  font-size:1.25em
 }
+.contact a{
+  display:inline-block;
+  margin-top:6px;
+  color:#2b3150;
+  font-weight:bold;
+  text-decoration:none
+}
+.contact a:hover{text-decoration:underline}
+
 .actions{
   margin-top:10px;
   display:flex;
   gap:8px
 }
+
 .modal{
   position:fixed;
   inset:0;
@@ -75,7 +94,7 @@ header{
 .modal-content{
   background:white;
   padding:20px;
-  border-radius:10px;
+  border-radius:12px;
   width:420px
 }
 input,select,textarea{
@@ -83,6 +102,7 @@ input,select,textarea{
   padding:8px;
   margin:6px 0
 }
+
 .gallery-overlay{
   position:fixed;
   inset:0;
@@ -95,9 +115,7 @@ input,select,textarea{
 .gallery{
   background:#111;
   padding:10px;
-  border-radius:10px;
-  max-width:90%;
-  max-height:90%
+  border-radius:10px
 }
 .gallery img{
   max-width:80vw;
@@ -148,15 +166,12 @@ input,select,textarea{
 <header>Blablac'Arts — Le bon Coin²</header>
 
 <div class="container">
-
-<div class="topbar">
-  <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
-  <div>
+  <div class="topbar">
+    <button class="btn" onclick="openModal()">➕ Publier une annonce</button>
     <button class="btn secondary" onclick="adminLogin()">Admin</button>
   </div>
-</div>
 
-<div id="ads">Chargement...</div>
+  <div id="ads">Chargement...</div>
 </div>
 
 <!-- MODAL -->
@@ -176,6 +191,8 @@ input,select,textarea{
     <input id="title" placeholder="Titre *">
     <textarea id="description" placeholder="Description"></textarea>
 
+    <input id="contact" placeholder="Contact (email ou téléphone) *">
+
     <div id="dynamicFields"></div>
 
     <input type="file" id="images" multiple accept="image/*">
@@ -190,7 +207,6 @@ input,select,textarea{
   <div class="close" onclick="closeGallery()">✕</div>
   <div class="arrow left" onclick="prevImg()">‹</div>
   <div class="arrow right" onclick="nextImg()">›</div>
-
   <div class="gallery">
     <img id="galleryImg">
     <div class="thumbs" id="thumbs"></div>
@@ -200,23 +216,17 @@ input,select,textarea{
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-window.supabase = createClient(
+const sb = createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
-
-/* 🔧 CORRECTION UNIQUE */
-const sb = window.supabase
 
 let isAdmin=false
 let editId=null
 let galleryImgs=[]
 let galleryIndex=0
-
-const $=id=>document.getElementById(id)
 const adminPassword="Error404trads"
-
-/* --- LE RESTE EST STRICTEMENT IDENTIQUE --- */
+const $=id=>document.getElementById(id)
 
 window.adminLogin=()=>{
   const p=prompt("Mot de passe admin")
@@ -227,49 +237,36 @@ window.adminLogin=()=>{
   }
 }
 
-window.openModal=()=>{
-  $("modal").style.display="flex"
-  resetModal()
-}
-
+window.openModal=()=>{$("modal").style.display="flex";resetModal()}
 window.closeModal=()=> $("modal").style.display="none"
 
 function resetModal(){
   editId=null
   $("modalTitle").innerText="Nouvelle annonce"
-  $("title").value=""
-  $("description").value=""
-  $("images").value=""
+  ["title","description","contact","images"].forEach(i=>$(i).value="")
   $("type").value="kgibs"
   updateFields()
 }
 
 window.updateFields=()=>{
   $("dynamicFields").innerHTML =
-    $("type").value==="kgibs"
-    ? `
-      <input id="price" type="number" placeholder="Prix € *">
-      <input id="surface" type="number" placeholder="Surface m² *">
-      <input id="rooms" type="number" placeholder="Pièces *">
-      <input id="location" placeholder="Localisation *">
-    `
-    : `
-      <input id="price" type="number" placeholder="Prix € *">
-      <input id="state" placeholder="État *">
-    `
+    `<input id="price" type="number" placeholder="Prix € *">` +
+    ($("type").value==="kgibs"
+      ? `<input id="surface" type="number" placeholder="Surface m² *">
+         <input id="rooms" type="number" placeholder="Pièces *">
+         <input id="location" placeholder="Localisation *">`
+      : `<input id="state" placeholder="État *">`)
 }
 
 window.publish=async()=>{
-  if(!$("title").value) return alert("Titre obligatoire")
-  if(!Number($("price")?.value)) return alert("Prix obligatoire")
+  if(!$("title").value||!$("contact").value||!Number($("price").value))
+    return alert("Champs obligatoires manquants")
 
   const urls=[]
-
-  for(const file of $("images").files){
-    const path=`public/${Date.now()}-${file.name}`
-    const { error } = await sb.storage.from("ads-images").upload(path,file)
-    if(error) return alert(error.message)
-    urls.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl)
+  for(const f of $("images").files){
+    const p=`public/${Date.now()}-${f.name}`
+    await sb.storage.from("ads-images").upload(p,f)
+    urls.push(sb.storage.from("ads-images").getPublicUrl(p).data.publicUrl)
   }
 
   const payload={
@@ -277,6 +274,7 @@ window.publish=async()=>{
     title:$("title").value,
     description:$("description").value||null,
     price:Number($("price").value),
+    contact:$("contact").value,
     surface:Number($("surface")?.value)||null,
     rooms:Number($("rooms")?.value)||null,
     state:$("state")?.value||null,
@@ -288,65 +286,62 @@ window.publish=async()=>{
     ? await sb.from("ads").update(payload).eq("id",editId)
     : await sb.from("ads").insert(payload)
 
-  closeModal()
-  loadAds()
+  closeModal();loadAds()
 }
 
 window.loadAds=async()=>{
-  const { data, error } = await sb
-    .from("ads")
-    .select("*")
-    .order("created_at",{ascending:false})
-
+  const {data}=await sb.from("ads").select("*").order("created_at",{ascending:false})
   $("ads").innerHTML=""
-  if(error || !data) return
+  data?.forEach(a=>{
+    const contactLink = a.contact.includes("@")
+      ? `mailto:${a.contact}`
+      : `https://wa.me/${a.contact.replace(/\D/g,"")}`
 
-  data.forEach(a=>{
     $("ads").innerHTML+=`
     <div class="card">
-      ${a.images?.[0]?`<img src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)},0)'>`:""}
-      <div class="card-content">
+      <div class="card-left">
         <b>${a.title}</b><br>
         <span class="price">${a.price} €</span><br>
         ${a.description||""}
+        <div class="contact">
+          <a href="${contactLink}" target="_blank">📞 ${a.contact}</a>
+        </div>
         ${isAdmin?`
         <div class="actions">
+          <button class="btn secondary" onclick="editId=${a.id};openModal()">Modifier</button>
           <button class="btn danger" onclick="deleteAd(${a.id})">Supprimer</button>
         </div>`:""}
       </div>
+      ${a.images?.[0]?`<div class="card-right">
+        <img src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)},0)'>
+      </div>`:""}
     </div>`
   })
 }
 
 window.deleteAd=async id=>{
-  if(!confirm("Supprimer cette annonce ?")) return
-  await sb.from("ads").delete().eq("id",id)
-  loadAds()
+  if(confirm("Supprimer cette annonce ?")){
+    await sb.from("ads").delete().eq("id",id)
+    loadAds()
+  }
 }
 
 window.openGallery=(imgs,i)=>{
-  galleryImgs=imgs
-  galleryIndex=i
-  $("gallery").style.display="flex"
-  renderGallery()
+  galleryImgs=imgs;galleryIndex=i
+  $("gallery").style.display="flex";renderGallery()
 }
-
 window.closeGallery=()=> $("gallery").style.display="none"
 window.prevImg=()=>{galleryIndex=(galleryIndex-1+galleryImgs.length)%galleryImgs.length;renderGallery()}
 window.nextImg=()=>{galleryIndex=(galleryIndex+1)%galleryImgs.length;renderGallery()}
-
 function renderGallery(){
   $("galleryImg").src=galleryImgs[galleryIndex]
   $("thumbs").innerHTML=""
   galleryImgs.forEach((i,idx)=>{
-    $("thumbs").innerHTML+=`
-      <img src="${i}" class="${idx===galleryIndex?"active":""}" onclick="openGallery(${JSON.stringify(galleryImgs)},${idx})">
-    `
+    $("thumbs").innerHTML+=`<img src="${i}" class="${idx===galleryIndex?"active":""}" onclick="openGallery(${JSON.stringify(galleryImgs)},${idx})">`
   })
 }
 
-updateFields()
-loadAds()
+updateFields();loadAds()
 </script>
 
 </body>
