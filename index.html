@@ -563,10 +563,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	);
 	
   window.sb = sb; // IMPORTANT
-
-  // ✅ ICI seulement
-  await sb.auth.getSession();
-
+  let currentSession = null;
   const qs = id => document.getElementById(id);
 
   // Restauration de session au chargement
@@ -612,42 +609,40 @@ function updateUI(session) {
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
+  currentSession = session;
   updateUI(session);
 
   if (!session) return;
 
-  // Email dans la popup
   qs("profileEmail").innerText = session.user.email;
 
-  // 1️⃣ Charger le profil depuis Supabase
   const { data: profile, error } = await sb
     .from("profiles")
     .select("*")
     .eq("id", session.user.id)
     .maybeSingle();
 
-  if (error) {
-    console.error("Erreur chargement profil:", error);
+  if (error && error.code !== "PGRST116") {
+    console.error("Erreur chargement profil :", error);
     return;
   }
 
-  // 2️⃣ Si le profil existe
-  if (profile) {
-    cacheProfile(profile);
-    fillProfileForm(profile);
-
-    if (profile.nom && profile.prenom && profile.promo) {
-      updateProfileBadge(profile);
-    }
+  if (!profile) {
+    await sb.from("profiles").insert({ id: session.user.id });
+    qs("profileModal").style.display = "flex";
+    return;
   }
 
-  // 3️⃣ Forcer la complétion au SIGNED_IN
-  if (event === "SIGNED_IN") {
-    if (!profile || !(profile.nom && profile.prenom && profile.promo)) {
-      qs("profileModal").style.display = "flex";
-    }
+  cacheProfile(profile);
+  fillProfileForm(profile);
+
+  if (profile.nom && profile.prenom && profile.promo) {
+    updateProfileBadge(profile);
+  } else {
+    qs("profileModal").style.display = "flex";
   }
 });
+
 
 
 
@@ -697,11 +692,8 @@ function fillProfileForm(profile) {
    AUTH ACTIONS
 ========================= */
 
-async function login() {
-  const email = qs("authEmail").value;
-  const password = qs("authPassword").value;
-
-  const { data, error } = await sb.auth.signInWithPassword({
+async function login(email, password) {
+  const { error } = await sb.auth.signInWithPassword({
     email,
     password
   });
@@ -711,12 +703,9 @@ async function login() {
     return;
   }
 
-  if (!data.user.email_confirmed_at) {
-    showToast("Merci de confirmer ton email 📧", "warn");
-  }
-
-  closeAuthModal();
+  closeAuth();
 }
+
 
 
 async function signup() {
@@ -759,21 +748,22 @@ qs("btnLogout").onclick = async () => {
 };
 
 qs("btnProfile").onclick = async () => {
-  const cached = getCachedProfile();
-  if (cached) fillProfileForm(cached);
+  if (!currentSession) return;
 
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return;
-
-  const { data } = await sb
+  const { data, error } = await sb
     .from("profiles")
     .select("*")
-    .eq("id", session.user.id)
+    .eq("id", currentSession.user.id)
     .maybeSingle();
 
+  if (error) {
+    console.error(error);
+    return;
+  }
+
   if (data) {
-    fillProfileForm(data);
     cacheProfile(data);
+    fillProfileForm(data);
   }
 
   qs("profileModal").style.display = "flex";
@@ -830,14 +820,12 @@ window.saveProfile = async () => {
 const blockedPages = ["Galerie.html", "LeBonCoin2.html"];
 
 window.openPage = async page => {
-  const { data: { session } } = await sb.auth.getSession();
-
   if (!blockedPages.includes(page)) {
     window.location.href = page;
     return;
   }
 
-  if (!session) {
+  if (!currentSession) {
     openAuth("login");
     return;
   }
@@ -851,23 +839,27 @@ window.openPage = async page => {
   window.location.href = page;
 };
 
+
 window.openPage = openPage;
 
 
 async function hasCompleteProfile() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return false;
+  if (!currentSession) return false;
+
+  const cached = getCachedProfile();
+  if (cached?.nom && cached?.prenom && cached?.promo) return true;
 
   const { data, error } = await sb
     .from("profiles")
     .select("nom, prenom, promo")
-    .eq("id", session.user.id)
-    .maybeSingle()
+    .eq("id", currentSession.user.id)
+    .maybeSingle();
 
-  if (error || !data) return false;
+  if (error) return false;
 
-  return Boolean(data.nom && data.prenom && data.promo);
+  return Boolean(data?.nom && data?.prenom && data?.promo);
 }
+
 
 	
 function showToast(msg, type="success"){
@@ -883,6 +875,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
