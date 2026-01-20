@@ -473,6 +473,9 @@ window.loadAds=async()=>{
     const fav = await isFav(a.id);
     const seen = await isSeen(a.id);
 
+    if (a.images?.length) {
+      ADS_IMAGES[a.id] = a.images;
+    }
     $("ads").innerHTML+=`
     <div class="card">
       <div>
@@ -500,12 +503,9 @@ window.loadAds=async()=>{
         </div>
       </div>
       ${a.images?.[0]
-        ? (() => {
-            ADS_IMAGES[a.id] = a.images;
-            return `<img src="${a.images[0]}" onclick="openGalleryById(${a.id})">`;
-          })()
-        : ""
-      }
+          ? `<img src="${a.images[0]}" onclick="openGalleryById(${a.id})">`
+          : ""
+        }
     </div>`;
   }
 };
@@ -563,5 +563,6 @@ loadAds();
 
 </body>
 </html>
+
 
 
