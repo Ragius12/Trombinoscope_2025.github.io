@@ -567,10 +567,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   const qs = id => document.getElementById(id);
 
 (async () => {
-  const { data, error } = await sb.auth.getSession();
-  if (data?.session) {
-    currentSession = data.session;
-    updateUI(data.session);
+  const { data } = await sb.auth.getSession();
+
+  if (!data?.session) return;
+
+  currentSession = data.session;
+  updateUI(currentSession);
+
+  // 🔥 CHARGEMENT DU PROFIL AU REFRESH
+  const cached = getCachedProfile();
+  if (cached) {
+    fillProfileForm(cached);
+    updateProfileBadge(cached);
+  } else {
+    const { data: profile } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("id", currentSession.user.id)
+      .maybeSingle();
+
+    if (profile) {
+      cacheProfile(profile);
+      fillProfileForm(profile);
+      if (profile.nom && profile.prenom && profile.promo) {
+        updateProfileBadge(profile);
+      }
+    }
   }
 })();
 	
@@ -733,10 +755,16 @@ qs("btnSignup").onclick = () => openAuth("signup");
 
 qs("btnLogout").onclick = async () => {
   await sb.auth.signOut();
+  localStorage.removeItem("profile_cache");
+  qs("avatar").style.display = "none";
+  qs("profileBadge").style.display = "none";
 };
 
 qs("btnProfile").onclick = async () => {
-  if (!currentSession) return;
+  if (!currentSession) {
+	  showToast("Session en cours de chargement…", "warn");
+	  return;
+	}
 
   const { data, error } = await sb
     .from("profiles")
@@ -870,6 +898,7 @@ window.saveProfile = saveProfile;
 
 </body>
 </html>
+
 
 
 
