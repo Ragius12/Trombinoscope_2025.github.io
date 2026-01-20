@@ -283,6 +283,8 @@ const $ = id => document.getElementById(id);
 let user=null,currentTab="all";
 let galleryImgs=[],galleryIndex=0;
 
+let ADS_IMAGES = {};
+  
 async function initAuth(){
   const { data } = await sb.auth.getSession();
   user = data.session?.user || null;
@@ -497,11 +499,23 @@ window.loadAds=async()=>{
             </span>
         </div>
       </div>
-      ${a.images?.[0]?`<img src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)})'>`:""}
+      ${a.images?.[0]
+        ? (() => {
+            ADS_IMAGES[a.id] = a.images;
+            return `<img src="${a.images[0]}" onclick="openGalleryById(${a.id})">`;
+          })()
+        : ""
+      }
     </div>`;
   }
 };
 
+window.openGalleryById = (adId) => {
+  const imgs = ADS_IMAGES[adId];
+  if (!imgs || !imgs.length) return;
+  openGallery(imgs);
+};
+  
 window.openGallery = (imgs) => {
   galleryImgs = imgs;
   galleryIndex = 0;
@@ -549,4 +563,5 @@ loadAds();
 
 </body>
 </html>
+
 
