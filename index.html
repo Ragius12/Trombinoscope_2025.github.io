@@ -566,30 +566,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let currentSession = null;
   const qs = id => document.getElementById(id);
 
-  // Restauration de session au chargement
-  (async () => {
-    const { data: { session } } = await sb.auth.getSession();
-    updateUI(session);
-
-    if (session) {
-      const { data } = await sb
-        .from("profiles")
-        .select("nom, prenom, promo")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-	if (!data) {
-	  await sb.from("profiles").insert({
-	    id: session.user.id,
-	  });
-	}
-
-     if (data?.nom && data?.prenom && data?.promo) {
-        updateProfileBadge(data);
-      }
-    }
-  })();
-
 function updateUI(session) {
   if (!session) {
     qs("btnSignup").style.display = "inline";
@@ -703,7 +679,7 @@ async function login(email, password) {
     return;
   }
 
-  closeAuth();
+  closeAuthModal();
 }
 
 
@@ -782,11 +758,12 @@ function updateProfileBadge(profile){
 ========================= */
 
 window.saveProfile = async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return showToast("Non connecté", "error");
+  if (!currentSession) {
+    return showToast("Non connecté", "error");
+  }
 
   const payload = {
-    id: session.user.id,
+    id: currentSession.user.id,
     nom: qs("pNom").value.trim(),
     prenom: qs("pPrenom").value.trim(),
     surns: qs("pSurns").value.trim(),
@@ -806,12 +783,12 @@ window.saveProfile = async () => {
     console.error(error);
     return showToast("Erreur lors de la sauvegarde", "error");
   }
+
   closeProfileModal();
   updateProfileBadge(payload);
   cacheProfile(payload);
   showToast("Profil sauvegardé ✨", "success");
 };
-;
 
 /* =========================
    NAVIGATION
@@ -875,6 +852,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
