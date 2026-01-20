@@ -433,7 +433,7 @@ window.toggleFav = async (adId) => {
 
   const { data, error } = await sb
     .from("ads_favorites")
-    .select("id")
+    .select("ad_id")
     .eq("user_id", user.id)
     .eq("ad_id", adId)
     .limit(1);
@@ -593,6 +593,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
