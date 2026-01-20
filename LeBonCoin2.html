@@ -5,16 +5,13 @@
 <title>Blablac'Arts — Le Bon Coin²</title>
 
 <style>
-/* ================== DESIGN SYSTEM ================== */
 :root{
   --main:#1b2340;
   --accent:#ffd76a;
   --bg:#eef1f5;
-  --card:#ffffff;
-  --text:#1e1e1e;
+  --card:#fff;
   --shadow:0 10px 30px rgba(0,0,0,.12);
   --soft:0 4px 12px rgba(0,0,0,.08);
-  --radius:18px;
 }
 
 *{box-sizing:border-box}
@@ -22,10 +19,8 @@ body{
   margin:0;
   font-family:Inter,Arial,sans-serif;
   background:var(--bg);
-  color:var(--text);
 }
 
-/* ================== HEADER ================== */
 header{
   background:linear-gradient(135deg,var(--main),#2b3150);
   color:var(--accent);
@@ -33,64 +28,36 @@ header{
   text-align:center;
   font-size:1.9em;
   font-weight:900;
-  box-shadow:var(--shadow);
 }
 
-/* ================== LAYOUT ================== */
-.container{
-  max-width:1200px;
-  margin:auto;
-  padding:20px;
-}
+.container{max-width:1200px;margin:auto;padding:20px}
 
-.tabs{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:20px;
-}
-.tabs button{
-  border-radius:999px;
-}
-.tabs button.active{
-  background:var(--main);
-  color:white;
-}
+/* ---------- TABS ---------- */
+.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.tabs button.active{background:var(--main);color:#fff}
 
-/* ================== FILTERS ================== */
-.filters{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:20px;
-}
-select,input{
-  padding:8px 10px;
+/* ---------- FILTERS ---------- */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+select,input,textarea{
+  padding:8px;
   border-radius:10px;
   border:1px solid #ccc;
+  width:100%;
 }
 
-/* ================== CARD ================== */
+/* ---------- CARD ---------- */
 .card{
   background:var(--card);
-  border-radius:var(--radius);
+  border-radius:18px;
   padding:18px;
   display:grid;
   grid-template-columns:1fr 260px;
   gap:18px;
-  margin-bottom:22px;
+  margin-bottom:20px;
   box-shadow:var(--shadow);
-  transition:.35s;
-  animation:fade .35s ease;
+  transition:.3s;
 }
-.card:hover{
-  transform:translateY(-6px);
-}
-
-@keyframes fade{
-  from{opacity:0;transform:translateY(12px)}
-  to{opacity:1;transform:none}
-}
+.card:hover{transform:translateY(-5px)}
 
 .card img{
   width:100%;
@@ -100,24 +67,32 @@ select,input{
   cursor:pointer;
 }
 
+/* ---------- PRICE BADGE ---------- */
 .price{
-  font-size:1.6em;
+  display:inline-block;
+  background:repeating-linear-gradient(
+    45deg,
+    #ffd76a,
+    #ffd76a 10px,
+    #ffefad 10px,
+    #ffefad 20px
+  );
+  color:#1b2340;
   font-weight:900;
-  color:var(--main);
+  font-size:1.6em;
+  padding:6px 14px;
+  border-radius:999px;
+  margin-bottom:6px;
 }
+
+/* ---------- META ---------- */
 .meta{
   font-size:.85em;
-  opacity:.7;
+  opacity:.75;
+  margin-bottom:8px;
 }
 
-.actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-
-/* ================== BUTTONS ================== */
+/* ---------- BUTTONS ---------- */
 button{
   background:var(--accent);
   border:none;
@@ -125,69 +100,44 @@ button{
   border-radius:12px;
   font-weight:700;
   cursor:pointer;
-  transition:.25s;
 }
-button:hover{
-  transform:translateY(-2px);
-  box-shadow:var(--soft);
-}
-button.secondary{
-  background:#2b3150;
-  color:white;
-}
-button.icon{
-  padding:6px 10px;
-}
+button.secondary{background:#2b3150;color:#fff}
+button.icon{padding:6px 10px}
 
-/* ================== MODAL ================== */
+/* ---------- ACTIONS ---------- */
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* ---------- MODAL ---------- */
 .modal,.gallery{
-  position:fixed;
-  inset:0;
+  position:fixed;inset:0;
   background:rgba(0,0,0,.75);
   display:none;
   align-items:center;
   justify-content:center;
   z-index:50;
 }
-
 .modal-content{
-  background:white;
-  border-radius:18px;
+  background:#fff;
   padding:22px;
+  border-radius:18px;
   width:440px;
   max-height:90vh;
   overflow:auto;
 }
 
-/* ================== GALLERY ================== */
-.gallery-content{
-  position:relative;
-}
-.gallery img{
-  max-width:85vw;
-  max-height:85vh;
-  border-radius:18px;
-}
+/* ---------- GALLERY ---------- */
+.gallery img{max-width:85vw;max-height:85vh;border-radius:18px}
 .gallery-nav{
   position:absolute;
   top:50%;
   transform:translateY(-50%);
   font-size:42px;
-  color:white;
-  cursor:pointer;
-  user-select:none;
-}
-.gallery-nav.left{left:-70px}
-.gallery-nav.right{right:-70px}
-
-.close{
-  position:absolute;
-  top:20px;
-  right:30px;
-  font-size:30px;
-  color:white;
+  color:#fff;
   cursor:pointer;
 }
+.gallery-nav.left{left:40px}
+.gallery-nav.right{right:40px}
+.close{position:absolute;top:20px;right:30px;font-size:30px;color:#fff;cursor:pointer}
 </style>
 </head>
 
@@ -197,116 +147,97 @@ button.icon{
 
 <div class="container">
 
-<!-- ================== TABS ================== -->
 <div class="tabs">
   <button id="tab-all" class="active" onclick="setTab('all')">📢 Annonces</button>
   <button id="tab-fav" onclick="setTab('fav')">⭐ Favoris</button>
   <button id="tab-mine" onclick="setTab('mine')">📂 Mes annonces</button>
   <button onclick="openModal()">➕ Publier</button>
-  <button class="secondary" onclick="adminLogin()">Admin</button>
 </div>
 
-<!-- ================== FILTERS ================== -->
 <div class="filters">
-  <select id="filterType">
-    <option value="">Toutes catégories</option>
-  </select>
+  <select id="filterType"><option value="">Toutes catégories</option></select>
   <select id="filterSeen">
     <option value="">Toutes</option>
     <option value="unseen">Uniquement non vues</option>
-  </select>
-  <select id="filterSort" style="display:none">
-    <option value="date">Date</option>
-    <option value="price_asc">Prix ↑</option>
-    <option value="price_desc">Prix ↓</option>
-    <option value="views">Vues</option>
   </select>
 </div>
 
 <div id="ads">Chargement…</div>
 </div>
 
-<!-- ================== MODAL ================== -->
+<!-- MODAL -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <h3>Publier une annonce</h3>
-    <select id="type"></select>
+
+    <select id="type" onchange="updateForm()"></select>
+
     <input id="title" placeholder="Titre *">
-    <textarea id="description" placeholder="Description"></textarea>
+    <textarea id="description" placeholder="Description (facultatif)"></textarea>
+
+    <div id="kgibsFields" style="display:none">
+      <input id="location" placeholder="Localisation *">
+      <input id="places" type="number" placeholder="Nombre de places *">
+    </div>
+
+    <div id="otherFields" style="display:none">
+      <input id="state" placeholder="État *">
+    </div>
+
     <input id="price" type="number" placeholder="Prix € *">
-    <input id="contact" placeholder="WhatsApp *">
-    <input type="file" id="images" multiple accept="image/*">
-    <br><br>
+    <input id="contact" placeholder="Numéro WhatsApp *">
+
+    <input type="file" id="images" multiple accept="image/*"><br><br>
+
     <button onclick="publish()">Publier</button>
     <button class="secondary" onclick="closeModal()">Annuler</button>
   </div>
 </div>
 
-<!-- ================== GALLERY ================== -->
+<!-- GALLERY -->
 <div class="gallery" id="gallery">
   <span class="close" onclick="closeGallery()">✕</span>
-  <div class="gallery-content">
-    <span class="gallery-nav left" onclick="prevImg()">‹</span>
-    <img id="galleryImg">
-    <span class="gallery-nav right" onclick="nextImg()">›</span>
-  </div>
+  <span class="gallery-nav left" onclick="prevImg()">‹</span>
+  <img id="galleryImg">
+  <span class="gallery-nav right" onclick="nextImg()">›</span>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-  
-/* ================== CONFIG ================== */
-const SUPABASE_URL = "https://wwjsqkktwxciyvzoisyz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = createClient(
+  "https://wwjsqkktwxciyvzoisyz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
+);
+
 const $ = id => document.getElementById(id);
+let user=null,currentTab="all";
+let galleryImgs=[],galleryIndex=0;
 
-let user=null;
-let isAdmin=false;
-let currentTab="all";
-
-/* ================== AUTH ================== */
 sb.auth.getUser().then(r=>user=r.data.user);
 
-/* ================== CATEGORIES ================== */
 const CATS=[
-  ["kgibs","🏠 Kgib’s"],
-  ["objets","📦 Objets"],
-  ["tech","💻 Tech"],
-  ["services","🛠️ Services"],
-  ["art","🎨 Art"],
-  ["autre","✨ Autre"]
+ ["kgibs","🏠 Kgib’s"],
+ ["objets","📦 Objets"],
+ ["tech","💻 Tech"],
+ ["services","🛠️ Services"],
+ ["art","🎨 Art"],
+ ["autre","✨ Autre"]
 ];
 CATS.forEach(c=>{
   $("type").innerHTML+=`<option value="${c[0]}">${c[1]}</option>`;
   $("filterType").innerHTML+=`<option value="${c[0]}">${c[1]}</option>`;
 });
 
-/* ================== ADMIN ================== */
-window.adminLogin=()=>{
-  if(prompt("Mot de passe admin")==="Error404trads"){
-    isAdmin=true;
-    $("filterSort").style.display="block";
-    alert("Mode admin activé");
-    loadAds();
-  }
+window.updateForm=()=>{
+  const isKgibs=$("type").value==="kgibs";
+  $("kgibsFields").style.display=isKgibs?"block":"none";
+  $("otherFields").style.display=!isKgibs?"block":"none";
 };
 
-/* ================== TABS ================== */
-window.setTab=tab=>{
-  currentTab=tab;
-  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
-  $("tab-"+tab).classList.add("active");
-  loadAds();
-};
+window.openModal=()=>{$("modal").style.display="flex";updateForm()}
+window.closeModal=()=>{$("modal").style.display="none"}
 
-/* ================== MODAL ================== */
-window.openModal=()=>$("modal").style.display="flex";
-window.closeModal=()=>$("modal").style.display="none";
-
-/* ================== CRUD ================== */
 window.publish=async()=>{
   const {data:{user:u}}=await sb.auth.getUser();
   if(!u) return alert("Connexion requise");
@@ -322,9 +253,12 @@ window.publish=async()=>{
     owner:u.id,
     type:$("type").value,
     title:$("title").value,
-    description:$("description").value,
+    description:$("description").value||null,
     price:Number($("price").value),
     contact:$("contact").value,
+    location:$("location")?.value||null,
+    rooms:$("places")?.value||null,
+    state:$("state")?.value||null,
     images:imgs
   });
 
@@ -332,32 +266,56 @@ window.publish=async()=>{
   loadAds();
 };
 
-/* ================== LOAD ADS ================== */
-window.loadAds=async()=>{
-  let q = sb.from("ads").select("*");
+window.setTab=tab=>{
+  currentTab=tab;
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  $("tab-"+tab).classList.add("active");
+  loadAds();
+};
 
-  if(currentTab==="mine" && user) q=q.eq("owner",user.id);
+window.toggleFav=async id=>{
+  if(!user) return alert("Connexion requise");
+  const {data}=await sb.from("ads_favorites").select("*").eq("ad_id",id).eq("user_id",user.id);
+  data.length
+    ? sb.from("ads_favorites").delete().eq("ad_id",id)
+    : sb.from("ads_favorites").insert({ad_id:id,user_id:user.id});
+  loadAds();
+};
+
+window.markSeen=async id=>{
+  if(!user) return;
+  await sb.from("ads_seen").insert({ad_id:id,user_id:user.id});
+  loadAds();
+};
+
+window.loadAds=async()=>{
+  let q=sb.from("ads").select("*");
+
+  if(currentTab==="mine"&&user) q=q.eq("owner",user.id);
+  if(currentTab==="fav"&&user){
+    const {data:favs}=await sb.from("ads_favorites").select("ad_id");
+    q=q.in("id",favs.map(f=>f.ad_id));
+  }
   if($("filterType").value) q=q.eq("type",$("filterType").value);
 
   const {data}=await q.order("created_at",{ascending:false});
   $("ads").innerHTML="";
 
-  if(!data?.length){
-    $("ads").innerHTML="<i>Aucune annonce</i>";
-    return;
-  }
-
   for(const a of data){
+    const {data:p}=await sb.from("profiles").select("prenom,nom,surns,fams,promo").eq("id",a.owner).single();
+    const wa=`https://wa.me/${(a.contact||"").replace(/\D/g,"")}`;
+
     $("ads").innerHTML+=`
     <div class="card">
       <div>
         <div class="price">${a.price} €</div>
         <b>${a.title}</b>
-        <div class="meta">${a.seller_name||""}</div>
+        <div class="meta">${p?.prenom||""} ${p?.nom||""}<br>${p?.surns||""} ${p?.fams||""} ${p?.promo||""}</div>
         <p>${a.description||""}</p>
         <div class="actions">
+          <a href="${wa}" target="_blank"><button>📲 Contactez-moi</button></a>
           <button onclick="toggleFav(${a.id})">⭐</button>
-          <button onclick="markSeen(${a.id})">👁️ Vu</button>
+          <button onclick="markSeen(${a.id})">👁 Vu</button>
         </div>
       </div>
       ${a.images?.[0]?`<img src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)})'>`:""}
@@ -365,27 +323,14 @@ window.loadAds=async()=>{
   }
 };
 
-/* ================== FAVORIS / VU ================== */
-window.toggleFav=id=>{
-  if(!user) return alert("Connexion requise");
-  sb.from("ads_favorites").upsert({user_id:user.id,ad_id:id});
-};
-window.markSeen=id=>{
-  if(!user) return;
-  sb.from("ads_seen").upsert({user_id:user.id,ad_id:id});
-};
-
-/* ================== GALLERY ================== */
-let gImgs=[],gIndex=0;
 window.openGallery=imgs=>{
-  gImgs=imgs;
-  gIndex=0;
-  $("galleryImg").src=gImgs[0];
+  galleryImgs=imgs;galleryIndex=0;
+  $("galleryImg").src=imgs[0];
   $("gallery").style.display="flex";
 };
-window.closeGallery=()=>$("gallery").style.display="none";
-window.prevImg=()=>{$("galleryImg").src=gImgs[gIndex=(gIndex-1+gImgs.length)%gImgs.length]};
-window.nextImg=()=>{$("galleryImg").src=gImgs[gIndex=(gIndex+1)%gImgs.length]};
+window.closeGallery=()=>{$("gallery").style.display="none"};
+window.prevImg=()=>{$("galleryImg").src=galleryImgs[galleryIndex=(galleryIndex-1+galleryImgs.length)%galleryImgs.length]};
+window.nextImg=()=>{$("galleryImg").src=galleryImgs[galleryIndex=(galleryIndex+1)%galleryImgs.length]};
 
 $("filterType").onchange=loadAds;
 $("filterSeen").onchange=loadAds;
