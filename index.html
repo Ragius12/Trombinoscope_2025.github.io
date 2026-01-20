@@ -343,6 +343,87 @@
 .toast.warn{border-left:4px solid #ffd700}
 .toast.error{border-left:4px solid #ff4d4d}
 
+/* =========================
+   MOBILE FIX GLOBAL
+========================= */
+
+@media (max-width: 768px) {
+
+  html, body {
+    height: auto;
+  }
+
+  .hero {
+    min-height: auto;
+    align-items: flex-start;
+    padding: 90px 14px 30px; /* espace pour authBar */
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  /* Brand section */
+  .brand {
+    align-items: center;
+    text-align: center;
+  }
+
+  .promo-photo {
+    max-height: 220px;
+    object-fit: cover;
+  }
+
+  /* Grid cartes */
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  /* Auth bar mobile */
+  #authBar {
+    top: 8px !important;
+    right: 8px !important;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  #authBar button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  #userEmail {
+    display: none !important;
+  }
+
+  /* Modales scrollables */
+  .modal-card,
+  .profile-modal {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  #authBar span.badge {
+    display: none;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+}
+	  
   </style>
 </head>
 
@@ -916,6 +997,7 @@ window.saveProfile = saveProfile;
 
 </body>
 </html>
+
 
 
 
