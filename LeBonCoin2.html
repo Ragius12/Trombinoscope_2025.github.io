@@ -395,13 +395,13 @@ async function isFav(adId){
 
   const { data, error } = await sb
     .from("ads_favorites")
-    .select("id")
+    .select("ad_id")
     .eq("user_id", user.id)
     .eq("ad_id", adId)
-    .maybeSingle();
+    .limit(1);
 
   if(error) return false;
-  return !!data;
+  return data.length > 0;
 }
 
 async function isSeen(adId){
@@ -409,13 +409,13 @@ async function isSeen(adId){
 
   const { data, error } = await sb
     .from("ads_seen")
-    .select("id")
+    .select("ad_id")
     .eq("user_id", user.id)
-  .eq("ad_id", adId)
-    .maybeSingle();
+    .eq("ad_id", adId)
+    .limit(1);
 
   if(error) return false;
-  return !!data;
+  return data.length > 0;
 }
   
 window.setTab=tab=>{
@@ -572,6 +572,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
