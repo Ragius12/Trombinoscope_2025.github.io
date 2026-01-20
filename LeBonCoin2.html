@@ -10,14 +10,17 @@
   --accent:#ffd76a;
   --bg:#eef1f5;
   --card:#fff;
-  --shadow:0 6px 18px rgba(0,0,0,.08);
+  --shadow:0 8px 22px rgba(0,0,0,.1);
 }
+
+*{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Inter,Arial,Helvetica,sans-serif;
+  font-family:Inter,Arial,sans-serif;
   background:var(--bg);
   color:#222
 }
+
 header{
   background:linear-gradient(135deg,var(--main),#2b3150);
   color:var(--accent);
@@ -26,27 +29,31 @@ header{
   font-size:1.8em;
   font-weight:800
 }
+
 .container{max-width:1200px;margin:auto;padding:20px}
 
 button{
   background:var(--accent);
   border:none;
   padding:8px 14px;
-  border-radius:8px;
+  border-radius:10px;
   font-weight:700;
   cursor:pointer;
   transition:.25s
 }
 button.secondary{background:#2b3150;color:white}
 button.danger{background:#d9534f;color:white}
-button:hover{transform:translateY(-1px);filter:brightness(.95)}
+button.icon{padding:6px 10px}
+button:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 
-.topbar{
+.tabs{
   display:flex;
-  justify-content:space-between;
-  align-items:center;
   gap:10px;
   margin-bottom:15px
+}
+.tabs button.active{
+  background:var(--main);
+  color:white
 }
 
 .filters{
@@ -58,53 +65,38 @@ button:hover{transform:translateY(-1px);filter:brightness(.95)}
 
 .card{
   background:var(--card);
-  border-radius:14px;
+  border-radius:16px;
   padding:18px;
-  display:flex;
-  gap:18px;
+  display:grid;
+  grid-template-columns:1fr 220px;
+  gap:16px;
   margin-bottom:18px;
   box-shadow:var(--shadow);
   transition:.25s
 }
-.card:hover{transform:translateY(-3px)}
+.card:hover{transform:translateY(-4px)}
 
 .card img{
-  width:220px;
+  width:100%;
   height:160px;
   object-fit:cover;
   border-radius:12px;
   cursor:pointer
 }
 
-.meta{
-  font-size:.9em;
-  opacity:.75
-}
-.price{
-  font-size:1.3em;
-  font-weight:800;
-  color:var(--main)
-}
+.price{font-size:1.4em;font-weight:800;color:var(--main)}
+.meta{font-size:.85em;opacity:.7}
 
 .actions{
-  margin-top:10px;
   display:flex;
   gap:8px;
-  flex-wrap:wrap
+  flex-wrap:wrap;
+  margin-top:10px
 }
 
-.tag{
-  display:inline-block;
-  padding:2px 8px;
-  border-radius:6px;
-  background:#eef1f5;
-  font-size:.8em
-}
-
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.65);
+.modal,.gallery{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.7);
   display:none;
   align-items:center;
   justify-content:center;
@@ -113,7 +105,7 @@ button:hover{transform:translateY(-1px);filter:brightness(.95)}
 .modal-content{
   background:white;
   padding:20px;
-  border-radius:14px;
+  border-radius:16px;
   width:420px;
   max-height:90vh;
   overflow:auto
@@ -122,33 +114,13 @@ input,select,textarea{
   width:100%;
   padding:8px;
   margin:6px 0;
-  border-radius:8px;
+  border-radius:10px;
   border:1px solid #ccc
 }
 textarea{resize:vertical}
 
-.gallery{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.85);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:20
-}
-.gallery img{
-  max-width:80vw;
-  max-height:75vh;
-  border-radius:12px
-}
-.close{
-  position:absolute;
-  top:20px;
-  right:30px;
-  font-size:30px;
-  color:white;
-  cursor:pointer
-}
+.gallery img{max-width:80vw;max-height:80vh;border-radius:14px}
+.close{position:absolute;top:20px;right:30px;font-size:30px;color:white;cursor:pointer}
 </style>
 </head>
 
@@ -158,7 +130,10 @@ textarea{resize:vertical}
 
 <div class="container">
 
-  <div class="topbar">
+  <div class="tabs">
+    <button onclick="setTab('all')" id="tab-all" class="active">📢 Annonces</button>
+    <button onclick="setTab('fav')" id="tab-fav">⭐ Favoris</button>
+    <button onclick="setTab('mine')" id="tab-mine">📂 Mes annonces</button>
     <button onclick="openModal()">➕ Publier</button>
     <button class="secondary" onclick="adminLogin()">Admin</button>
   </div>
@@ -180,9 +155,9 @@ textarea{resize:vertical}
     <h3 id="modalTitle">Annonce</h3>
     <select id="type"></select>
     <input id="title" placeholder="Titre *">
-    <textarea id="description" placeholder="Description"></textarea>
+    <textarea id="description" placeholder="Description (facultatif)"></textarea>
     <input id="price" type="number" placeholder="Prix € *">
-    <input id="contact" placeholder="Contact *">
+    <input id="contact" placeholder="Numéro WhatsApp *">
     <div id="dynamic"></div>
     <input type="file" id="images" multiple accept="image/*">
     <button onclick="publish()">Publier</button>
@@ -203,32 +178,42 @@ const sb = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
 
-const CATEGORIES=[
-  {id:"kgibs",label:"🏠 Kgib’s"},
-  {id:"objets",label:"📦 Objets"},
-  {id:"tech",label:"💻 Tech"},
-  {id:"services",label:"🛠️ Services"},
-  {id:"art",label:"🎨 Art"},
-  {id:"autre",label:"✨ Autre"}
-];
+const CONFIG={
+  categories:[
+    {id:"all",label:"🔍 Tout"},
+    {id:"kgibs",label:"🏠 Kgib’s"},
+    {id:"objets",label:"📦 Objets"},
+    {id:"tech",label:"💻 Tech"},
+    {id:"services",label:"🛠️ Services"},
+    {id:"art",label:"🎨 Art"},
+    {id:"autre",label:"✨ Autre"}
+  ]
+};
 
-let user=null,isAdmin=false,editId=null;
-
+let user=null,isAdmin=false,editId=null,currentTab="all";
 const $=id=>document.getElementById(id);
 
 sb.auth.getUser().then(r=>user=r.data.user);
 
-CATEGORIES.forEach(c=>{
-  $("type").innerHTML+=`<option value="${c.id}">${c.label}</option>`;
+// Populate selects
+CONFIG.categories.forEach(c=>{
+  if(c.id!=="all") $("type").innerHTML+=`<option value="${c.id}">${c.label}</option>`;
   $("filterType").innerHTML+=`<option value="${c.id}">${c.label}</option>`;
 });
 
 window.adminLogin=()=>{
   if(prompt("Mot de passe admin")==="Error404trads"){
     isAdmin=true;
-    alert("Mode admin (lecture seule)");
+    alert("Mode admin : lecture seule");
     loadAds();
   }
+};
+
+window.setTab=tab=>{
+  currentTab=tab;
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  $("tab-"+tab).classList.add("active");
+  loadAds();
 };
 
 window.openModal=()=>{$("modal").style.display="flex";resetModal();}
@@ -243,120 +228,80 @@ function resetModal(){
 }
 
 window.updateFields=()=>{
-  $("dynamic").innerHTML =
+  $("dynamic").innerHTML=
     $("type").value==="kgibs"
-    ? `<input id="surface" placeholder="Surface m²">
-       <input id="rooms" placeholder="Pièces">
-       <input id="location" placeholder="Localisation">`
-    : `<input id="state" placeholder="État">`;
+    ? `<input id="surface" placeholder="Surface m² *">
+       <input id="rooms" placeholder="Pièces *">
+       <input id="location" placeholder="Localisation *">`
+    : `<input id="state" placeholder="État *">`;
 };
 
-window.publish = async () => {
+window.publish=async()=>{
+  const {data:{user:u}}=await sb.auth.getUser();
+  if(!u) return alert("Connexion requise");
 
-  const { data: auth } = await sb.auth.getUser();
+  const {data:p}=await sb.from("profiles")
+    .select("prenom,nom,surns,fams,promo")
+    .eq("id",u.id).single();
 
-  if (!auth.user) {
-    alert("Vous devez être connecté pour publier une annonce.");
-    return;
+  if(!p) return alert("Profil incomplet");
+
+  if(!$("title").value||!$("price").value||!$("contact").value)
+    return alert("Champs obligatoires manquants");
+
+  const imgs=[];
+  for(const f of $("images").files){
+    const path=`public/${Date.now()}-${f.name.replace(/\W/g,"_")}`;
+    await sb.storage.from("ads-images").upload(path,f);
+    imgs.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl);
   }
 
-  const user = auth.user;
-
-  const { data: profile, error: profErr } = await sb
-    .from("profiles")
-    .select("prenom, nom, surns, fams, promo")
-    .eq("id", user.id)
-    .single();
-
-  if (profErr || !profile) {
-    alert("Profil incomplet ou introuvable.");
-    return;
-  }
-
-  if (!$("title").value || !$("price").value || !$("contact").value) {
-    alert("Champs obligatoires manquants");
-    return;
-  }
-
-  const imgs = [];
-  for (const f of $("images").files) {
-    const safe = f.name
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-      .replace(/[^a-zA-Z0-9.]/g,"_");
-
-    const path = `public/${Date.now()}-${safe}`;
-    const { error } = await sb.storage.from("ads-images").upload(path, f);
-    if (!error) {
-      imgs.push(
-        sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl
-      );
-    }
-  }
-
-  const payload = {
-    owner: user.id,
-    type: $("type").value,
-    title: $("title").value,
-    description: $("description").value || null,
-    price: Number($("price").value),
-    contact: $("contact").value,
-    surface: Number($("surface")?.value) || null,
-    rooms: Number($("rooms")?.value) || null,
-    state: $("state")?.value || null,
-    location: $("location")?.value || null,
-    images: imgs,
-    seller_name: `${profile.prenom} ${profile.nom}`,
-    seller_bucque: `${profile.surns || ""} ${profile.fams || ""} ${profile.promo || ""}`.trim()
+  const payload={
+    owner:u.id,
+    type:$("type").value,
+    title:$("title").value,
+    description:$("description").value||null,
+    price:Number($("price").value),
+    contact:$("contact").value,
+    surface:Number($("surface")?.value)||null,
+    rooms:Number($("rooms")?.value)||null,
+    state:$("state")?.value||null,
+    location:$("location")?.value||null,
+    images:imgs,
+    seller_name:`${p.prenom} ${p.nom}`,
+    seller_bucque:`${p.surns||""} ${p.fams||""} ${p.promo||""}`.trim()
   };
 
-  const { error } = editId
-    ? await sb.from("ads").update(payload).eq("id", editId)
+  editId
+    ? await sb.from("ads").update(payload).eq("id",editId)
     : await sb.from("ads").insert(payload);
 
-  if (error) {
-    alert("Erreur publication : " + error.message);
-    return;
-  }
-
-  closeModal();
-  loadAds();
+  closeModal();loadAds();
 };
 
+window.loadAds=async()=>{
+  let q=sb.from("ads").select("*").order("created_at",{ascending:false});
+  if(currentTab==="mine"&&user) q=q.eq("owner",user.id);
+  const {data}=await q;
 
-window.loadAds = async () => {
+  $("ads").innerHTML="";
+  if(!data?.length){$("ads").innerHTML="<i>Aucune annonce</i>";return;}
 
-  const { data, error } = await sb
-    .from("ads")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error(error);
-    $("ads").innerHTML = "<i>Impossible de charger les annonces</i>";
-    return;
-  }
-
-  if (!data || !data.length) {
-    $("ads").innerHTML = "<i>Aucune annonce</i>";
-    return;
-  }
-
-  $("ads").innerHTML = "";
-  data.forEach(a => {
+  data.forEach(a=>{
     const wa=`https://wa.me/${a.contact.replace(/\D/g,"")}`;
     $("ads").innerHTML+=`
     <div class="card">
       <div>
         <div class="price">${a.price} €</div>
         <b>${a.title}</b>
-        <div class="meta">${a.seller_name} · ${a.seller_bucque}</div>
+        <div class="meta">Vendeur : ${a.seller_name} · ${a.seller_bucque}</div>
         <p>${a.description||""}</p>
         <a href="${wa}" target="_blank">📲 Contactez-moi</a>
-        ${!isAdmin && user?.id===a.owner?`
-          <div class="actions">
-            <button class="secondary" onclick="editId=${a.id};openModal()">Modifier</button>
-            <button class="danger" onclick="deleteAd(${a.id})">Supprimer</button>
-          </div>`:""}
+        ${!isAdmin&&user?.id===a.owner?`
+        <div class="actions">
+          <button onclick="editId=${a.id};openModal()">✏️ Modifier</button>
+          <button class="danger" onclick="deleteAd(${a.id})">🗑️ Supprimer</button>
+        </div>`:""}
       </div>
       ${a.images?.[0]?`<img src="${a.images[0]}" onclick="showImg('${a.images[0]}')">`:""}
     </div>`;
@@ -364,7 +309,7 @@ window.loadAds = async () => {
 };
 
 window.deleteAd=async id=>{
-  if(confirm("Supprimer ?")){
+  if(confirm("Supprimer cette annonce ?")){
     await sb.from("ads").delete().eq("id",id);
     loadAds();
   }
@@ -376,10 +321,8 @@ window.showImg=src=>{
 };
 
 $("filterType").onchange=$("filterSeen").onchange=loadAds;
-
 updateFields();loadAds();
 </script>
 
 </body>
 </html>
-
