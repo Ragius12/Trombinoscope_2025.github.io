@@ -576,11 +576,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 (async () => {
   const { data } = await sb.auth.getSession();
 
-  if (!data?.session) return;
-
-  currentSession = data.session;
-  updateUI(currentSession);
-
+  if (data?.session) {
+	  await initUser(data.session);
+	}
+	
   // 🔥 CHARGEMENT DU PROFIL AU REFRESH
   const cached = getCachedProfile();
   if (cached) {
@@ -602,6 +601,40 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
   }
 })();
+
+async function initUser(session) {
+  currentSession = session;
+  updateUI(session);
+
+  if (!session) {
+    qs("avatar").style.display = "none";
+    qs("profileBadge").style.display = "none";
+    return;
+  }
+
+  qs("profileEmail").innerText = session.user.email;
+
+  // 🔁 Profil
+  let profile = getCachedProfile();
+
+  if (!profile) {
+    const { data } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    profile = data;
+    if (profile) cacheProfile(profile);
+  }
+
+  if (profile) {
+    fillProfileForm(profile);
+
+    if (profile.nom && profile.prenom && profile.promo) {
+      updateProfileBadge(profile);
+    }
+  }
+}
 	
 function updateUI(session) {
   if (!session) {
@@ -622,39 +655,16 @@ function updateUI(session) {
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
-  currentSession = session;
-  updateUI(session);
+  await initUser(session);
 
-  if (!session) return;
-
-  qs("profileEmail").innerText = session.user.email;
-
-  const { data: profile, error } = await sb
-    .from("profiles")
-    .select("*")
-    .eq("id", session.user.id)
-    .maybeSingle();
-
-  if (error && error.code !== "PGRST116") {
-    console.error("Erreur chargement profil :", error);
-    return;
-  }
-
-  if (!profile) {
-    await sb.from("profiles").insert({ id: session.user.id });
-    qs("profileModal").style.display = "flex";
-    return;
-  }
-
-  cacheProfile(profile);
-  fillProfileForm(profile);
-
-  if (profile.nom && profile.prenom && profile.promo) {
-    updateProfileBadge(profile);
-  } else {
-    qs("profileModal").style.display = "flex";
+  if (event === "SIGNED_IN" && session) {
+    const cached = getCachedProfile();
+    if (!cached?.nom || !cached?.prenom || !cached?.promo) {
+      qs("profileModal").style.display = "flex";
+    }
   }
 });
+
 
 
 
@@ -763,8 +773,8 @@ qs("btnSignup").onclick = () => openAuth("signup");
 qs("btnLogout").onclick = async () => {
   await sb.auth.signOut();
   localStorage.removeItem("profile_cache");
-  qs("avatar").style.display = "none";
-  qs("profileBadge").style.display = "none";
+  currentSession = null;
+  updateUI(null);
 };
 
 qs("btnProfile").onclick = async () => {
@@ -906,6 +916,7 @@ window.saveProfile = saveProfile;
 
 </body>
 </html>
+
 
 
 
