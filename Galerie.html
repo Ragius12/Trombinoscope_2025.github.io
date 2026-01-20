@@ -232,7 +232,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
     </div>
     <div id="authArea" style="text-align:center; margin-bottom:20px;">
-                                                                                  duplicate UI elements hidden to keep only one logical login/signup in the main flow 
+                                                                                                              duplicate UI elements hidden to keep only one logical login/signup in the main flow 
   <button id="openLoginBtn" class="login-btn" style="display:none">Se connecter</button>
   <button id="openSignupBtn" class="login-btn" style="display:none">S'inscrire</button>
   <div id="connectedInfo" style="display:none; margin-top:10px;">
@@ -244,7 +244,6 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   </div>
   <div class="small-muted">Utilise ton adresse <b>@ensam.eu</b>. Inscrit toi si cela n'est pas déjà fait. N'oublies pas ton Mot de Passe siteup's, sinon c'est une enlise.</div>
 </div>
--->
 
 
 <div id="publishArea" class="card" style="display:none;">
@@ -252,13 +251,13 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
      <div>Connecté : <span id="userEmail" style="font-weight:700"></span></div>
      <div style="display:flex;gap:10px;align-items:center;">
        <button class="btn" id="openProfileBtn">Mon profil</button>
-       <!-- second logout button kept but unique id so both work -->
+                                                   second logout button kept but unique id so both work
        <button class="login-btn" id="logoutBtnSmall" style="background:transparent;border:1px solid rgba(255,255,255,0.08);color:white">Déconnexion</button>
      </div>
    </div>
 </div>
 
-<!-- Profile modal -->
+                                                                                                                                                         Profile modal 
 <div id="profileModal" class="profile-modal">
   <div class="panel card">
     <h3 style="margin-top:0;">Compléter ton profil</h3>
@@ -280,7 +279,8 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     </form>
   </div>
 </div>
-
+-->
+    
 <!-- Form toggle -->
 <div style="text-align:center;">
   <div class="btn-publish" id="toggleFormBtn">➕ Publier un trajet</div>
@@ -1824,6 +1824,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
