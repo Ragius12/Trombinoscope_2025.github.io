@@ -431,14 +431,21 @@ window.toggleFav = async (adId) => {
     return;
   }
 
-  const { data } = await sb
+  const { data, error } = await sb
     .from("ads_favorites")
     .select("id")
     .eq("user_id", user.id)
     .eq("ad_id", adId)
     .limit(1);
 
-  if (data.length > 0) {
+  if (error) {
+    console.error("Erreur favoris:", error);
+    return;
+  }
+
+  const exists = Array.isArray(data) && data.length > 0;
+
+  if (exists) {
     await sb
       .from("ads_favorites")
       .delete()
@@ -450,19 +457,26 @@ window.toggleFav = async (adId) => {
       .insert({ user_id: user.id, ad_id: adId });
   }
 
-  // 🔥 rafraîchissement intelligent
   loadAds();
 };
 
 
 window.markSeen = async (adId) => {
-  if(!user) return;
+  if (!user) return;
 
-  await sb
+  const { error } = await sb
     .from("ads_seen")
-    .upsert({ user_id:user.id, ad_id:adId });
-};
+    .upsert(
+      { user_id: user.id, ad_id: adId },
+      { onConflict: "user_id,ad_id" }
+    );
 
+  if (error) {
+    console.error("Erreur seen:", error);
+  } else {
+    loadAds();
+  }
+};
 
 window.loadAds=async()=>{
   let q=sb.from("ads").select("*");
@@ -579,6 +593,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
