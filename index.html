@@ -566,6 +566,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let currentSession = null;
   const qs = id => document.getElementById(id);
 
+(async () => {
+  const { data, error } = await sb.auth.getSession();
+  if (data?.session) {
+    currentSession = data.session;
+    updateUI(data.session);
+  }
+})();
+	
 function updateUI(session) {
   if (!session) {
     qs("btnSignup").style.display = "inline";
@@ -577,7 +585,7 @@ function updateUI(session) {
   }
 
   qs("btnSignup").style.display = "none";
-  qs("btnLogin").style.display  = "none";
+  qs("btn").style.display  = "none";
   qs("btnLogout").style.display = "inline";
   qs("btnProfile").style.display = "inline";
   qs("userEmail").style.display = "inline";
@@ -630,7 +638,7 @@ window.openAuth = mode => {
   qs("authModal").style.display = "flex";
   qs("authTitle").innerText = mode === "signup" ? "Inscription" : "Connexion";
   qs("authConfirm").onclick = () =>
-    mode === "signup" ? signup() : login();
+    mode === "signup" ? signup() : ();
 };
 
 window.closeAuthModal = () => {
@@ -668,7 +676,10 @@ function fillProfileForm(profile) {
    AUTH ACTIONS
 ========================= */
 
-async function login(email, password) {
+async function login() {
+  const email = qs("authEmail").value;
+  const password = qs("authPassword").value;
+
   const { error } = await sb.auth.signInWithPassword({
     email,
     password
@@ -681,6 +692,7 @@ async function login(email, password) {
 
   closeAuthModal();
 }
+
 
 
 
@@ -852,6 +864,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
