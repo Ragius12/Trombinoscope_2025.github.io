@@ -200,7 +200,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const sb = createClient(
   "https://wwjsqkktwxciyvzoisyz.supabase.co",
-  "TA_CLE_ANON"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 );
 
 const CATEGORIES=[
@@ -251,46 +251,98 @@ window.updateFields=()=>{
     : `<input id="state" placeholder="État">`;
 };
 
-window.publish=async()=>{
-  const {data:profile}=await sb.from("profiles").select("*").eq("id",user.id).single();
+window.publish = async () => {
 
-  const imgs=[];
-  for(const f of $("images").files){
-    const name=f.name.replace(/[^a-zA-Z0-9.]/g,"_");
-    const path=`public/${Date.now()}-${name}`;
-    await sb.storage.from("ads-images").upload(path,f);
-    imgs.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl);
+  const { data: auth } = await sb.auth.getUser();
+
+  if (!auth.user) {
+    alert("Vous devez être connecté pour publier une annonce.");
+    return;
   }
 
-  const payload={
-    owner:user.id,
-    type:$("type").value,
-    title:$("title").value,
-    description:$("description").value,
-    price:+$("price").value,
-    contact:$("contact").value,
-    surface:+$("surface")?.value||null,
-    rooms:+$("rooms")?.value||null,
-    state:$("state")?.value||null,
-    location:$("location")?.value||null,
-    images:imgs,
-    seller_name:`${profile.prenom} ${profile.nom}`,
-    seller_bucque:`${profile.surns} ${profile.fams} ${profile.promo}`
+  const user = auth.user;
+
+  const { data: profile, error: profErr } = await sb
+    .from("profiles")
+    .select("prenom, nom, surns, fams, promo")
+    .eq("id", user.id)
+    .single();
+
+  if (profErr || !profile) {
+    alert("Profil incomplet ou introuvable.");
+    return;
+  }
+
+  if (!$("title").value || !$("price").value || !$("contact").value) {
+    alert("Champs obligatoires manquants");
+    return;
+  }
+
+  const imgs = [];
+  for (const f of $("images").files) {
+    const safe = f.name
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-zA-Z0-9.]/g,"_");
+
+    const path = `public/${Date.now()}-${safe}`;
+    const { error } = await sb.storage.from("ads-images").upload(path, f);
+    if (!error) {
+      imgs.push(
+        sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl
+      );
+    }
+  }
+
+  const payload = {
+    owner: user.id,
+    type: $("type").value,
+    title: $("title").value,
+    description: $("description").value || null,
+    price: Number($("price").value),
+    contact: $("contact").value,
+    surface: Number($("surface")?.value) || null,
+    rooms: Number($("rooms")?.value) || null,
+    state: $("state")?.value || null,
+    location: $("location")?.value || null,
+    images: imgs,
+    seller_name: `${profile.prenom} ${profile.nom}`,
+    seller_bucque: `${profile.surns || ""} ${profile.fams || ""} ${profile.promo || ""}`.trim()
   };
 
-  editId
-    ? await sb.from("ads").update(payload).eq("id",editId)
+  const { error } = editId
+    ? await sb.from("ads").update(payload).eq("id", editId)
     : await sb.from("ads").insert(payload);
 
-  closeModal();loadAds();
+  if (error) {
+    alert("Erreur publication : " + error.message);
+    return;
+  }
+
+  closeModal();
+  loadAds();
 };
 
-window.loadAds=async()=>{
-  let q=sb.from("ads").select("*").order("created_at",{ascending:false});
-  if($("filterType").value) q=q.eq("type",$("filterType").value);
-  const {data}=await q;
-  $("ads").innerHTML="";
-  data.forEach(a=>{
+
+window.loadAds = async () => {
+
+  const { data, error } = await sb
+    .from("ads")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    $("ads").innerHTML = "<i>Impossible de charger les annonces</i>";
+    return;
+  }
+
+  if (!data || !data.length) {
+    $("ads").innerHTML = "<i>Aucune annonce</i>";
+    return;
+  }
+
+  $("ads").innerHTML = "";
+  data.forEach(a => {
     const wa=`https://wa.me/${a.contact.replace(/\D/g,"")}`;
     $("ads").innerHTML+=`
     <div class="card">
@@ -330,3 +382,4 @@ updateFields();loadAds();
 
 </body>
 </html>
+
