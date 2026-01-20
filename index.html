@@ -553,6 +553,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <footer style="text-align: center; font-family: 'Old English Text MT', 'Gothic', 'Blackletter', serif;">
     Vespula 84 — Promotion 2025
   </footer>
+
+<div id="toast" class="toast"></div>
 	
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="module">
@@ -789,8 +791,11 @@ qs("btnProfile").onclick = async () => {
 function updateProfileBadge(profile){
   qs("profileBadge").style.display = "inline";
   qs("avatar").style.display = "flex";
-  qs("avatar").innerText =
-    (profile.prenom[0] || "") + (profile.nom[0] || "");
+
+  const p = profile?.prenom?.[0] || "";
+  const n = profile?.nom?.[0] || "";
+
+  qs("avatar").innerText = p + n;
 }
 
 /* =========================
@@ -894,10 +899,9 @@ window.saveProfile = saveProfile;
 	
 </script>
 
-<div id="toast" class="toast"></div>
-
 </body>
 </html>
+
 
 
 
