@@ -426,7 +426,7 @@ window.setTab=tab=>{
 };
 
 window.toggleFav = async (adId) => {
-  if(!user){
+  if (!user) {
     alert("Connexion requise pour les favoris");
     return;
   }
@@ -436,22 +436,21 @@ window.toggleFav = async (adId) => {
     .select("id")
     .eq("user_id", user.id)
     .eq("ad_id", adId)
-    .maybeSingle();
+    .limit(1);
 
-  if(data){
+  if (data.length > 0) {
     await sb
       .from("ads_favorites")
       .delete()
       .eq("user_id", user.id)
       .eq("ad_id", adId);
-    alert("Retiré des favoris");
-  }else{
+  } else {
     await sb
       .from("ads_favorites")
-      .insert({ user_id:user.id, ad_id:adId });
-    alert("Ajouté aux favoris ❤️");
+      .insert({ user_id: user.id, ad_id: adId });
   }
 
+  // 🔥 rafraîchissement intelligent
   loadAds();
 };
 
@@ -500,6 +499,14 @@ window.loadAds=async()=>{
           </div>
         <p>${a.description||""}</p>
         <div class="actions">
+          ${currentTab === "mine" ? `
+            <button class="secondary" onclick='editAd(${JSON.stringify(a)})'>
+              ✏️ Modifier
+            </button>
+            <button class="secondary" onclick="deleteAd(${a.id})">
+              🗑 Supprimer
+            </button>
+          ` : ""}
           <a href="${wa}" target="_blank"><button>📲 Contactez-moi</button></a>
               <span class="icon-heart ${fav ? "active" : ""}"
                   onclick="toggleFav(${a.id})">
@@ -572,6 +579,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
