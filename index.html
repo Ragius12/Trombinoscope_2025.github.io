@@ -585,7 +585,7 @@ function updateUI(session) {
   }
 
   qs("btnSignup").style.display = "none";
-  qs("btn").style.display  = "none";
+  qs("btnLogin").style.display  = "none";
   qs("btnLogout").style.display = "inline";
   qs("btnProfile").style.display = "inline";
   qs("userEmail").style.display = "inline";
@@ -638,7 +638,7 @@ window.openAuth = mode => {
   qs("authModal").style.display = "flex";
   qs("authTitle").innerText = mode === "signup" ? "Inscription" : "Connexion";
   qs("authConfirm").onclick = () =>
-    mode === "signup" ? signup() : ();
+  	mode === "signup" ? signup() : login();
 };
 
 window.closeAuthModal = () => {
@@ -864,6 +864,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
