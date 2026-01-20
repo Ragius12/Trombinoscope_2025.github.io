@@ -1,261 +1,359 @@
-<!-- CODE COMPLET PRÊT À COPIER-COLLER -->
-
 <!DOCTYPE html>
-
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Blablac'Arts — Le Bon Coin²</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blablac'Arts — Annonces</title>
+
 <style>
 :root{
   --main:#1b2340;
   --accent:#ffd76a;
   --bg:#eef1f5;
   --card:#fff;
-  --shadow:0 10px 28px rgba(0,0,0,.12);
+  --shadow:0 10px 30px rgba(0,0,0,.12);
 }
+
 *{box-sizing:border-box}
 body{
   margin:0;
   font-family:Inter,Arial,sans-serif;
   background:var(--bg);
-  color:#222
+  color:#222;
 }
+
 header{
   background:linear-gradient(135deg,var(--main),#2b3150);
   color:var(--accent);
   padding:18px;
   text-align:center;
-  font-size:1.9em;
-  font-weight:800
+  font-size:1.8em;
+  font-weight:800;
 }
+
 .container{max-width:1200px;margin:auto;padding:20px}
+
+.tabs{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:16px
+}
+
 button{
-  background:var(--accent);
   border:none;
-  padding:8px 14px;
+  padding:9px 16px;
   border-radius:12px;
   font-weight:700;
   cursor:pointer;
-  transition:.25s
+  transition:.25s;
+  background:var(--accent)
 }
-button.secondary{background:#2b3150;color:white}
-button.danger{background:#d9534f;color:white}
-button.icon{padding:6px 10px}
+button.secondary{background:#2b3150;color:#fff}
+button.icon{padding:8px 10px}
+button.active{background:var(--main);color:#fff}
 button:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.tabs{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
-.tabs button.active{background:var(--main);color:white}
-.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+
+.filters{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:18px
+}
+
+select,input{
+  padding:8px;
+  border-radius:10px;
+  border:1px solid #ccc
+}
+
 .card{
   background:var(--card);
   border-radius:18px;
   padding:18px;
   display:grid;
-  grid-template-columns:1fr 240px;
-  gap:16px;
+  grid-template-columns:1fr 230px;
+  gap:18px;
   margin-bottom:18px;
   box-shadow:var(--shadow);
   transition:.3s
 }
-.card.seen{opacity:.6}
 .card:hover{transform:translateY(-4px)}
-.price{font-size:1.5em;font-weight:800;color:var(--main)}
-.meta{font-size:.85em;opacity:.7}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.galleryThumb{
+
+.card img{
   width:100%;
   height:170px;
   object-fit:cover;
   border-radius:14px;
   cursor:pointer
 }
-.fav{cursor:pointer;font-size:20px}
-.modal,.gallery{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.7);
+
+.price{
+  font-size:1.4em;
+  font-weight:800;
+  color:var(--main)
+}
+
+.meta{font-size:.85em;opacity:.75}
+
+.actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px
+}
+
+.badges{
+  display:flex;
+  gap:6px;
+  margin-bottom:6px
+}
+
+.badge{
+  font-size:.75em;
+  background:#eee;
+  padding:4px 8px;
+  border-radius:8px
+}
+
+.gallery{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.85);
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:10
+  z-index:20
+}
+.gallery img{
+  max-width:90vw;
+  max-height:90vh;
+  border-radius:16px
+}
+.gallery .nav{
+  position:absolute;
+  top:50%;
+  font-size:50px;
+  color:white;
+  cursor:pointer;
+  user-select:none
+}
+.gallery .left{left:30px}
+.gallery .right{right:30px}
+.gallery .close{
+  position:absolute;
+  top:20px;
+  right:30px;
+  font-size:34px;
+  color:white;
+  cursor:pointer
+}
+.gallery .count{
+  position:absolute;
+  bottom:30px;
+  color:white;
+  opacity:.8
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:30
 }
 .modal-content{
   background:white;
-  padding:22px;
-  border-radius:18px;
-  width:440px;
+  padding:20px;
+  border-radius:16px;
+  width:420px;
   max-height:90vh;
   overflow:auto
 }
-input,select,textarea{
-  width:100%;
-  padding:10px;
-  margin:6px 0;
-  border-radius:12px;
-  border:1px solid #ccc
-}
-.galleryContent{
-  position:relative
-}
-.galleryContent img{
-  max-width:85vw;
-  max-height:85vh;
-  border-radius:16px
-}
-.galleryNav{
-  position:absolute;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:40px;
-  color:white;
-  cursor:pointer;
-  padding:10px
-}
-.galleryNav.left{left:-60px}
-.galleryNav.right{right:-60px}
-.close{position:absolute;top:-50px;right:0;font-size:32px;color:white;cursor:pointer}
+textarea{resize:vertical}
 </style>
 </head>
+
 <body>
+
 <header>Blablac'Arts — Le Bon Coin²</header>
+
 <div class="container">
-  <div class="tabs">
-    <button id="tab-all" class="active">📢 Annonces</button>
-    <button id="tab-fav">⭐ Favoris</button>
-    <button id="tab-mine">📂 Mes annonces</button>
-    <button id="btnAdd">➕ Publier</button>
-    <button class="secondary" id="btnAdmin">Admin</button>
-  </div>
 
-  <div class="filters">
-    <select id="filterType"></select>
-    <select id="filterSeen">
-      <option value="">Toutes</option>
-      <option value="unseen">Non vues</option>
-    </select>
-  </div>
+<div class="tabs">
+  <button id="tab-all" class="active" onclick="setTab('all')">📢 Annonces</button>
+  <button id="tab-fav" onclick="setTab('fav')">⭐ Favoris</button>
+  <button id="tab-mine" onclick="setTab('mine')">📂 Mes annonces</button>
+  <button onclick="openModal()">➕ Publier</button>
+  <button class="secondary" onclick="adminLogin()">Admin</button>
+</div>
 
-  <div id="ads">Chargement…</div>
+<div class="filters">
+  <select id="filterType"></select>
+  <select id="filterSeen">
+    <option value="">Toutes</option>
+    <option value="unseen">Non vues</option>
+  </select>
+  <select id="adminSort" style="display:none">
+    <option value="created_at">Date</option>
+    <option value="price">Prix</option>
+    <option value="views">Vues</option>
+  </select>
+</div>
+
+<div id="ads">Chargement…</div>
 </div>
 
 <!-- MODAL -->
-
 <div class="modal" id="modal">
   <div class="modal-content">
-    <h3>Nouvelle annonce</h3>
+    <h3>Annonce</h3>
     <select id="type"></select>
     <input id="title" placeholder="Titre *">
     <textarea id="description" placeholder="Description"></textarea>
     <input id="price" type="number" placeholder="Prix € *">
     <input id="contact" placeholder="WhatsApp *">
-    <div id="dynamic"></div>
     <input type="file" id="images" multiple accept="image/*">
-    <button id="publish">Publier</button>
-    <button class="secondary" onclick="modal.style.display='none'">Annuler</button>
+    <button onclick="publish()">Publier</button>
+    <button class="secondary" onclick="closeModal()">Annuler</button>
   </div>
 </div>
 
 <!-- GALLERY -->
-
 <div class="gallery" id="gallery">
-  <div class="galleryContent">
-    <span class="close" onclick="gallery.style.display='none'">✕</span>
-    <span class="galleryNav left" id="prev">❮</span>
-    <img id="galleryImg">
-    <span class="galleryNav right" id="next">❯</span>
-  </div>
+  <div class="close" onclick="closeGallery()">✕</div>
+  <div class="nav left" onclick="prevImg()">‹</div>
+  <img id="galleryImg">
+  <div class="nav right" onclick="nextImg()">›</div>
+  <div class="count" id="galleryCount"></div>
 </div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const sb=createClient("https://wwjsqkktwxciyvzoisyz.supabase.co","CLE_API");
-const $=e=>document.getElementById(e);
-const cats=[{id:'kgibs',label:'🏠 Kgib’s'},{id:'objets',label:'📦 Objets'},{id:'tech',label:'💻 Tech'},{id:'services',label:'🛠️ Services'},{id:'art',label:'🎨 Art'},{id:'autre',label:'✨ Autre'}];
-let user=null,tab='all',admin=false,images=[],imgIndex=0;
+
+const sb=createClient(
+ "https://wwjsqkktwxciyvzoisyz.supabase.co",
+ "PUBLIC_ANON_KEY"
+);
+
+const categories=[
+ {id:"all",label:"🔍 Tout"},
+ {id:"kgibs",label:"🏠 Kgib’s"},
+ {id:"objets",label:"📦 Objets"},
+ {id:"tech",label:"💻 Tech"},
+ {id:"services",label:"🛠️ Services"},
+ {id:"art",label:"🎨 Art"},
+ {id:"autre",label:"✨ Autre"}
+];
+
+let user=null,isAdmin=false,currentTab="all";
+let galleryImgs=[],galleryIndex=0;
+
+const $=id=>document.getElementById(id);
 
 sb.auth.getUser().then(r=>user=r.data.user);
-cats.forEach(c=>{
-  type.innerHTML+=`<option value="${c.id}">${c.label}</option>`;
-  filterType.innerHTML+=`<option value="${c.id}">${c.label}</option>`;
+
+categories.forEach(c=>{
+ if(c.id!=="all"){
+  $("filterType").innerHTML+=`<option value="${c.id}">${c.label}</option>`;
+  $("type").innerHTML+=`<option value="${c.id}">${c.label}</option>`;
+ }
 });
 
-function updateDynamic(){
-  dynamic.innerHTML=type.value==='kgibs'
-   ? '<input id="surface" placeholder="Surface m²"><input id="rooms" placeholder="Pièces"><input id="location" placeholder="Localisation">'
-   : '<input id="state" placeholder="État">';
-}
-type.onchange=updateDynamic;updateDynamic();
-
-btnAdmin.onclick=()=>{
-  if(prompt('Mot de passe admin')==='Error404trads'){admin=true;loadAds();alert('Admin activé');}
-};
-
-['tab-all','tab-fav','tab-mine'].forEach(id=>{
-  $(id).onclick=()=>{
-    document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
-    $(id).classList.add('active');
-    tab=id.replace('tab-','');loadAds();
-  }
-});
-
-btnAdd.onclick=()=>modal.style.display='flex';
-publish.onclick=async()=>{
-  if(!user)return alert('Connexion requise');
-  const imgs=[];
-  for(const f of images.files){
-    const p=`ads/${Date.now()}-${f.name}`;
-    await sb.storage.from('ads-images').upload(p,f);
-    imgs.push(sb.storage.from('ads-images').getPublicUrl(p).data.publicUrl);
-  }
-  await sb.from('ads').insert({
-    owner:user.id,type:type.value,title:title.value,description:description.value,
-    price:+price.value,contact:contact.value,images:imgs
-  });
-  modal.style.display='none';loadAds();
-};
-
-async function loadAds(){
-  ads.innerHTML='Chargement…';
-  let q=sb.from('ads').select('*').order('created_at',{ascending:false});
-  if(tab==='mine'&&user)q=q.eq('owner',user.id);
-  if(filterType.value)q=q.eq('type',filterType.value);
-  const {data}=await q;ads.innerHTML='';
-  if(!data?.length)return ads.innerHTML='<i>Aucune annonce</i>';
-  for(const a of data){
-    const {data:seen}=user?await sb.from('ads_seen').select('ad_id').eq('ad_id',a.id).single():{data:null};
-    if(filterSeen.value==='unseen'&&seen)continue;
-    const {data:fav}=user?await sb.from('ads_favorites').select('ad_id').eq('ad_id',a.id).single():{data:null};
-    ads.innerHTML+=`
-    <div class="card ${seen?'seen':''}">
-      <div>
-        <div class="price">${a.price} € <span class="fav" onclick="toggleFav(${a.id})">${fav?'⭐':'☆'}</span></div>
-        <b>${a.title}</b>
-        <p>${a.description||''}</p>
-        <button class="icon" onclick="markSeen(${a.id})">👁 Vu</button>
-      </div>
-      ${a.images?.[0]?`<img class="galleryThumb" src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)})'>`:''}
-    </div>`;
-  }
-}
-
-window.toggleFav=async(id)=>{
-  if(!user)return;
-  const {data}=await sb.from('ads_favorites').select().eq('ad_id',id).single();
-  data?await sb.from('ads_favorites').delete().eq('ad_id',id):await sb.from('ads_favorites').insert({ad_id:id,user_id:user.id});
+window.adminLogin=()=>{
+ if(prompt("Mot de passe admin")==="Error404trads"){
+  isAdmin=true;
+  $("adminSort").style.display="block";
   loadAds();
+ }
 };
-window.markSeen=async(id)=>{
-  if(!user)return;
-  await sb.from('ads_seen').insert({ad_id:id,user_id:user.id});
-  loadAds();
-};
-window.openGallery=(imgs)=>{
-  images=imgs;imgIndex=0;galleryImg.src=images[0];gallery.style.display='flex';
-};
-prev.onclick=()=>{if(imgIndex>0)galleryImg.src=images[--imgIndex]};
-next.onclick=()=>{if(imgIndex<images.length-1)galleryImg.src=images[++imgIndex]};
 
-filterType.onchange=filterSeen.onchange=loadAds;
+window.setTab=t=>{
+ currentTab=t;
+ document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+ $("tab-"+t)?.classList.add("active");
+ loadAds();
+};
+
+window.openModal=()=>{$("modal").style.display="flex"};
+window.closeModal=()=>{$("modal").style.display="none"};
+
+window.publish=async()=>{
+ const {data:{user:u}}=await sb.auth.getUser();
+ if(!u) return alert("Connexion requise");
+ const imgs=[];
+ for(const f of $("images").files){
+  const p=`public/${Date.now()}-${f.name}`;
+  await sb.storage.from("ads-images").upload(p,f);
+  imgs.push(sb.storage.from("ads-images").getPublicUrl(p).data.publicUrl);
+ }
+ await sb.from("ads").insert({
+  owner:u.id,
+  type:$("type").value,
+  title:$("title").value,
+  description:$("description").value,
+  price:$("price").value,
+  contact:$("contact").value,
+  images:imgs
+ });
+ closeModal();loadAds();
+};
+
+window.loadAds=async()=>{
+ let q=sb.from("ads").select("*");
+ if(currentTab==="mine"&&user) q=q.eq("owner",user.id);
+ if(currentTab==="fav"&&user){
+  const {data:f}=await sb.from("ads_favorites").select("ad_id").eq("user_id",user.id);
+  q=q.in("id",f.map(x=>x.ad_id));
+ }
+ if($("filterType").value) q=q.eq("type",$("filterType").value);
+ if(isAdmin) q=q.order($("adminSort").value,{ascending:false});
+ const {data}=await q;
+ $("ads").innerHTML="";
+ if(!data?.length){$("ads").innerHTML="<i>Aucune annonce</i>";return;}
+ data.forEach(a=>renderAd(a));
+};
+
+function renderAd(a){
+ const favBtn=user?`<button class="icon" onclick="toggleFav(${a.id})">⭐</button>`:"";
+ const seenBtn=user?`<button class="icon" onclick="markSeen(${a.id})">👁️</button>`:"";
+ $("ads").innerHTML+=`
+ <div class="card">
+  <div>
+   <div class="price">${a.price} €</div>
+   <b>${a.title}</b>
+   <div class="meta">${a.type}</div>
+   <p>${a.description||""}</p>
+   <div class="actions">${favBtn}${seenBtn}</div>
+  </div>
+  ${a.images?.[0]?`<img src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)})'>`:""}
+ </div>`;
+}
+
+window.toggleFav=async id=>{
+ await sb.from("ads_favorites").upsert({user_id:user.id,ad_id:id});
+};
+
+window.markSeen=async id=>{
+ await sb.from("ads_seen").upsert({user_id:user.id,ad_id:id});
+};
+
+window.openGallery=imgs=>{
+ galleryImgs=imgs;
+ galleryIndex=0;
+ updateGallery();
+ $("gallery").style.display="flex";
+};
+window.closeGallery=()=>{$("gallery").style.display="none"};
+window.prevImg=()=>{galleryIndex=(galleryIndex-1+galleryImgs.length)%galleryImgs.length;updateGallery()};
+window.nextImg=()=>{galleryIndex=(galleryIndex+1)%galleryImgs.length;updateGallery()};
+function updateGallery(){
+ $("galleryImg").src=galleryImgs[galleryIndex];
+ $("galleryCount").textContent=`${galleryIndex+1} / ${galleryImgs.length}`;
+}
+
+$("filterType").onchange=$("filterSeen").onchange=loadAds;
 loadAds();
 </script>
 
