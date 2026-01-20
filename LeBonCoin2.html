@@ -341,42 +341,53 @@ window.updateForm=()=>{
 window.openModal=()=>{$("modal").style.display="flex";updateForm()}
 window.closeModal=()=>{$("modal").style.display="none"}
 
-window.publish=async()=>{
-  const {data:{user:u}}=await sb.auth.getUser();
-  if(!u) return alert("Connexion requise");
-
-  const imgs=[];
-  for(const f of $("images").files){
-    const path=`public/${Date.now()}-${f.name}`;
-    await sb.storage.from("ads-images").upload(path,f);
-    imgs.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl);
+window.publish = async () => {
+  const { data: { user: u } } = await sb.auth.getUser();
+  if (!u) {
+    alert("Connexion requise");
+    return;
   }
 
-if(window.__editId){
-  await sb.from("ads").update({
-    title:$("title").value,
-    description:$("description").value||null,
-    price:Number($("price").value),
-    contact:$("contact").value,
-    location:$("location")?.value||null,
-    rooms:$("places")?.value||null,
-    state:$("state")?.value||null,
-  }).eq("id", window.__editId);
+  const imgs = [];
+  for (const f of $("images").files) {
+    const path = `public/${Date.now()}-${f.name}`;
+    await sb.storage.from("ads-images").upload(path, f);
+    imgs.push(
+      sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl
+    );
+  }
 
-  window.__editId = null;
-}else{
-  await sb.from("ads").insert({
-    owner:u.id,
-    type:$("type").value,
-    title:$("title").value,
-    description:$("description").value||null,
-    price:Number($("price").value),
-    contact:$("contact").value,
-    location:$("location")?.value||null,
-    rooms:$("places")?.value||null,
-    state:$("state")?.value||null,
-    images:imgs
-  });
+  if (window.__editId) {
+    await sb.from("ads").update({
+      title: $("title").value,
+      description: $("description").value || null,
+      price: Number($("price").value),
+      contact: $("contact").value,
+      location: $("location")?.value || null,
+      rooms: $("places")?.value || null,
+      state: $("state")?.value || null,
+    }).eq("id", window.__editId);
+
+    window.__editId = null;
+
+  } else {
+    await sb.from("ads").insert({
+      owner: u.id,
+      type: $("type").value,
+      title: $("title").value,
+      description: $("description").value || null,
+      price: Number($("price").value),
+      contact: $("contact").value,
+      location: $("location")?.value || null,
+      rooms: $("places")?.value || null,
+      state: $("state")?.value || null,
+      images: imgs
+    });
+  }
+
+  closeModal();
+  loadAds();
+};
 
   closeModal();
   loadAds();
@@ -562,6 +573,7 @@ loadAds();
 
 </body>
 </html>
+
 
 
 
