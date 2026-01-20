@@ -288,12 +288,13 @@ let ADS_IMAGES = {};
 async function initAuth(){
   const { data } = await sb.auth.getSession();
   user = data.session?.user || null;
-  loadAds();
+  await loadAds();
 }
 
 sb.auth.onAuthStateChange((_e, session)=>{
+  const wasLogged = !!user;
   user = session?.user || null;
-  loadAds();
+  if (wasLogged !== !!user) loadAds();
 });
 
 initAuth();
@@ -396,7 +397,7 @@ async function isFav(adId){
     .from("ads_favorites")
     .select("id")
     .eq("user_id", user.id)
-    .eq("ad_id", Number(adId))
+    .eq("ad_id", adId)
     .maybeSingle();
 
   if(error) return false;
@@ -410,7 +411,7 @@ async function isSeen(adId){
     .from("ads_seen")
     .select("id")
     .eq("user_id", user.id)
-    .eq("ad_id", Number(adId))
+  .eq("ad_id", adId)
     .maybeSingle();
 
   if(error) return false;
@@ -461,8 +462,6 @@ window.markSeen = async (adId) => {
   await sb
     .from("ads_seen")
     .upsert({ user_id:user.id, ad_id:adId });
-
-  loadAds();
 };
 
 
@@ -569,11 +568,11 @@ window.nextImg = () => {
 $("filterType").onchange=loadAds;
 $("filterSeen").onchange=loadAds;
 
-loadAds();
 </script>
 
 </body>
 </html>
+
 
 
 
