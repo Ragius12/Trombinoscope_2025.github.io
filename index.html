@@ -614,24 +614,41 @@ function updateUI(session) {
 sb.auth.onAuthStateChange(async (event, session) => {
   updateUI(session);
 
-  if (session) {
-    document.getElementById("profileEmail").innerText = session.user.email;
+  if (!session) return;
 
-   if (data) {
-  cacheProfile(data);
-  fillProfileForm(data);
+  // Email dans la popup
+  qs("profileEmail").innerText = session.user.email;
 
-  if (data.nom && data.prenom && data.promo) {
-    updateProfileBadge(data);
+  // 1️⃣ Charger le profil depuis Supabase
+  const { data: profile, error } = await sb
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erreur chargement profil:", error);
+    return;
   }
-}
 
-  if (event === "SIGNED_IN") {
-    if (!(await hasCompleteProfile())) {
-      document.getElementById("profileModal").style.display = "flex";
+  // 2️⃣ Si le profil existe
+  if (profile) {
+    cacheProfile(profile);
+    fillProfileForm(profile);
+
+    if (profile.nom && profile.prenom && profile.promo) {
+      updateProfileBadge(profile);
     }
   }
-}});
+
+  // 3️⃣ Forcer la complétion au SIGNED_IN
+  if (event === "SIGNED_IN") {
+    if (!profile || !(profile.nom && profile.prenom && profile.promo)) {
+      qs("profileModal").style.display = "flex";
+    }
+  }
+});
+
 
 
 /* =========================
@@ -866,6 +883,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
