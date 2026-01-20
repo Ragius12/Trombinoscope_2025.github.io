@@ -663,14 +663,23 @@ async function login() {
   const email = qs("authEmail").value;
   const password = qs("authPassword").value;
 
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) return alert(error.message);
+  const { data, error } = await sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    showToast(error.message, "error");
+    return;
+  }
+
   if (!data.user.email_confirmed_at) {
-  showToast("Merci de confirmer ton email 📧", "warn");
-}
+    showToast("Merci de confirmer ton email 📧", "warn");
+  }
 
   closeAuthModal();
 }
+
 
 async function signup() {
   const email = qs("authEmail").value;
@@ -817,6 +826,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
