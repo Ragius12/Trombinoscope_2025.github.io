@@ -222,7 +222,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
 
 <div class="container">
 
-<!-- Login area (remplacé : email + password + login/signup distincts) -->
+<!-- Login area (remplacé : email + password + login/signup distincts) 
 <div id="loginArea" class="card" style="text-align:center;">
   <div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:420px;margin:auto;">
     <input id="email" name="email" autocomplete="email" class="login-input" placeholder="prénom.nom@ensam.eu" type="email" aria-label="email">
@@ -232,7 +232,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
       <button id="signupBtn" class="login-btn" style="flex:1">S'inscrire</button>
     </div>
     <div id="authArea" style="text-align:center; margin-bottom:20px;">
-  <!-- duplicate UI elements hidden to keep only one logical login/signup in the main flow -->
+                                                                                  duplicate UI elements hidden to keep only one logical login/signup in the main flow 
   <button id="openLoginBtn" class="login-btn" style="display:none">Se connecter</button>
   <button id="openSignupBtn" class="login-btn" style="display:none">S'inscrire</button>
   <div id="connectedInfo" style="display:none; margin-top:10px;">
@@ -244,7 +244,7 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
   </div>
   <div class="small-muted">Utilise ton adresse <b>@ensam.eu</b>. Inscrit toi si cela n'est pas déjà fait. N'oublies pas ton Mot de Passe siteup's, sinon c'est une enlise.</div>
 </div>
-
+-->
 
 
 <div id="publishArea" class="card" style="display:none;">
@@ -389,8 +389,35 @@ select:focus, input:focus, textarea:focus { transform: scale(1.01); box-shadow: 
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
   );
 
+async function fillProfileFieldsLocked() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("nom, prenom, surns, fams, promo")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) return;
+
+  const fields = ["nom", "prenom", "surns", "fams", "promo"];
+
+  fields.forEach(f => {
+    const input = document.querySelector(`input[name="${f}"], select[name="${f}"]`);
+    if (input) {
+      input.value = profile[f] ?? "";
+      input.readOnly = true;
+      input.disabled = true;
+      input.style.opacity = "0.7";
+      input.style.cursor = "not-allowed";
+    }
+  });
+}
+    
 window.openProfile = function () {
   const modal = document.getElementById("profileModal");
+  fillProfileFieldsLocked();
   if (!modal) return;
   modal.style.display = "flex";
   modal.classList.add("show");
@@ -1797,6 +1824,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
