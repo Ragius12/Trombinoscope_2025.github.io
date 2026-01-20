@@ -584,7 +584,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	if (!data) {
 	  await sb.from("profiles").insert({
 	    id: session.user.id,
-	    email: session.user.email
 	  });
 	}
 
@@ -622,7 +621,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
       .from("profiles")
       .select("*")
       .eq("id", session.user.id)
-      .single();
+      .maybeSingle()
 
     if (data?.nom && data?.prenom && data?.promo) {
 	  updateProfileBadge(data);
@@ -666,7 +665,7 @@ async function login() {
 
   const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) return alert(error.message);
-  if (!session.user.email_confirmed_at) {
+  if (!data.user.email_confirmed_at) {
   showToast("Merci de confirmer ton email 📧", "warn");
 }
 
@@ -797,7 +796,7 @@ async function hasCompleteProfile() {
     .from("profiles")
     .select("nom, prenom, promo")
     .eq("id", session.user.id)
-    .single();
+    .maybeSingle()
 
   if (error || !data) return false;
 
@@ -818,6 +817,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
