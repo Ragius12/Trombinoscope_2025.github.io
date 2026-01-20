@@ -391,23 +391,29 @@ window.publish = async () => {
 
 async function isFav(adId){
   if(!user) return false;
-  const { data } = await sb
+
+  const { data, error } = await sb
     .from("ads_favorites")
     .select("id")
     .eq("user_id", user.id)
-    .eq("ad_id", adId)
+    .eq("ad_id", Number(adId))
     .maybeSingle();
+
+  if(error) return false;
   return !!data;
 }
 
 async function isSeen(adId){
   if(!user) return false;
-  const { data } = await sb
+
+  const { data, error } = await sb
     .from("ads_seen")
     .select("id")
     .eq("user_id", user.id)
-    .eq("ad_id", adId)
+    .eq("ad_id", Number(adId))
     .maybeSingle();
+
+  if(error) return false;
   return !!data;
 }
   
@@ -493,7 +499,6 @@ window.loadAds=async()=>{
               ${p?.surns || ""} ${p?.fams || ""} ${p?.promo || ""}
             </small>
           </div>
-        <div class="meta">${p?.prenom||""} ${p?.nom||""}<br>${p?.surns||""} ${p?.fams||""} ${p?.promo||""}</div>
         <p>${a.description||""}</p>
         <div class="actions">
           <a href="${wa}" target="_blank"><button>📲 Contactez-moi</button></a>
@@ -569,6 +574,7 @@ loadAds();
 
 </body>
 </html>
+
 
 
 
