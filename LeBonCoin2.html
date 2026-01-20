@@ -138,6 +138,72 @@ button.icon{padding:6px 10px}
 .gallery-nav.left{left:40px}
 .gallery-nav.right{right:40px}
 .close{position:absolute;top:20px;right:30px;font-size:30px;color:#fff;cursor:pointer}
+
+/* ================= MOBILE ================= */
+@media (max-width: 900px){
+
+  .container{
+    padding:12px;
+  }
+
+  .tabs{
+    gap:6px;
+  }
+
+  /* bouton publier bien séparé */
+  .tabs button:last-child{
+    margin-left:auto;
+    background:#ffb703;
+  }
+
+  .card{
+    grid-template-columns:1fr;
+  }
+
+  .card img{
+    height:220px;
+  }
+
+  .price{
+    font-size:1.4em;
+  }
+
+  .actions{
+    justify-content:space-between;
+  }
+
+  .meta{
+    font-size:.9em;
+    line-height:1.3;
+  }
+
+  .modal-content{
+    width:95%;
+  }
+}
+
+.icon-heart{
+  font-size:20px;
+  cursor:pointer;
+}
+.icon-heart.active{
+  color:red;
+}
+.icon-eye{
+  opacity:.5;
+}
+.icon-eye.active{
+  opacity:1;
+}
+
+  .profile-box{
+  background:#f3f4f6;
+  padding:8px 12px;
+  border-radius:12px;
+  margin:8px 0;
+  font-size:.9em;
+}
+
 </style>
 </head>
 
@@ -199,6 +265,9 @@ button.icon{padding:6px 10px}
   <span class="close" onclick="closeGallery()">✕</span>
   <span class="gallery-nav left" onclick="prevImg()">‹</span>
   <img id="galleryImg">
+    <div id="thumbs"
+         style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap">
+    </div>
   <span class="gallery-nav right" onclick="nextImg()">›</span>
 </div>
 
@@ -214,7 +283,39 @@ const $ = id => document.getElementById(id);
 let user=null,currentTab="all";
 let galleryImgs=[],galleryIndex=0;
 
-sb.auth.getUser().then(r=>user=r.data.user);
+async function initAuth(){
+  const { data } = await sb.auth.getSession();
+  user = data.session?.user || null;
+  loadAds();
+}
+
+sb.auth.onAuthStateChange((_e, session)=>{
+  user = session?.user || null;
+  loadAds();
+});
+
+initAuth();
+
+  async function deleteAd(id){
+  if(!confirm("Supprimer cette annonce ?")) return;
+  await sb.from("ads").delete().eq("id",id);
+  alert("Annonce supprimée");
+  loadAds();
+}
+
+function editAd(ad){
+  openModal();
+  $("type").value = ad.type;
+  $("title").value = ad.title;
+  $("description").value = ad.description||"";
+  $("price").value = ad.price;
+  $("contact").value = ad.contact||"";
+  $("location").value = ad.location||"";
+  $("places").value = ad.rooms||"";
+  $("state").value = ad.state||"";
+
+  window.__editId = ad.id;
+}
 
 const CATS=[
  ["kgibs","🏠 Kgib’s"],
@@ -249,6 +350,19 @@ window.publish=async()=>{
     imgs.push(sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl);
   }
 
+if(window.__editId){
+  await sb.from("ads").update({
+    title:$("title").value,
+    description:$("description").value||null,
+    price:Number($("price").value),
+    contact:$("contact").value,
+    location:$("location")?.value||null,
+    rooms:$("places")?.value||null,
+    state:$("state")?.value||null,
+  }).eq("id", window.__editId);
+
+  window.__editId = null;
+}else{
   await sb.from("ads").insert({
     owner:u.id,
     type:$("type").value,
@@ -260,12 +374,35 @@ window.publish=async()=>{
     rooms:$("places")?.value||null,
     state:$("state")?.value||null,
     images:imgs
+    }
   });
 
   closeModal();
   loadAds();
 };
 
+async function isFav(adId){
+  if(!user) return false;
+  const { data } = await sb
+    .from("ads_favorites")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("ad_id", adId)
+    .maybeSingle();
+  return !!data;
+}
+
+async function isSeen(adId){
+  if(!user) return false;
+  const { data } = await sb
+    .from("ads_seen")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("ad_id", adId)
+    .maybeSingle();
+  return !!data;
+}
+  
 window.setTab=tab=>{
   currentTab=tab;
   document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
@@ -273,20 +410,47 @@ window.setTab=tab=>{
   loadAds();
 };
 
-window.toggleFav=async id=>{
-  if(!user) return alert("Connexion requise");
-  const {data}=await sb.from("ads_favorites").select("*").eq("ad_id",id).eq("user_id",user.id);
-  data.length
-    ? sb.from("ads_favorites").delete().eq("ad_id",id)
-    : sb.from("ads_favorites").insert({ad_id:id,user_id:user.id});
+window.toggleFav = async (adId) => {
+  if(!user){
+    alert("Connexion requise pour les favoris");
+    return;
+  }
+
+  const { data } = await sb
+    .from("ads_favorites")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("ad_id", adId)
+    .maybeSingle();
+
+  if(data){
+    await sb
+      .from("ads_favorites")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("ad_id", adId);
+    alert("Retiré des favoris");
+  }else{
+    await sb
+      .from("ads_favorites")
+      .insert({ user_id:user.id, ad_id:adId });
+    alert("Ajouté aux favoris ❤️");
+  }
+
   loadAds();
 };
 
-window.markSeen=async id=>{
+
+window.markSeen = async (adId) => {
   if(!user) return;
-  await sb.from("ads_seen").insert({ad_id:id,user_id:user.id});
+
+  await sb
+    .from("ads_seen")
+    .upsert({ user_id:user.id, ad_id:adId });
+
   loadAds();
 };
+
 
 window.loadAds=async()=>{
   let q=sb.from("ads").select("*");
@@ -304,18 +468,33 @@ window.loadAds=async()=>{
   for(const a of data){
     const {data:p}=await sb.from("profiles").select("prenom,nom,surns,fams,promo").eq("id",a.owner).single();
     const wa=`https://wa.me/${(a.contact||"").replace(/\D/g,"")}`;
+    const fav = await isFav(a.id);
+    const seen = await isSeen(a.id);
 
     $("ads").innerHTML+=`
     <div class="card">
       <div>
         <div class="price">${a.price} €</div>
         <b>${a.title}</b>
+          <div class="profile-box">
+            👤 ${p?.prenom || ""} ${p?.nom || ""}<br>
+            <small>
+              ${p?.surns || ""} ${p?.fams || ""} ${p?.promo || ""}
+            </small>
+          </div>
         <div class="meta">${p?.prenom||""} ${p?.nom||""}<br>${p?.surns||""} ${p?.fams||""} ${p?.promo||""}</div>
         <p>${a.description||""}</p>
         <div class="actions">
           <a href="${wa}" target="_blank"><button>📲 Contactez-moi</button></a>
-          <button onclick="toggleFav(${a.id})">⭐</button>
-          <button onclick="markSeen(${a.id})">👁 Vu</button>
+              <span class="icon-heart ${fav ? "active" : ""}"
+                  onclick="toggleFav(${a.id})">
+              ${fav ? "❤️" : "🤍"}
+            </span>
+            
+            <span class="icon-eye ${seen ? "active" : ""}"
+                  onclick="markSeen(${a.id})">
+              👁
+            </span>
         </div>
       </div>
       ${a.images?.[0]?`<img src="${a.images[0]}" onclick='openGallery(${JSON.stringify(a.images)})'>`:""}
@@ -323,14 +502,44 @@ window.loadAds=async()=>{
   }
 };
 
-window.openGallery=imgs=>{
-  galleryImgs=imgs;galleryIndex=0;
-  $("galleryImg").src=imgs[0];
-  $("gallery").style.display="flex";
+window.openGallery = (imgs) => {
+  galleryImgs = imgs;
+  galleryIndex = 0;
+
+  $("galleryImg").src = galleryImgs[0];
+  $("thumbs").innerHTML = "";
+
+  galleryImgs.forEach((src, i) => {
+    const t = document.createElement("img");
+    t.src = src;
+    t.style.height = "55px";
+    t.style.borderRadius = "8px";
+    t.style.cursor = "pointer";
+    t.style.opacity = i === 0 ? "1" : ".6";
+
+    t.onclick = () => {
+      galleryIndex = i;
+      $("galleryImg").src = src;
+      [...$("thumbs").children].forEach(c => c.style.opacity = ".6");
+      t.style.opacity = "1";
+    };
+
+    $("thumbs").appendChild(t);
+  });
+
+  $("gallery").style.display = "flex";
 };
+
 window.closeGallery=()=>{$("gallery").style.display="none"};
-window.prevImg=()=>{$("galleryImg").src=galleryImgs[galleryIndex=(galleryIndex-1+galleryImgs.length)%galleryImgs.length]};
-window.nextImg=()=>{$("galleryImg").src=galleryImgs[galleryIndex=(galleryIndex+1)%galleryImgs.length]};
+window.prevImg = () => {
+  galleryIndex = (galleryIndex - 1 + galleryImgs.length) % galleryImgs.length;
+  $("galleryImg").src = galleryImgs[galleryIndex];
+};
+
+window.nextImg = () => {
+  galleryIndex = (galleryIndex + 1) % galleryImgs.length;
+  $("galleryImg").src = galleryImgs[galleryIndex];
+};
 
 $("filterType").onchange=loadAds;
 $("filterSeen").onchange=loadAds;
@@ -340,3 +549,4 @@ loadAds();
 
 </body>
 </html>
+
