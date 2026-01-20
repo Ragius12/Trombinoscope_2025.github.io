@@ -617,16 +617,14 @@ sb.auth.onAuthStateChange(async (event, session) => {
   if (session) {
     document.getElementById("profileEmail").innerText = session.user.email;
 
-    const { data } = await sb
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .maybeSingle()
+   if (data) {
+  cacheProfile(data);
+  fillProfileForm(data);
 
-    if (data?.nom && data?.prenom && data?.promo) {
-	  updateProfileBadge(data);
-	}
+  if (data.nom && data.prenom && data.promo) {
+    updateProfileBadge(data);
   }
+}
 
   if (event === "SIGNED_IN") {
     if (!(await hasCompleteProfile())) {
@@ -655,6 +653,29 @@ window.closeProfileModal = () => {
   qs("profileModal").style.display = "none";
 };
 
+function cacheProfile(profile) {
+  localStorage.setItem("profile_cache", JSON.stringify(profile));
+}
+
+function getCachedProfile() {
+  try {
+    return JSON.parse(localStorage.getItem("profile_cache"));
+  } catch {
+    return null;
+  }
+}
+
+function fillProfileForm(profile) {
+  if (!profile) return;
+
+  qs("pNom").value    = profile.nom    || "";
+  qs("pPrenom").value = profile.prenom || "";
+  qs("pSurns").value  = profile.surns  || "";
+  qs("pFams").value   = profile.fams   || "";
+  qs("pPromo").value  = profile.promo  || "";
+}
+
+	
 /* =========================
    AUTH ACTIONS
 ========================= */
@@ -720,9 +741,27 @@ qs("btnLogout").onclick = async () => {
   await sb.auth.signOut();
 };
 
-qs("btnProfile").onclick = () => {
+qs("btnProfile").onclick = async () => {
+  const cached = getCachedProfile();
+  if (cached) fillProfileForm(cached);
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+
+  const { data } = await sb
+    .from("profiles")
+    .select("*")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  if (data) {
+    fillProfileForm(data);
+    cacheProfile(data);
+  }
+
   qs("profileModal").style.display = "flex";
 };
+
 
 function updateProfileBadge(profile){
   qs("profileBadge").style.display = "inline";
@@ -762,6 +801,7 @@ window.saveProfile = async () => {
   }
   closeProfileModal();
   updateProfileBadge(payload);
+  cacheProfile(payload);
   showToast("Profil sauvegardé ✨", "success");
 };
 ;
@@ -826,6 +866,7 @@ function showToast(msg, type="success"){
 
 </body>
 </html>
+
 
 
 
