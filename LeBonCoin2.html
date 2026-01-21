@@ -775,7 +775,9 @@ window.loadAds = async () => {
   <div class="card ${seen ? "" : "unseen"}">
     <div class="card-left">
       <div class="ad-header">
-  <span class="price">${a.price} €</span>
+  <span class="price">
+    ${Number(a.price) === 0 ? "Bohut" : `${a.price} €`}
+  </span>
       <b class="ad-title">
         ${a.title}
         ${isNew ? `<span class="badge-new">NOUVEAU</span>` : ""}
@@ -892,6 +894,7 @@ $("filterType").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
