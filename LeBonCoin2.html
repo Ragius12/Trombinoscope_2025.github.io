@@ -62,7 +62,7 @@ select,input,textarea{
 .card img{
   width:100%;
   height:180px;
-  object-fit:cover;
+  object-fit:contain;
   border-radius:14px;
   cursor:pointer;
 }
@@ -149,7 +149,8 @@ button.icon{padding:6px 10px}
 @media (max-width: 900px){
 
   .profile-box{
-    display:flex;
+    display:block;
+    color:#111;
     flex-direction:column;
     gap:2px;
     background:#e8ebf0;
@@ -345,10 +346,22 @@ initAuth();
 
 window.deleteAd = async function(id){
   if(!confirm("Supprimer cette annonce ?")) return;
-  await sb.from("ads").delete().eq("id",id);
-  alert("Annonce supprimée");
+
+  const { error } = await sb
+    .from("ads")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("Suppression refusée");
+    console.error(error);
+    return;
+  }
+
+  // ✅ suppression immédiate côté UI
+  delete window.__ADS_CACHE[id];
   loadAds();
-}
+};
 
 window.editAd = function(ad){
   openModal();
@@ -454,6 +467,15 @@ window.publish = async () => {
       images: imgs
     });
   }
+
+    $("title").value = "";
+    $("description").value = "";
+    $("price").value = "";
+    $("contact").value = "";
+    $("location").value = "";
+    $("places").value = "";
+    $("state").value = "";
+    $("images").value = "";
 
   closeModal();
   loadAds();
@@ -645,9 +667,13 @@ window.editAdById = (id) => {
   editAd(ad);
 };
   
-window.openGalleryById = (adId) => {
+window.openGalleryById = async (adId) => {
   const imgs = ADS_IMAGES[adId];
   if (!imgs || !imgs.length) return;
+
+  // ✅ vue unique par user
+  await markSeen(adId);
+
   openGallery(imgs);
 };
   
@@ -697,6 +723,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
