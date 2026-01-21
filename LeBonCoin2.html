@@ -347,8 +347,8 @@ button.icon{padding:6px 10px}
 .banner{
   position: relative;
   width: 100%;
-  height: 180px;
-  background: url("Coin2.png") center center / cover no-repeat;
+  height: 220px; /* un peu plus haut */
+  background: url("Coin2.png") center 25% / cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -412,6 +412,16 @@ button.icon{padding:6px 10px}
   font-weight: 700;
   z-index: 9999;
 }
+
+input.invalid{
+  border:2px solid #e63946;
+  background:#ffe5e5;
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
   
 </style>
 </head>
@@ -472,7 +482,7 @@ button.icon{padding:6px 10px}
 
     <input type="file" id="images" multiple accept="image/*"><br><br>
 
-    <button onclick="publish()">Publier</button>
+    <button id="publishBtn" onclick="publish()" disabled>Publier</button>
     <button class="secondary" onclick="closeModal()">Annuler</button>
   </div>
 </div>
@@ -671,19 +681,6 @@ function showCopyMsg(text) {
   }, 1500);
 }
 
-window.contactAd = async (adId, contact) => {
-  await markSeen(adId);
-  if (contact.includes("@")) {
-    navigator.clipboard.writeText(contact)
-      .then(() => showCopyMsg(`Adresse copiée : ${contact}`))
-      .catch(err => console.error("Impossible de copier :", err));
-    return;
-  }
-
-  const wa = `https://wa.me/${contact.replace(/\D/g,"")}`;
-  window.open(wa, "_blank");
-};
-  
 function saveScroll(){
   sessionStorage.setItem("scrollY", window.scrollY);
 }
@@ -975,28 +972,20 @@ window.contactAd = async (adId, contact) => {
 
   contact = contact.trim();
 
-  if (!contact) {
-    alert("Le champ contact est vide !");
-    return;
-  }
-
-  // Cas 1 : mail
-  if (contact.includes("@")) {
+  // MAIL
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact)) {
     navigator.clipboard.writeText(contact)
-      .then(() => alert(`Adresse copiée : ${contact}`))
-      .catch(err => console.error("Impossible de copier :", err));
+      .then(() => showCopyMsg(`Adresse copiée : ${contact}`));
     return;
   }
 
-  // Cas 2 : numéro WhatsApp (seulement chiffres)
+  // NUMÉRO
   if (/^\d+$/.test(contact)) {
-    const wa = `https://wa.me/${contact}`;
-    window.open(wa, "_blank");
+    window.open(`https://wa.me/${contact}`, "_blank");
     return;
   }
 
-  // Cas 3 : contact invalide
-  alert("Contact incorrect ! Veuillez remplir un numéro ou un email valide.");
+  showCopyMsg("Contact invalide");
 };
   
 window.closeGallery=()=>{$("gallery").style.display="none"};
@@ -1012,20 +1001,32 @@ window.nextImg = () => {
 
 $("filterType").onchange=loadAds;
 
+const contactInput = document.getElementById("contact");
+const publishBtn = document.getElementById("publishBtn");
+
+function isValidContact(value){
+  value = value.trim();
+
+  // numéro : uniquement chiffres
+  if (/^\d+$/.test(value)) return true;
+
+  // email : exactement 1 @
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) return true;
+
+  return false;
+}
+
+contactInput.addEventListener("input", () => {
+  if (isValidContact(contactInput.value)) {
+    contactInput.classList.remove("invalid");
+    publishBtn.disabled = false;
+  } else {
+    contactInput.classList.add("invalid");
+    publishBtn.disabled = true;
+  }
+});
+  
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
