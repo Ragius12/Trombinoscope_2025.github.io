@@ -477,12 +477,11 @@ window.editAd = function(ad){
 }
 
 const CATS=[
- ["kgibs","🏠 Kgib’s"],
- ["objets","📦 Objets"],
- ["tech","💻 Tech"],
- ["services","🛠️ Services"],
- ["art","🎨 Art"],
- ["autre","✨ Autre"]
+ ["kgibs","Kgib’s"],
+ ["objets","Objets"],
+ ["tech","Tech"],
+ ["services","Services"],
+ ["autre","Autre"]
 ];
 CATS.forEach(c=>{
   $("type").innerHTML+=`<option value="${c[0]}">${c[1]}</option>`;
@@ -793,10 +792,10 @@ window.loadAds = async () => {
       <p class="ad-desc">${a.description || ""}</p>
 
       <div class="meta">
-        ${a.location ? `📍 ${a.location}<br>` : ""}
-        ${a.rooms ? `👥 ${a.rooms} places<br>` : ""}
-        ${a.state ? `📦 État : ${a.state}<br>` : ""}
-        🗂 Catégorie : ${a.type}
+        ${a.location ? `Localisation :  ${a.location}<br>` : ""}
+        ${a.rooms ? `Nombre de places : ${a.rooms} places<br>` : ""}
+        ${a.state ? `État : ${a.state}<br>` : ""}
+        Catégorie : ${a.type}
       </div>
 
       <div class="actions">
@@ -893,6 +892,7 @@ $("filterType").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
