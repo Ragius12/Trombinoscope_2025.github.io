@@ -93,18 +93,20 @@
     .subtitle{color:var(--muted);font-size:14px;animation:fadeIn 1.6s ease}
     @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 
-    .promo-photo {
-      width:100%;
-      border-radius:18px;
-      margin-top:14px;
-      box-shadow:0 8px 30px rgba(0,0,0,0.4);
-      transition:transform 0.4s ease, box-shadow 0.4s ease;
-      animation:fadeInUp 1.2s ease;
-    }
-    .promo-photo:hover {
-      transform:scale(1.03);
-      box-shadow:0 12px 40px rgba(0,0,0,0.5);
-    }
+    .promo-photo{
+	  width:100%;
+	  max-width:320px;        /* 🔥 limite visuelle */
+	  border-radius:18px;
+	  margin-top:14px;
+	  box-shadow:0 8px 30px rgba(0,0,0,0.4);
+	  transition:transform .4s ease, box-shadow .4s ease, opacity .3s ease;
+	  animation:fadeInUp 1.2s ease;
+	}
+	
+	.promo-photo:hover{
+	  transform:scale(1.03);
+	  box-shadow:0 12px 40px rgba(0,0,0,0.5);
+	}
     @keyframes fadeInUp {
       from {opacity:0; transform:translateY(20px);}
       to {opacity:1; transform:translateY(0);}
@@ -373,28 +375,17 @@
     text-align: center;
   }
 
-  .promo-photo {
-    max-height: 220px;
-    object-fit: cover;
-  }
-
-/* === PROMO IMAGE MINI === */
-.promo-mini{
-  width:100%;
-  max-width:280px;
-  margin-top:12px;
-  border-radius:14px;
-  box-shadow:0 6px 20px rgba(0,0,0,0.35);
-  animation:fadeInUp .6s ease;
-}
-
-@media(max-width:950px){
-  .promo-mini{
-    max-width:220px;
-    margin-left:auto;
-    margin-right:auto;
-  }
-}
+  .promo-photo{
+	  max-width:220px;
+	  margin-left:auto;
+	  margin-right:auto;
+	}
+	@media(max-width:450px){
+	  .promo-photo{
+	    max-width:180px;
+	    border-radius:14px;
+	  }
+	}
 	
   /* Grid cartes */
   .grid {
@@ -451,38 +442,7 @@
 .profile-modal input[type="date"]:hover::-webkit-calendar-picker-indicator {
   filter: invert(1) sepia(1) saturate(5) hue-rotate(30deg);
 }
-
-/* === PROMO IMAGE DISCRÈTE (DESKTOP) === */
-.promo-corner{
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-
-  width: 140px;
-  max-width: 35%;
-
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-
-  opacity: 0.95;
-}
-
-/* === PROMO IMAGE MOBILE === */
-@media(max-width:950px){
-  .promo-corner{
-    position: static;      /* enlève absolute */
-    margin: 14px auto 0;
-    width: 120px;
-    max-width: 60%;
-    display: block;
-  }
-}
-
-@media(max-width:450px){
-  .promo-corner{
-    width: 100px;
-  }
-}	  
+  
   </style>
 </head>
 
@@ -583,13 +543,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 		    </div>
 		  </div>
 		
-		  <!-- 🔽 IMAGE PROMO ICI -->
 		  <img
-		    id="promoImage"
-		    src="Promotion.png"
-		    alt="Promotion"
-		    class="promo-mini"
-		  >
+			  id="promoImage"
+			  src="Promotion.png"
+			  alt="Promotion"
+			  class="promo-photo"
+			/>
 		</section>
 
       <section class="grid">
@@ -1111,5 +1070,6 @@ setInterval(() => {
 
 </body>
 </html>
+
 
 
