@@ -487,6 +487,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <option>An224</option>
         <option>An225</option>
       </select>
+			<input 
+	  id="pAnniv"
+	  type="date"
+	  placeholder="Date de naissance"
+	  value="2004-01-01"
+	/>
     </div>
 
     <div class="actions">
@@ -789,6 +795,7 @@ function fillProfileForm(profile) {
   qs("pSurns").value  = profile.surns  || "";
   qs("pFams").value   = profile.fams   || "";
   qs("pPromo").value  = profile.promo  || "";
+  qs("pAnniv").value = profile.anniversaire || "2004-01-01";
 }
 
 	
@@ -910,12 +917,15 @@ window.saveProfile = async () => {
     surns: qs("pSurns").value.trim(),
     fams: qs("pFams").value.trim(),
     promo: qs("pPromo").value,
+	anniversaire: qs("pAnniv").value,
   };
 
-  if (!payload.nom || !payload.prenom || !payload.promo) {
-    return showToast("Merci de remplir Nom, Prénom et Promo", "warn");
-  }
-
+  if (!payload.nom || !payload.prenom || !payload.promo || !payload.anniversaire) {
+	  return showToast(
+	    "Merci de remplir Nom, Prénom, Promo et Date de naissance",
+	    "warn"
+	  );
+	}
   const { error } = await sb
     .from("profiles")
     .upsert(payload, { onConflict: "id" });
@@ -969,13 +979,18 @@ async function hasCompleteProfile() {
 
   const { data, error } = await sb
     .from("profiles")
-    .select("nom, prenom, promo")
+    .select("nom, prenom, promo, anniversaire")
     .eq("id", currentSession.user.id)
     .maybeSingle();
 
   if (error) return false;
 
-  return Boolean(data?.nom && data?.prenom && data?.promo);
+  return Boolean(
+  data?.nom &&
+  data?.prenom &&
+  data?.promo &&
+  data?.anniversaire
+);
 }
 
 
@@ -997,6 +1012,7 @@ window.saveProfile = saveProfile;
 
 </body>
 </html>
+
 
 
 
