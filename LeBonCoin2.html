@@ -67,6 +67,7 @@ select,input,textarea{
 .card-left{
   display:flex;
   flex-direction:column;
+  max-width:100%;
 }
 
 .card-right{
@@ -803,7 +804,7 @@ window.loadAds = async () => {
         }
       </div>`;
   }
-
+  restoreScroll();
   loadingAds = false;
 };
 
@@ -871,5 +872,6 @@ $("filterType").onchange=loadAds;
 
 </body>
 </html>
+
 
 
