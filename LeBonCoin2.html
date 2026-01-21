@@ -306,7 +306,7 @@ initAuth();
   loadAds();
 }
 
-function editAd(ad){
+window.editAd = function(ad){
   openModal();
   $("type").value = ad.type;
   $("title").value = ad.title;
@@ -593,6 +593,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
