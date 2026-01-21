@@ -854,7 +854,6 @@ window.loadAds = async () => {
       .eq("id", a.owner)
       .single();
 
-    const wa = `https://wa.me/${(a.contact || "").replace(/\D/g,"")}`;
     const fav = await isFav(a.id);
     const seen = await isSeen(a.id);
 
@@ -901,7 +900,7 @@ window.loadAds = async () => {
           <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
         ` : ""}
 
-        <button onclick="contactAd(${a.id}, '${wa}')">
+        <button onclick="contactAd(${a.id}, '${a.contact || ""}')">
           📲 Contactez-moi
         </button>
 
@@ -972,16 +971,18 @@ window.contactAd = async (adId, contact) => {
 
   contact = contact.trim();
 
-  // MAIL
+  // EMAIL (1 seul @, format correct)
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact)) {
-    navigator.clipboard.writeText(contact)
-      .then(() => showCopyMsg(`Adresse copiée : ${contact}`));
+    await navigator.clipboard.writeText(contact);
+    showCopyMsg(`Adresse copiée : ${contact}`);
     return;
   }
 
-  // NUMÉRO
-  if (/^\d+$/.test(contact)) {
-    window.open(`https://wa.me/${contact}`, "_blank");
+  // NUMÉRO → on enlève tout sauf chiffres
+  const digits = contact.replace(/\D/g, "");
+
+  if (digits.length >= 8) {
+    window.open(`https://wa.me/${digits}`, "_blank");
     return;
   }
 
@@ -1030,3 +1031,4 @@ contactInput.addEventListener("input", () => {
 
 </body>
 </html>
+
