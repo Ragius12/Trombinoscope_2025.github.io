@@ -264,7 +264,49 @@ button.icon{padding:6px 10px}
   box-shadow:0 0 0 3px #ff9f1c, var(--shadow);
   background:linear-gradient(0deg,#fff,#fff8e6);
 }
-  
+
+.badge-new{
+  display:inline-block;
+  background:#ff9f1c;
+  color:#fff;
+  font-size:.7em;
+  font-weight:900;
+  padding:4px 8px;
+  border-radius:999px;
+  margin-left:8px;
+  animation:newPulse 2s infinite;
+}
+
+@keyframes newPulse{
+  0%,100%{opacity:1}
+  50%{opacity:.6}
+}
+
+/* halo plus explicite pour nouveau */
+.card.new{
+  box-shadow:
+    0 0 0 3px #ff9f1c,
+    0 10px 30px rgba(0,0,0,.12);
+  background:linear-gradient(0deg,#fff,#fff8e6);
+}
+
+.ad-title{
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  line-height:1.25;
+}
+
+.ad-desc{
+  display:-webkit-box;
+  -webkit-line-clamp:4;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  line-height:1.35;
+  margin:8px 0;
+}
+
 </style>
 </head>
 
@@ -275,7 +317,8 @@ button.icon{padding:6px 10px}
 <div class="container">
 
 <div class="tabs">
-  <button id="tab-all" class="active" onclick="setTab('all')">📢 Annonces</button>
+  <button id="tab-all" class="active" onclick="setTab('all')">📢 Toutes les annonces</button>
+  <button id="tab-unseen" onclick="setTab('unseen')">👀 Uniquement les non-vues</button>
   <button id="tab-fav" onclick="setTab('fav')">⭐ Favoris</button>
   <button id="tab-mine" onclick="setTab('mine')">📂 Mes annonces</button>
   <button onclick="openModal()">➕ Publier</button>
@@ -284,9 +327,12 @@ button.icon{padding:6px 10px}
 
 <div class="filters">
   <select id="filterType"><option value="">Toutes catégories</option></select>
-  <select id="filterSeen">
-    <option value="">Toutes</option>
-    <option value="unseen">Uniquement non vues</option>
+  <select id="sort">
+    <option value="date">🕒 Plus récentes</option>
+    <option value="price_asc">💰 Prix croissant</option>
+    <option value="price_desc">💰 Prix décroissant</option>
+    <option value="views_desc">👁 Plus vues</option>
+    <option value="state">📦 État</option>
   </select>
 </div>
 
@@ -633,8 +679,27 @@ window.loadAds = async () => {
     const { data: favs } = await sb.from("ads_favorites").select("ad_id");
     q = q.in("id", favs.map(f => f.ad_id));
   }
+  if (currentTab === "unseen" && user) {
+    const { data: seenAds } = await sb
+      .from("ads_seen")
+      .select("ad_id");
+  
+    const seenIds = seenAds.map(s => s.ad_id);
+    if (seenIds.length) {
+      q = q.not("id", "in", `(${seenIds.join(",")})`);
+    }
+  }
   if ($("filterType").value) q = q.eq("type", $("filterType").value);
 
+  const sort = $("sort").value;
+
+  if (sort === "price_asc") q = q.order("price", { ascending:true });
+  else if (sort === "price_desc") q = q.order("price", { ascending:false });
+  else if (sort === "views_desc") q = q.order("views", { ascending:false });
+  else if (sort === "state") q = q.order("state", { ascending:true });
+  else q = q.order("created_at", { ascending:false });
+  $("sort").onchange = loadAds;
+  
   const { data } = await q.order("created_at", { ascending:false });
   $("ads").innerHTML = "";
 
@@ -657,11 +722,18 @@ window.loadAds = async () => {
       ADS_IMAGES[a.id] = a.images;
     }
 
+    const isNew =
+      Date.now() - new Date(a.created_at).getTime()
+      < 48 * 60 * 60 * 1000;
+    
     $("ads").innerHTML += `
       <div class="card ${seen ? "" : "unseen"}">
         <div>
           <div class="price">${a.price} €</div>
-          <b>${a.title}</b>
+          <b class="ad-title">
+            ${a.title}
+            ${isNew ? `<span class="badge-new">NOUVEAU</span>` : ""}
+          </b>
 
           <div class="profile-box">
             👤 ${p?.prenom || ""} ${p?.nom || ""}<br>
@@ -669,8 +741,10 @@ window.loadAds = async () => {
               ${p?.surns || ""} ${p?.fams || ""} ${p?.promo || ""}
             </small>
           </div>
-
-          <p>${a.description || ""}</p>
+          
+          <div class="card ${seen ? "" : "unseen"} ${isNew ? "new" : ""}">
+          
+          <p class="ad-desc">${a.description || ""}</p>
 
           <div class="meta">
             ${a.location ? `📍 ${a.location}<br>` : ""}
@@ -771,9 +845,9 @@ window.nextImg = () => {
 };
 
 $("filterType").onchange=loadAds;
-$("filterSeen").onchange=loadAds;
 
 </script>
 
 </body>
 </html>
+
