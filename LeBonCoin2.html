@@ -319,32 +319,53 @@ button.icon{padding:6px 10px}
   margin:8px 0;
 }
 
+.ad-header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap; /* évite le débordement sur mobile */
+}
+
+.ad-header .price{
+  margin:0; /* supprime l'ancien margin-bottom */
+  font-size:1.4em;
+  white-space:nowrap;
+}
+
+.ad-header .ad-title{
+  font-size:1.15em;
+  font-weight:800;
+  line-height:1.25;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
 </style>
 </head>
 
 <body>
 
-<header>Blablac'Arts — Le Bon Coin²</header>
+<header>Le Bon Coin²</header>
 
 <div class="container">
 
 <div class="tabs">
-  <button id="tab-all" class="active" onclick="setTab('all')">📢 Toutes les annonces</button>
-  <button id="tab-unseen" onclick="setTab('unseen')">👀 Uniquement les non-vues</button>
-  <button id="tab-fav" onclick="setTab('fav')">⭐ Favoris</button>
-  <button id="tab-mine" onclick="setTab('mine')">📂 Mes annonces</button>
+  <button id="tab-all" class="active" onclick="setTab('all')">Toutes les annonces</button>
+  <button id="tab-unseen" onclick="setTab('unseen')">Uniquement les non-vues</button>
+  <button id="tab-fav" onclick="setTab('fav')">Mes avoris</button>
+  <button id="tab-mine" onclick="setTab('mine')">Mes annonces</button>
   <button onclick="openModal()">➕ Publier</button>
-  <button onclick="adminLogin()">🛡 Admin</button>
+  <button onclick="adminLogin()">Admin</button>
 </div>
 
 <div class="filters">
   <select id="filterType"><option value="">Toutes catégories</option></select>
   <select id="sort">
-    <option value="date">🕒 Plus récentes</option>
-    <option value="price_asc">💰 Prix croissant</option>
-    <option value="price_desc">💰 Prix décroissant</option>
-    <option value="views_desc">👁 Plus vues</option>
-    <option value="state">📦 État</option>
+    <option value="date">Plus récentes</option>
+    <option value="price_asc">Prix croissant</option>
+    <option value="price_desc">Prix décroissant</option>
+    <option value="views_desc">Plus vues</option>
   </select>
 </div>
 
@@ -754,11 +775,13 @@ window.loadAds = async () => {
     $("ads").innerHTML += `
   <div class="card ${seen ? "" : "unseen"}">
     <div class="card-left">
-      <div class="price">${a.price} €</div>
+      <div class="ad-header">
+  <span class="price">${a.price} €</span>
       <b class="ad-title">
         ${a.title}
         ${isNew ? `<span class="badge-new">NOUVEAU</span>` : ""}
       </b>
+    </div>
 
       <div class="profile-box">
         👤 ${p?.prenom || ""} ${p?.nom || ""}<br>
@@ -870,6 +893,7 @@ $("filterType").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
