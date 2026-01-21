@@ -377,6 +377,51 @@
     object-fit: cover;
   }
 
+/* === CAROUSEL === */
+.carousel {
+  width: 100%;
+  margin-top: 14px;
+  position: relative;
+}
+
+.carousel .slides {
+  display: flex;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.carousel .slide {
+  min-width: 100%;
+  transition: transform 0.6s ease;
+  position: relative;
+}
+
+.carousel img {
+  width: 100%;
+  display: block;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+.carousel .dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.carousel .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  cursor: pointer;
+}
+
+.carousel .dot.active {
+  background: #ffd700;
+}
+	
   /* Grid cartes */
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -1029,11 +1074,65 @@ window.openAuth = openAuth;
 window.closeAuthModal = closeAuthModal;
 window.closeProfileModal = closeProfileModal;
 window.saveProfile = saveProfile;
+
+/* =========================
+   CAROUSEL TEST (LOCAL)
+========================= */
+
+const images = [
+  "Promotion.png",
+  "Promotion.png",
+  "Promotion.png"
+];
+
+const slidesEl = document.querySelector(".carousel .slides");
+const dotsEl   = document.querySelector(".carousel .dots");
+
+let index = 0;
+
+// créer slides + dots
+images.forEach((src, i) => {
+  const slide = document.createElement("div");
+  slide.className = "slide";
+
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = "Promotion";
+
+  slide.appendChild(img);
+  slidesEl.appendChild(slide);
+
+  const dot = document.createElement("div");
+  dot.className = "dot";
+  dot.onclick = () => goTo(i);
+  dotsEl.appendChild(dot);
+});
+
+function updateCarousel() {
+  slidesEl.style.transform = `translateX(-${index * 100}%)`;
+  [...dotsEl.children].forEach((d, i) =>
+    d.classList.toggle("active", i === index)
+  );
+}
+
+function goTo(i) {
+  index = i;
+  updateCarousel();
+}
+
+// autoplay (optionnel)
+setInterval(() => {
+  index = (index + 1) % images.length;
+  updateCarousel();
+}, 5000);
+
+updateCarousel();
 	
 </script>
 
 </body>
 </html>
+
 
 
 
