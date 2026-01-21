@@ -409,20 +409,6 @@ window.adminLogin = () => {
     alert("Code incorrect");
   }
 };
-
-window.registerView = async (adId) => {
-  if (!user) return;
-
-  const seen = await isSeen(adId);
-  if (seen) return;
-
-  await sb.from("ads_seen").insert({
-    user_id: user.id,
-    ad_id: adId
-  });
-
-  await sb.rpc("increment_ad_views", { ad_id: adId });
-};
   
 window.publish = async () => {
   const { data: { user: u } } = await sb.auth.getUser();
@@ -536,7 +522,7 @@ window.toggleFav = async (adId) => {
 
   const exists = Array.isArray(data) && data.length > 0;
 
-  if (!exists) registerView(adId);
+  if (!exists) await markSeen(adId);
 
   if (exists) {
     await sb
@@ -559,15 +545,13 @@ window.markSeen = async (adId) => {
 
   const { error } = await sb
     .from("ads_seen")
-    .upsert(
-      { user_id: user.id, ad_id: adId },
-      { onConflict: "user_id,ad_id" }
-    );
+    .insert({ user_id: user.id, ad_id: adId });
 
-  if (!error) {
-    await sb.rpc("increment_ad_views", { ad_id: adId });
-    loadAds();
-  }
+  // ⚠️ si déjà vu → erreur 409 normale → on ignore
+  if (error && error.code !== "23505") return;
+
+  await sb.rpc("increment_ad_views", { ad_id: adId });
+  loadAds();
 };
 
 
@@ -635,7 +619,7 @@ window.loadAds = async () => {
               <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
             ` : ""}
 
-            <a href="${wa}" target="_blank" onclick="registerView(${a.id})">
+            <a href="${wa}" target="_blank" onclick="markSeen(${a.id})">
               <button>📲 Contactez-moi</button>
             </a>
 
@@ -723,6 +707,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
