@@ -522,8 +522,6 @@ window.toggleFav = async (adId) => {
 
   const exists = Array.isArray(data) && data.length > 0;
 
-  if (!exists) await markSeen(adId);
-
   if (exists) {
     await sb
       .from("ads_favorites")
@@ -547,11 +545,15 @@ window.markSeen = async (adId) => {
     .from("ads_seen")
     .insert({ user_id: user.id, ad_id: adId });
 
-  // ⚠️ si déjà vu → erreur 409 normale → on ignore
-  if (error && error.code !== "23505") return;
+  // ❌ déjà vu → on STOPPE TOUT
+  if (error) {
+    if (error.code === "23505") return; // déjà vu
+    console.error(error);
+    return;
+  }
 
+  // ✅ première fois SEULEMENT
   await sb.rpc("increment_ad_views", { ad_id: adId });
-  loadAds();
 };
 
 
@@ -636,7 +638,8 @@ window.loadAds = async () => {
         </div>
 
         ${a.images?.[0]
-          ? `<img src="${a.images[0]}" onclick="registerView(${a.id});openGalleryById(${a.id})">`
+          ? `<img src="${a.images[0]}"
+     onclick="openGalleryById(${a.id})">`
           : ""
         }
       </div>`;
@@ -707,6 +710,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
