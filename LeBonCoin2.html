@@ -126,7 +126,13 @@ button.icon{padding:6px 10px}
 }
 
 /* ---------- GALLERY ---------- */
-.gallery img{max-width:85vw;max-height:85vh;border-radius:18px}
+.gallery img{
+  max-width:90vw;
+  max-height:75vh;
+  object-fit:contain;
+  background:#000;
+  padding:10px;
+}
 .gallery-nav{
   position:absolute;
   top:50%;
@@ -142,6 +148,13 @@ button.icon{padding:6px 10px}
 /* ================= MOBILE ================= */
 @media (max-width: 900px){
 
+  .profile-box{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    background:#e8ebf0;
+  }
+  
   .container{
     padding:12px;
   }
@@ -161,8 +174,11 @@ button.icon{padding:6px 10px}
   }
 
   .card img{
-    height:220px;
-  }
+  height:180px;
+  object-fit:contain;
+  background:#000;
+  padding:6px;
+}
 
   .price{
     font-size:1.4em;
@@ -212,9 +228,20 @@ button.icon{padding:6px 10px}
   box-shadow: 0 20px 50px rgba(0,0,0,.4);
 }
 
+#thumbs{
+  position:absolute;
+  bottom:25px;
+  width:100%;
+}
+  
 #thumbs img:hover{
   transform: scale(1.05);
   opacity:1 !important;
+}
+
+.card.unseen{
+  box-shadow:0 0 0 3px #ff9f1c, var(--shadow);
+  background:linear-gradient(0deg,#fff,#fff8e6);
 }
   
 </style>
@@ -294,8 +321,10 @@ const sb = createClient(
 );
 
 const $ = id => document.getElementById(id);
+let loadingAds = false;
 let user=null,currentTab="all";
 let galleryImgs=[],galleryIndex=0;
+window.__ADS_CACHE = {};
 
 let isAdmin = false;
 let ADS_IMAGES = {};
@@ -366,6 +395,20 @@ window.adminLogin = () => {
   } else {
     alert("Code incorrect");
   }
+};
+
+window.registerView = async (adId) => {
+  if (!user) return;
+
+  const seen = await isSeen(adId);
+  if (seen) return;
+
+  await sb.from("ads_seen").insert({
+    user_id: user.id,
+    ad_id: adId
+  });
+
+  await sb.rpc("increment_ad_views", { ad_id: adId });
 };
   
 window.publish = async () => {
@@ -457,6 +500,8 @@ window.toggleFav = async (adId) => {
     return;
   }
 
+  if (!exists) registerView(adId);
+  
   const { data, error } = await sb
     .from("ads_favorites")
     .select("ad_id")
@@ -505,6 +550,9 @@ window.markSeen = async (adId) => {
 
 
 window.loadAds = async () => {
+  if (loadingAds) return;
+  loadingAds = true;
+  
   ADS_IMAGES = {};
   let q = sb.from("ads").select("*");
 
@@ -516,6 +564,7 @@ window.loadAds = async () => {
   if($("filterType").value) q=q.eq("type",$("filterType").value);
 
   const {data}=await q.order("created_at",{ascending:false});
+  window.__ADS_CACHE[a.id] = a;
   $("ads").innerHTML="";
 
   for(const a of data){
@@ -528,7 +577,7 @@ window.loadAds = async () => {
       ADS_IMAGES[a.id] = a.images;
     }
     $("ads").innerHTML+=`
-    <div class="card">
+    <div class="card ${seen ? "" : "unseen"}">
       <div>
         <div class="price">${a.price} €</div>
         <b>${a.title}</b>
@@ -547,14 +596,14 @@ window.loadAds = async () => {
           </div>
         <div class="actions">
           ${(currentTab === "mine" || isAdmin) ? `
-          <button class="secondary" onclick='editAd(${JSON.stringify(a)})'>
+          <button class="secondary" onclick="editAdById(${a.id})">
             ✏️ Modifier
           </button>
           <button class="secondary" onclick="deleteAd(${a.id})">
             🗑 Supprimer
           </button>
         ` : ""}
-          <a href="${wa}" target="_blank"><button>📲 Contactez-moi</button></a>
+          <a href="${wa}" target="_blank" onclick="registerView(${a.id})"><button>📲 Contactez-moi</button></a>
               <span class="icon-heart ${fav ? "active" : ""}"
                   onclick="toggleFav(${a.id})">
               ${fav ? "❤️" : "🤍"}
@@ -567,13 +616,20 @@ window.loadAds = async () => {
         </div>
       </div>
       ${a.images?.[0]
-          ? `<img src="${a.images[0]}" onclick="openGalleryById(${a.id})">`
+          ? `<img src="${a.images[0]}" onclick="registerView(${a.id});openGalleryById(${a.id})">`
           : ""
         }
     </div>`;
   }
+  loadingAds = false;
 };
 
+window.editAdById = (id) => {
+  const ad = window.__ADS_CACHE[id];
+  if (!ad) return;
+  editAd(ad);
+};
+  
 window.openGalleryById = (adId) => {
   const imgs = ADS_IMAGES[adId];
   if (!imgs || !imgs.length) return;
@@ -626,6 +682,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
