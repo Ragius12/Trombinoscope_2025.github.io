@@ -493,17 +493,23 @@
   }
 
   #zoomModal .modal-card {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    border-radius: 0;
+	width: 90%;
+    max-width: 95vw;
+    max-height: 90vh;
     padding: 12px;
+    height: 100%;
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
 
+	#zoomModal img {
+	    width: 100%;
+	    height: auto;
+	    border-radius: 12px;
+	}
+	
   #zoomImg {
     width: 100%;
     height: 100%;
@@ -879,21 +885,67 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-window.enableAdmin = function () {
-  const pass = prompt("Mot de passe admin");
+function initCarouselAdmin() {
+    const container = document.querySelector(".carousel-nav");
+    if (!container) return;
 
-  if (pass === null) return; // annulation
+    // Supprimer anciens boutons admin si déjà présent
+    const oldBtns = container.querySelectorAll(".admin-btn");
+    oldBtns.forEach(b => b.remove());
 
-  if (pass === "sans3dit") {
-    localStorage.setItem("carousel_admin", "true");
-    showToast("🔓 Mode admin activé", "success");
+    // Ajouter bouton pour ajouter une image
+    const addBtn = document.createElement("button");
+    addBtn.innerText = "+";
+    addBtn.className = "admin-btn nav-dot";
+    addBtn.style.background = "green";
+    addBtn.onclick = () => {
+        const url = prompt("URL de la nouvelle image ?");
+        if (url) {
+            promoImages.push(url);
+            promoIndex = promoImages.length - 1;
+            promoImg.src = url;
+            updateDots();
+        }
+    };
+    container.appendChild(addBtn);
 
-    // petit délai pour que le toast soit visible
-    setTimeout(() => location.reload(), 800);
-  } else {
-    showToast("❌ Mot de passe incorrect", "error");
-  }
-};
+    // Ajouter bouton pour supprimer l’image actuelle
+    const delBtn = document.createElement("button");
+    delBtn.innerText = "−";
+    delBtn.className = "admin-btn nav-dot";
+    delBtn.style.background = "red";
+    delBtn.onclick = () => {
+        if (promoImages.length <= 1) return alert("Impossible de supprimer la dernière image");
+        promoImages.splice(promoIndex, 1);
+        promoIndex = promoIndex % promoImages.length;
+        promoImg.src = promoImages[promoIndex];
+        updateDots();
+    };
+    container.appendChild(delBtn);
+}
+	
+let isAdmin = localStorage.getItem("carousel_admin") === "true";
+
+function enableAdmin() {
+    const pass = prompt("Mot de passe admin");
+    if (pass === "sans3dit") {
+        localStorage.setItem("carousel_admin", "true");
+        isAdmin = true;
+        showToast("Mode admin activé", "success");
+        initCarouselAdmin();
+    }
+}
+
+// Réinitialisation après page load
+window.addEventListener("load", () => {
+    if (isAdmin) initCarouselAdmin();
+});
+
+// Désactivation au logout
+qs("btnLogout").addEventListener("click", () => {
+    localStorage.removeItem("carousel_admin");
+    isAdmin = false;
+});
 
 /* =========================
    MODALS
@@ -1191,9 +1243,17 @@ if (isAdmin) {
   if (b) b.style.display = "block";
 }
 
-promoImg.onclick = ()=>{
-  qs("zoomImg").src = promoImg.src;
-  qs("zoomModal").style.display="flex";
+promoImg.onclick = () => {
+    qs("zoomImg").src = promoImg.src;
+    qs("zoomModal").style.display = "flex";
+
+    if (window.innerWidth < 768) {
+        qs("zoomModal").style.alignItems = "flex-start";
+        qs("zoomModal").style.paddingTop = "60px"; // pour authBar
+    } else {
+        qs("zoomModal").style.alignItems = "center";
+        qs("zoomModal").style.paddingTop = "0";
+    }
 };
 
 window.closeZoom = function () {
@@ -1204,6 +1264,7 @@ window.closeZoom = function () {
 
 </body>
 </html>
+
 
 
 
