@@ -541,16 +541,18 @@ window.toggleFav = async (adId) => {
 
 window.markSeen = async (adId) => {
 
+  // 🚫 le propriétaire ne compte pas
+  const ad = window.__ADS_CACHE[adId];
+  if (user && ad && ad.owner === user.id) return;
+
   // =========================
-  // 🔒 VISITEUR NON CONNECTÉ
+  // 👤 VISITEUR ANONYME
   // =========================
   if (!user) {
     const key = `seen_ad_${adId}`;
     if (localStorage.getItem(key)) return;
 
     localStorage.setItem(key, "1");
-
-    // vue anonyme → on incrémente quand même
     await sb.rpc("increment_ad_views", { ad_id: adId });
     return;
   }
@@ -562,9 +564,12 @@ window.markSeen = async (adId) => {
     .from("ads_seen")
     .insert({ user_id: user.id, ad_id: adId });
 
+  // déjà vu → stop
+  if (error && error.code === "23505") return;
+
+  // autre erreur → log
   if (error) {
-    if (error.code === "23505") return; // déjà vu
-    console.error(error);
+    console.error("markSeen:", error);
     return;
   }
 
@@ -636,7 +641,8 @@ window.loadAds = async () => {
               <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
             ` : ""}
 
-            <a href="${wa}" target="_blank" onclick="markSeen(${a.id})">
+            <a href="${wa}" target="_blank"
+   onclick="markSeen(${a.id}); setTimeout(()=>{},200)">
               <button>📲 Contactez-moi</button>
             </a>
 
@@ -719,6 +725,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
