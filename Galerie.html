@@ -15,10 +15,11 @@
 <title>Blablac'Arts</title>
 
 <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
     
 <style>
 @font-face {
-    font-family: "Old English Text MT", "Gothic Old English", serif;
+    font-family: 'UnifrakturCook', 'MedievalSharp', serif;
 }
 
 :root{
@@ -42,7 +43,7 @@ body {
 header {
     text-align:center; padding:28px 12px 8px;
     /* ensure the Old English look on mobile too by using the Google font as fallback */
-    font-family: 'MedievalSharp', "Old English Text MT", "Gothic Old English", serif;
+    font-family: 'UnifrakturCook', 'MedievalSharp', serif;
 }
 h1 { font-size:2.4rem; margin:0; letter-spacing:2px; }
 
@@ -81,7 +82,7 @@ h1 { font-size:2.4rem; margin:0; letter-spacing:2px; }
     color:white;
     padding:10px 44px;
     font-size:18px;
-    font-family: "Old English Text MT", "Gothic Old English", serif;
+    font-family: 'UnifrakturCook', 'MedievalSharp', serif;
     box-shadow:0 4px 12px rgba(0,0,0,0.5);
     letter-spacing:2px;
     z-index:2;
@@ -119,7 +120,7 @@ h1 { font-size:2.4rem; margin:0; letter-spacing:2px; }
   opacity: 0.75;
 }
 
-.label-fixed {font-family: "Old English Text MT", "Gothic Old English", serif; letter-spacing:1px; font-weight:bold}
+.label-fixed {font-family: 'UnifrakturCook', 'MedievalSharp', serif; letter-spacing:1px; font-weight:bold}
 
 .btn { background: var(--accent); color:#1b1f3b; padding:10px 12px; border-radius:8px; font-weight:700; cursor:pointer; transition:0.15s; border:none; }
 .btn:hover{ transform:scale(1.03); }
@@ -1510,15 +1511,31 @@ async function ensureProfilePresent(user) {
   }
 }
 
+function lockPublishIdentityFields(profile) {
+  const map = {
+    nom: "nom",
+    prenom: "prenom",
+    surns: "surns_pub",
+    fams: "fams_pub",
+    promo: "promo"
+  };
 
+  Object.entries(map).forEach(([key, id]) => {
+    const field = document.getElementById(id);
+    if (!field) return;
 
-
-
-
+    field.value = profile[key] || "";
+    field.readOnly = true;
+    field.disabled = true;
+    field.style.opacity = "0.7";
+    field.style.cursor = "not-allowed";
+  });
+}
 
 // Remplit automatiquement le formulaire de publication
 function autofillPublishForm(profile) {
   if (!profile) return;
+  lockPublishIdentityFields(profile);
   const el = (id) => document.getElementById(id);
 
   if (el("nom")) el("nom").value = profile.nom || "";
@@ -1824,6 +1841,7 @@ function hideLoader(){ document.getElementById("globalLoader").style.display="no
     
 </body>
 </html>
+
 
 
 
