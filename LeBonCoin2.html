@@ -540,9 +540,6 @@ window.toggleFav = async (adId) => {
 
 
 window.markSeen = async (adId) => {
-  // =========================
-  // 👤 VISITEUR ANONYME
-  // =========================
   if (!user) {
     const key = `seen_ad_${adId}`;
     if (localStorage.getItem(key)) return;
@@ -552,22 +549,21 @@ window.markSeen = async (adId) => {
     return;
   }
 
-  // =========================
-  // 🔐 UTILISATEUR CONNECTÉ
-  // =========================
   const { error } = await sb
     .from("ads_seen")
     .insert({ user_id: user.id, ad_id: adId });
 
-  // déjà vu → stop
-  if (error && error.code === "23505") return;
+  // 🔁 DÉJÀ VU → OK MAIS ON NE FAIT RIEN
+  if (error && error.code === "23505") {
+    return;
+  }
 
-  // autre erreur → log
   if (error) {
     console.error("markSeen:", error);
     return;
   }
 
+  // ✅ incrément UNIQUEMENT lors du 1er insert
   await sb.rpc("increment_ad_views", { ad_id: adId });
 };
 
@@ -636,10 +632,9 @@ window.loadAds = async () => {
               <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
             ` : ""}
 
-            <a href="${wa}" target="_blank"
-   onclick="markSeen(${a.id}); setTimeout(()=>{},200)">
-              <button>📲 Contactez-moi</button>
-            </a>
+            <button onclick="contactAd(${a.id}, '${wa}')">
+              📲 Contactez-moi
+            </button>
 
             <span class="icon-heart ${fav ? "active" : ""}"
                   onclick="toggleFav(${a.id})">
@@ -670,7 +665,10 @@ window.editAdById = (id) => {
 };
   
 window.openGalleryById = async (adId) => {
-  await markSeen(adId);
+  const seen = await isSeen(adId);
+  if (!seen) {
+    await markSeen(adId);
+  }
   openGallery(ADS_IMAGES[adId]);
 };
   
@@ -702,6 +700,11 @@ window.openGallery = (imgs) => {
   $("gallery").style.display = "flex";
 };
 
+window.contactAd = async (adId, url) => {
+  await markSeen(adId);
+  window.open(url, "_blank");
+};
+  
 window.closeGallery=()=>{$("gallery").style.display="none"};
 window.prevImg = () => {
   galleryIndex = (galleryIndex - 1 + galleryImgs.length) % galleryImgs.length;
@@ -720,6 +723,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
