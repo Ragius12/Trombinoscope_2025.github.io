@@ -500,8 +500,6 @@ window.toggleFav = async (adId) => {
     return;
   }
 
-  if (!exists) registerView(adId);
-  
   const { data, error } = await sb
     .from("ads_favorites")
     .select("ad_id")
@@ -515,6 +513,8 @@ window.toggleFav = async (adId) => {
   }
 
   const exists = Array.isArray(data) && data.length > 0;
+
+  if (!exists) registerView(adId);
 
   if (exists) {
     await sb
@@ -552,75 +552,90 @@ window.markSeen = async (adId) => {
 window.loadAds = async () => {
   if (loadingAds) return;
   loadingAds = true;
-  
+
   ADS_IMAGES = {};
   let q = sb.from("ads").select("*");
 
-  if(currentTab==="mine"&&user) q=q.eq("owner",user.id);
-  if(currentTab==="fav"&&user){
-    const {data:favs}=await sb.from("ads_favorites").select("ad_id");
-    q=q.in("id",favs.map(f=>f.ad_id));
+  if(currentTab==="mine" && user) q = q.eq("owner", user.id);
+  if(currentTab==="fav" && user){
+    const { data: favs } = await sb.from("ads_favorites").select("ad_id");
+    q = q.in("id", favs.map(f => f.ad_id));
   }
-  if($("filterType").value) q=q.eq("type",$("filterType").value);
+  if ($("filterType").value) q = q.eq("type", $("filterType").value);
 
-  const {data}=await q.order("created_at",{ascending:false});
-  window.__ADS_CACHE[a.id] = a;
-  $("ads").innerHTML="";
+  const { data } = await q.order("created_at", { ascending:false });
+  $("ads").innerHTML = "";
 
-  for(const a of data){
-    const {data:p}=await sb.from("profiles").select("prenom,nom,surns,fams,promo").eq("id",a.owner).single();
-    const wa=`https://wa.me/${(a.contact||"").replace(/\D/g,"")}`;
+  for (const a of data) {
+
+    // ✅ CORRECTION ICI (a existe maintenant)
+    window.__ADS_CACHE[a.id] = a;
+
+    const { data: p } = await sb
+      .from("profiles")
+      .select("prenom,nom,surns,fams,promo")
+      .eq("id", a.owner)
+      .single();
+
+    const wa = `https://wa.me/${(a.contact || "").replace(/\D/g,"")}`;
     const fav = await isFav(a.id);
     const seen = await isSeen(a.id);
 
     if (a.images?.length) {
       ADS_IMAGES[a.id] = a.images;
     }
-    $("ads").innerHTML+=`
-    <div class="card ${seen ? "" : "unseen"}">
-      <div>
-        <div class="price">${a.price} €</div>
-        <b>${a.title}</b>
+
+    $("ads").innerHTML += `
+      <div class="card ${seen ? "" : "unseen"}">
+        <div>
+          <div class="price">${a.price} €</div>
+          <b>${a.title}</b>
+
           <div class="profile-box">
             👤 ${p?.prenom || ""} ${p?.nom || ""}<br>
             <small>
               ${p?.surns || ""} ${p?.fams || ""} ${p?.promo || ""}
             </small>
           </div>
-        <p>${a.description || ""}</p>
+
+          <p>${a.description || ""}</p>
+
           <div class="meta">
             ${a.location ? `📍 ${a.location}<br>` : ""}
             ${a.rooms ? `👥 ${a.rooms} places<br>` : ""}
             ${a.state ? `📦 État : ${a.state}<br>` : ""}
             🗂 Catégorie : ${a.type}
           </div>
-        <div class="actions">
-          ${(currentTab === "mine" || isAdmin) ? `
-          <button class="secondary" onclick="editAdById(${a.id})">
-            ✏️ Modifier
-          </button>
-          <button class="secondary" onclick="deleteAd(${a.id})">
-            🗑 Supprimer
-          </button>
-        ` : ""}
-          <a href="${wa}" target="_blank" onclick="registerView(${a.id})"><button>📲 Contactez-moi</button></a>
-              <span class="icon-heart ${fav ? "active" : ""}"
+
+          <div class="actions">
+            ${(currentTab === "mine" || isAdmin) ? `
+              <button class="secondary" onclick="editAdById(${a.id})">✏️ Modifier</button>
+              <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
+            ` : ""}
+
+            <a href="${wa}" target="_blank" onclick="registerView(${a.id})">
+              <button>📲 Contactez-moi</button>
+            </a>
+
+            <span class="icon-heart ${fav ? "active" : ""}"
                   onclick="toggleFav(${a.id})">
               ${fav ? "❤️" : "🤍"}
             </span>
-            
+
             <span class="icon-eye ${seen ? "active" : ""}"
                   title="${a.views || 0} vues">
               👁 ${a.views || 0}
             </span>
+          </div>
         </div>
-      </div>
-      ${a.images?.[0]
+
+        ${a.images?.[0]
           ? `<img src="${a.images[0]}" onclick="registerView(${a.id});openGalleryById(${a.id})">`
           : ""
         }
-    </div>`;
+      </div>`;
   }
+
   loadingAds = false;
 };
 
@@ -682,6 +697,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
