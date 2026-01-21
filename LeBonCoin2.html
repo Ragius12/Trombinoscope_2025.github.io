@@ -540,11 +540,6 @@ window.toggleFav = async (adId) => {
 
 
 window.markSeen = async (adId) => {
-
-  // 🚫 le propriétaire ne compte pas
-  const ad = window.__ADS_CACHE[adId];
-  if (user && ad && ad.owner === user.id) return;
-
   // =========================
   // 👤 VISITEUR ANONYME
   // =========================
@@ -725,6 +720,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
