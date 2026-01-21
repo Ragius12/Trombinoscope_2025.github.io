@@ -56,15 +56,21 @@ select,input,textarea{
   margin-bottom:20px;
   box-shadow:var(--shadow);
   transition:.3s;
+  transform .35s cubic-bezier(.2,.8,.2,1),
+  box-shadow .35s;
 }
-.card:hover{transform:translateY(-5px)}
+.card:hover{
+  transform:translateY(-8px) scale(1.01);
+  box-shadow:0 20px 45px rgba(0,0,0,.18);
+}
 
 .card img{
   width:100%;
-  height:180px;
+  height:260px;
   object-fit:contain;
-  border-radius:14px;
-  cursor:pointer;
+  background:linear-gradient(135deg,#f5f6fa,#e8ebf0);
+  padding:14px;
+  border-radius:18px;
 }
 
 /* ---------- PRICE BADGE ---------- */
@@ -202,17 +208,26 @@ button.icon{padding:6px 10px}
 .icon-heart{
   font-size:20px;
   cursor:pointer;
+  transition:transform .25s;
 }
 .icon-heart.active{
   color:red;
+  transform:scale(1.25);
 }
 .icon-eye{
   opacity:.5;
 }
 .icon-eye.active{
   opacity:1;
+  animation:pulse .6s ease;
 }
-
+  
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.25)}
+  100%{transform:scale(1)}
+}
+  
   .profile-box{
   background:#f3f4f6;
   padding:8px 12px;
@@ -224,9 +239,14 @@ button.icon{padding:6px 10px}
 .gallery{
   backdrop-filter: blur(14px);
 }
+@keyframes fadeIn{
+  from{opacity:0}
+  to{opacity:1}
+}
 
 .gallery img{
   box-shadow: 0 20px 50px rgba(0,0,0,.4);
+  animation:fadeIn .35s ease;
 }
 
 #thumbs{
@@ -420,12 +440,33 @@ window.publish = async () => {
   const imgs = [];
   for (const f of $("images").files) {
     const path = `public/${Date.now()}-${f.name}`;
+    const files = $("images").files;
+      if (files.length > 10) {
+        alert("Maximum 10 photos");
+        return;
+      }
     await sb.storage.from("ads-images").upload(path, f);
     imgs.push(
       sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl
     );
   }
 
+  if ($("title").value.length > 80) {
+    alert("Titre trop long (80 caractères max)");
+    return;
+  }
+  
+  if ($("description").value.length > 1000) {
+    alert("Description trop longue");
+    return;
+  }
+
+const price = Number($("price").value);
+    if (price <= 0 || price > 100000) {
+      alert("Prix invalide (1€ à 100 000€ max)");
+      return;
+    }
+  
   if (window.__editId) {
     await sb.from("ads").update({
       title: $("title").value,
@@ -565,6 +606,18 @@ window.markSeen = async (adId) => {
 
   // ✅ incrément UNIQUEMENT lors du 1er insert
   await sb.rpc("increment_ad_views", { ad_id: adId });
+
+if (window.__ADS_CACHE[adId]) {
+  window.__ADS_CACHE[adId].views =
+    (window.__ADS_CACHE[adId].views || 0) + 1;
+
+  const eye = document.querySelector(
+    `.card .icon-eye[title][data-id="${adId}"]`
+  );
+  if (eye) {
+    eye.innerHTML = `👁 ${window.__ADS_CACHE[adId].views}`;
+  }
+} 
 };
 
 
@@ -642,6 +695,7 @@ window.loadAds = async () => {
             </span>
 
             <span class="icon-eye ${seen ? "active" : ""}"
+                  data-id="${a.id}"
                   title="${a.views || 0} vues">
               👁 ${a.views || 0}
             </span>
@@ -723,27 +777,3 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
