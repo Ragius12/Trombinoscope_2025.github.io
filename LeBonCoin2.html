@@ -752,57 +752,55 @@ window.loadAds = async () => {
       < 48 * 60 * 60 * 1000;
     
     $("ads").innerHTML += `
-      <div class="card ${seen ? "" : "unseen"}">
-        <div>
-          <div class="price">${a.price} €</div>
-          <b class="ad-title">
-            ${a.title}
-            ${isNew ? `<span class="badge-new">NOUVEAU</span>` : ""}
-          </b>
+  <div class="card ${seen ? "" : "unseen"}">
+    <div class="card-left">
+      <div class="price">${a.price} €</div>
+      <b class="ad-title">
+        ${a.title}
+        ${isNew ? `<span class="badge-new">NOUVEAU</span>` : ""}
+      </b>
 
-          <div class="profile-box">
-            👤 ${p?.prenom || ""} ${p?.nom || ""}<br>
-            <small>
-              ${p?.surns || ""} ${p?.fams || ""} ${p?.promo || ""}
-            </small>
-          </div>
-                    
-          <p class="ad-desc">${a.description || ""}</p>
+      <div class="profile-box">
+        👤 ${p?.prenom || ""} ${p?.nom || ""}<br>
+        <small>
+          ${p?.surns || ""} ${p?.fams || ""} ${p?.promo || ""}
+        </small>
+      </div>
 
-          <div class="meta">
-            ${a.location ? `📍 ${a.location}<br>` : ""}
-            ${a.rooms ? `👥 ${a.rooms} places<br>` : ""}
-            ${a.state ? `📦 État : ${a.state}<br>` : ""}
-            🗂 Catégorie : ${a.type}
-          </div>
+      <p class="ad-desc">${a.description || ""}</p>
 
-          <div class="actions">
-            ${(currentTab === "mine" || isAdmin) ? `
-              <button class="secondary" onclick="editAdById(${a.id})">✏️ Modifier</button>
-              <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
-            ` : ""}
+      <div class="meta">
+        ${a.location ? `📍 ${a.location}<br>` : ""}
+        ${a.rooms ? `👥 ${a.rooms} places<br>` : ""}
+        ${a.state ? `📦 État : ${a.state}<br>` : ""}
+        🗂 Catégorie : ${a.type}
+      </div>
 
-            <button onclick="contactAd(${a.id}, '${wa}')">
-              📲 Contactez-moi
-            </button>
+      <div class="actions">
+        ${(currentTab === "mine" || isAdmin) ? `
+          <button class="secondary" onclick="editAdById(${a.id})">✏️ Modifier</button>
+          <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
+        ` : ""}
 
-            <span class="icon-heart ${fav ? "active" : ""}"
-                  onclick="toggleFav(${a.id})">
-              ${fav ? "❤️" : "🤍"}
-            </span>
+        <button onclick="contactAd(${a.id}, '${wa}')">
+          📲 Contactez-moi
+        </button>
 
-            <span class="icon-eye ${seen ? "active" : ""}"
-                  data-id="${a.id}"
-                  title="${a.views || 0} vues">
-              👁 ${a.views || 0}
-            </span>
-        </div>
+        <span class="icon-heart ${fav ? "active" : ""}" onclick="toggleFav(${a.id})">
+          ${fav ? "❤️" : "🤍"}
+        </span>
 
-        ${a.images?.[0]
-          ? `<img src="${a.images[0]}" onclick="openGalleryById(${a.id})">`
-          : ""
-        }
-      </div>`;
+        <span class="icon-eye ${seen ? "active" : ""}" data-id="${a.id}" title="${a.views || 0} vues">
+          👁 ${a.views || 0}
+        </span>
+      </div>
+    </div>
+
+    <div class="card-right">
+      ${a.images?.[0] ? `<img src="${a.images[0]}" onclick="openGalleryById(${a.id})">` : ""}
+    </div>
+  </div>
+`;
   }
   restoreScroll();
   loadingAds = false;
@@ -872,6 +870,7 @@ $("filterType").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
