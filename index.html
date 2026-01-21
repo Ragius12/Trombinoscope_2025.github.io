@@ -590,6 +590,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 			  </div>
 			</div>
 
+		  	<button onclick="enableAdmin()" style="opacity:.3;font-size:12px">
+				Admin
+			</button>
 		  <h3 class="carousel-title">Infals du jour :</h3>
 		  <img
 			  id="promoImage"
@@ -715,10 +718,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	  if(u) document.getElementById("ensamUser").textContent = u;
 	});
 	</script>
-	
-	<button onclick="enableAdmin()" style="opacity:.3;font-size:12px">
-		Admin
-	</button>
 
       <div class="footer">Fait avec coher's par l'un de vos chicop’s, brassez moi en privé pour de potentiels problèmes !<BR> Version 1.3 - Ajout des chants et hymnes (usinés par i7An225) et ajout de Blablac'Arts.</div>
     </main>
@@ -840,13 +839,13 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-function enableAdmin() {
+window.enableAdmin = function () {
   const pass = prompt("Mot de passe admin");
   if (pass === "sans3dit") {
     localStorage.setItem("carousel_admin", "true");
     location.reload();
   }
-}
+};
 
 /* =========================
    MODALS
@@ -1145,14 +1144,15 @@ promoImg.onclick = ()=>{
   qs("zoomModal").style.display="flex";
 };
 
-function closeZoom(){
-  qs("zoomModal").style.display="none";
-}
+window.closeZoom = function () {
+  qs("zoomModal").style.display = "none";
+};
 	
 </script>
 
 </body>
 </html>
+
 
 
 
