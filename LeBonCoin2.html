@@ -503,6 +503,7 @@ window.setTab=tab=>{
 };
 
 window.toggleFav = async (adId) => {
+  await markSeen(adId);
   if (!user) {
     alert("Connexion requise pour les favoris");
     return;
@@ -539,20 +540,34 @@ window.toggleFav = async (adId) => {
 
 
 window.markSeen = async (adId) => {
-  if (!user) return;
 
+  // =========================
+  // 🔒 VISITEUR NON CONNECTÉ
+  // =========================
+  if (!user) {
+    const key = `seen_ad_${adId}`;
+    if (localStorage.getItem(key)) return;
+
+    localStorage.setItem(key, "1");
+
+    // vue anonyme → on incrémente quand même
+    await sb.rpc("increment_ad_views", { ad_id: adId });
+    return;
+  }
+
+  // =========================
+  // 🔐 UTILISATEUR CONNECTÉ
+  // =========================
   const { error } = await sb
     .from("ads_seen")
     .insert({ user_id: user.id, ad_id: adId });
 
-  // ❌ déjà vu → on STOPPE TOUT
   if (error) {
     if (error.code === "23505") return; // déjà vu
     console.error(error);
     return;
   }
 
-  // ✅ première fois SEULEMENT
   await sb.rpc("increment_ad_views", { ad_id: adId });
 };
 
@@ -621,7 +636,7 @@ window.loadAds = async () => {
               <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
             ` : ""}
 
-            <a href="${wa}" target="_blank" onclick="markSeen(${a.id})">
+            <a href="${wa}" target="_blank" onclick="markSeen(id)">
               <button>📲 Contactez-moi</button>
             </a>
 
@@ -639,7 +654,7 @@ window.loadAds = async () => {
 
         ${a.images?.[0]
           ? `<img src="${a.images[0]}"
-     onclick="openGalleryById(${a.id})">`
+     onclick="openGalleryById(id)">`
           : ""
         }
       </div>`;
@@ -655,13 +670,8 @@ window.editAdById = (id) => {
 };
   
 window.openGalleryById = async (adId) => {
-  const imgs = ADS_IMAGES[adId];
-  if (!imgs || !imgs.length) return;
-
-  // ✅ vue unique par user
   await markSeen(adId);
-
-  openGallery(imgs);
+  openGallery(ADS_IMAGES[adId]);
 };
   
 window.openGallery = (imgs) => {
@@ -710,6 +720,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
