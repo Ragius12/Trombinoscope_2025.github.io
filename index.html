@@ -421,6 +421,24 @@
 .carousel .dot.active {
   background: #ffd700;
 }
+
+/* === PROMO IMAGE MINI === */
+.promo-mini{
+  width:100%;
+  max-width:280px;
+  margin-top:12px;
+  border-radius:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.35);
+  animation:fadeInUp .6s ease;
+}
+
+@media(max-width:950px){
+  .promo-mini{
+    max-width:220px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
 	
   /* Grid cartes */
   .grid {
@@ -575,10 +593,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div>
             <h1 class="title">Prom's 225</h1>
             <div class="subtitle">Fratern's !!</div>
-            	<div class="carousel">
-				  <div class="slides"></div>
-				  <div class="dots"></div>
-				</div>
           </div>
         </div>
       </section>
@@ -1090,95 +1104,30 @@ const dotsEl   = document.querySelector(".carousel .dots");
 
 let index = 0;
 
-// créer slides + dots
-images.forEach((src, i) => {
-  const slide = document.createElement("div");
-  slide.className = "slide";
+/* =========================
+   PROMO IMAGE ROTATION
+========================= */
 
-  const img = document.createElement("img");
-  img.src = src;
-  img.alt = "Promotion";
+const promoImages = [
+  "Promotion.png",
+  "Promotion.png",
+  "Promotion.png"
+];
 
-  slide.appendChild(img);
-  slidesEl.appendChild(slide);
+let promoIndex = 0;
+const promoImg = document.getElementById("promoImage");
 
-  const dot = document.createElement("div");
-  dot.className = "dot";
-  dot.onclick = () => goTo(i);
-  dotsEl.appendChild(dot);
-});
-
-function updateCarousel() {
-  slidesEl.style.transform = `translateX(-${index * 100}%)`;
-  [...dotsEl.children].forEach((d, i) =>
-    d.classList.toggle("active", i === index)
-  );
-}
-
-function goTo(i) {
-  index = i;
-  updateCarousel();
-}
-
-// autoplay (optionnel)
 setInterval(() => {
-  index = (index + 1) % images.length;
-  updateCarousel();
-}, 5000);
+  promoIndex = (promoIndex + 1) % promoImages.length;
+  promoImg.style.opacity = 0;
 
-updateCarousel();
+  setTimeout(() => {
+    promoImg.src = promoImages[promoIndex];
+    promoImg.style.opacity = 1;
+  }, 300);
+}, 4000);
 	
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
