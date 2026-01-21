@@ -530,7 +530,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div>
             <h1 class="title">Prom's 225</h1>
             <div class="subtitle">Fratern's !!</div>
-            <img src="Promotion.png" alt="Photo de la promo 2025" class="promo-photo">
+            	<div class="carousel">
+				  <div class="slides"></div>
+				  <div class="dots"></div>
+				</div>
           </div>
         </div>
       </section>
@@ -669,7 +672,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   window.sb = sb; // IMPORTANT
   let currentSession = null;
   const qs = id => document.getElementById(id);
-
+	
+const MAX_IMAGES = 5;
+const NEW_DAYS = 3;
+const isNew = (date) =>
+  (Date.now() - new Date(date)) < NEW_DAYS * 86400000;
+	
 (async () => {
   const { data } = await sb.auth.getSession();
 
@@ -762,9 +770,13 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-
-
-
+function enableAdmin() {
+  const pass = prompt("Mot de passe admin");
+  if (pass === "sans3dit") {
+    localStorage.setItem("carousel_admin", "true");
+    location.reload();
+  }
+}
 
 /* =========================
    MODALS
@@ -1022,6 +1034,7 @@ window.saveProfile = saveProfile;
 
 </body>
 </html>
+
 
 
 
