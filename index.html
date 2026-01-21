@@ -926,7 +926,7 @@ function initCarouselAdmin() {
 	
 let isAdmin = localStorage.getItem("carousel_admin") === "true";
 
-function enableAdmin() {
+window.enableAdmin = function() {
     const pass = prompt("Mot de passe admin");
     if (pass === "sans3dit") {
         localStorage.setItem("carousel_admin", "true");
@@ -934,7 +934,7 @@ function enableAdmin() {
         showToast("Mode admin activé", "success");
         initCarouselAdmin();
     }
-}
+};
 
 // Réinitialisation après page load
 window.addEventListener("load", () => {
@@ -1264,6 +1264,7 @@ window.closeZoom = function () {
 
 </body>
 </html>
+
 
 
 
