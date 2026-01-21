@@ -481,6 +481,9 @@ button:disabled{
     <input id="contact" placeholder="Numéro WhatsApp *">
 
     <input type="file" id="images" multiple accept="image/*"><br><br>
+    <div id="editImages"
+         style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    </div>
 
     <button id="publishBtn" onclick="publish()" disabled>Publier</button>
     <button class="secondary" onclick="closeModal()">Annuler</button>
@@ -514,6 +517,7 @@ window.__ADS_CACHE = {};
 
 let isAdmin = false;
 let ADS_IMAGES = {};
+let EDIT_IMAGES = [];
   
 async function initAuth(){
   const { data } = await sb.auth.getSession();
@@ -550,6 +554,7 @@ window.deleteAd = async function(id){
 
 window.editAd = function(ad){
   openModal();
+
   $("type").value = ad.type;
   $("title").value = ad.title;
   $("description").value = ad.description||"";
@@ -560,6 +565,10 @@ window.editAd = function(ad){
   $("state").value = ad.state||"";
 
   window.__editId = ad.id;
+
+  // 🔥 NOUVEAU
+  EDIT_IMAGES = [...(ad.images || [])];
+  renderEditImages();
 }
 
 const CATS=[
@@ -581,7 +590,12 @@ window.updateForm=()=>{
 };
 
 window.openModal=()=>{$("modal").style.display="flex";updateForm()}
-window.closeModal=()=>{$("modal").style.display="none"}
+window.closeModal=()=>{$("modal").style.display="none"
+                                EDIT_IMAGES = [];
+                                  $("editImages").innerHTML = "";
+                                  $("images").value = "";
+                                  window.__editId = null;
+                                              }
 
 window.adminLogin = () => {
   const code = prompt("Code admin ?");
@@ -601,9 +615,21 @@ window.publish = async () => {
     return;
   }
 
-  const imgs = [];
-  for (const f of $("images").files) {
+  const imgs = [...EDIT_IMAGES];
+
+  const files = $("images").files;
+  if (imgs.length + files.length > 10) {
+    alert("Maximum 10 photos");
+    return;
+  }
+  
+  for (const f of files) {
     const path = `public/${Date.now()}-${f.name}`;
+    await sb.storage.from("ads-images").upload(path, f);
+    imgs.push(
+      sb.storage.from("ads-images").getPublicUrl(path).data.publicUrl
+    );
+  }
     const files = $("images").files;
       if (files.length > 10) {
         alert("Maximum 10 photos");
@@ -633,14 +659,15 @@ const price = Number($("price").value);
   
   if (window.__editId) {
     await sb.from("ads").update({
-      title: $("title").value,
-      description: $("description").value || null,
-      price: Number($("price").value),
-      contact: $("contact").value,
-      location: $("location")?.value || null,
-      rooms: $("places")?.value || null,
-      state: $("state")?.value || null,
-    }).eq("id", window.__editId);
+    title: $("title").value,
+    description: $("description").value || null,
+    price: Number($("price").value),
+    contact: $("contact").value,
+    location: $("location")?.value || null,
+    rooms: $("places")?.value || null,
+    state: $("state")?.value || null,
+    images: imgs   // ✅ IMPORTANT
+  }).eq("id", window.__editId);
 
     window.__editId = null;
 
@@ -691,6 +718,36 @@ function restoreScroll(){
     window.scrollTo({ top: Number(y), behavior: "instant" });
     sessionStorage.removeItem("scrollY");
   }
+}
+
+function renderEditImages(){
+  const box = $("editImages");
+  box.innerHTML = "";
+
+  EDIT_IMAGES.forEach((src, i) => {
+    const wrap = document.createElement("div");
+    wrap.style.position = "relative";
+
+    wrap.innerHTML = `
+      <img src="${src}"
+           style="width:90px;height:90px;object-fit:contain;
+                  border-radius:12px;background:#eee;padding:6px">
+      <span style="
+        position:absolute;top:-6px;right:-6px;
+        background:#e63946;color:#fff;
+        width:22px;height:22px;
+        border-radius:50%;
+        display:flex;align-items:center;justify-content:center;
+        cursor:pointer;font-size:14px;">✕</span>
+    `;
+
+    wrap.querySelector("span").onclick = () => {
+      EDIT_IMAGES.splice(i, 1);
+      renderEditImages();
+    };
+
+    box.appendChild(wrap);
+  });
 }
   
 async function isFav(adId){
@@ -1031,4 +1088,5 @@ contactInput.addEventListener("input", () => {
 
 </body>
 </html>
+
 
