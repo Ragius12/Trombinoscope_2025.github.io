@@ -204,6 +204,19 @@ button.icon{padding:6px 10px}
   font-size:.9em;
 }
 
+.gallery{
+  backdrop-filter: blur(14px);
+}
+
+.gallery img{
+  box-shadow: 0 20px 50px rgba(0,0,0,.4);
+}
+
+#thumbs img:hover{
+  transform: scale(1.05);
+  opacity:1 !important;
+}
+  
 </style>
 </head>
 
@@ -218,6 +231,7 @@ button.icon{padding:6px 10px}
   <button id="tab-fav" onclick="setTab('fav')">⭐ Favoris</button>
   <button id="tab-mine" onclick="setTab('mine')">📂 Mes annonces</button>
   <button onclick="openModal()">➕ Publier</button>
+  <button onclick="adminLogin()">🛡 Admin</button>
 </div>
 
 <div class="filters">
@@ -283,6 +297,7 @@ const $ = id => document.getElementById(id);
 let user=null,currentTab="all";
 let galleryImgs=[],galleryIndex=0;
 
+let isAdmin = false;
 let ADS_IMAGES = {};
   
 async function initAuth(){
@@ -299,7 +314,7 @@ sb.auth.onAuthStateChange((_e, session)=>{
 
 initAuth();
 
-  async function deleteAd(id){
+window.deleteAd = async function(id){
   if(!confirm("Supprimer cette annonce ?")) return;
   await sb.from("ads").delete().eq("id",id);
   alert("Annonce supprimée");
@@ -342,6 +357,17 @@ window.updateForm=()=>{
 window.openModal=()=>{$("modal").style.display="flex";updateForm()}
 window.closeModal=()=>{$("modal").style.display="none"}
 
+window.adminLogin = () => {
+  const code = prompt("Code admin ?");
+  if (code === "Error404trads") {
+    isAdmin = true;
+    alert("Mode admin activé");
+    loadAds();
+  } else {
+    alert("Code incorrect");
+  }
+};
+  
 window.publish = async () => {
   const { data: { user: u } } = await sb.auth.getUser();
   if (!u) {
@@ -471,15 +497,16 @@ window.markSeen = async (adId) => {
       { onConflict: "user_id,ad_id" }
     );
 
-  if (error) {
-    console.error("Erreur seen:", error);
-  } else {
+  if (!error) {
+    await sb.rpc("increment_ad_views", { ad_id: adId });
     loadAds();
   }
 };
 
-window.loadAds=async()=>{
-  let q=sb.from("ads").select("*");
+
+window.loadAds = async () => {
+  ADS_IMAGES = {};
+  let q = sb.from("ads").select("*");
 
   if(currentTab==="mine"&&user) q=q.eq("owner",user.id);
   if(currentTab==="fav"&&user){
@@ -511,16 +538,22 @@ window.loadAds=async()=>{
               ${p?.surns || ""} ${p?.fams || ""} ${p?.promo || ""}
             </small>
           </div>
-        <p>${a.description||""}</p>
+        <p>${a.description || ""}</p>
+          <div class="meta">
+            ${a.location ? `📍 ${a.location}<br>` : ""}
+            ${a.rooms ? `👥 ${a.rooms} places<br>` : ""}
+            ${a.state ? `📦 État : ${a.state}<br>` : ""}
+            🗂 Catégorie : ${a.type}
+          </div>
         <div class="actions">
-          ${currentTab === "mine" ? `
-            <button class="secondary" onclick='editAd(${JSON.stringify(a)})'>
-              ✏️ Modifier
-            </button>
-            <button class="secondary" onclick="deleteAd(${a.id})">
-              🗑 Supprimer
-            </button>
-          ` : ""}
+          ${(currentTab === "mine" || isAdmin) ? `
+          <button class="secondary" onclick='editAd(${JSON.stringify(a)})'>
+            ✏️ Modifier
+          </button>
+          <button class="secondary" onclick="deleteAd(${a.id})">
+            🗑 Supprimer
+          </button>
+        ` : ""}
           <a href="${wa}" target="_blank"><button>📲 Contactez-moi</button></a>
               <span class="icon-heart ${fav ? "active" : ""}"
                   onclick="toggleFav(${a.id})">
@@ -528,8 +561,8 @@ window.loadAds=async()=>{
             </span>
             
             <span class="icon-eye ${seen ? "active" : ""}"
-                  onclick="markSeen(${a.id})">
-              👁
+                  title="${a.views || 0} vues">
+              👁 ${a.views || 0}
             </span>
         </div>
       </div>
@@ -593,6 +626,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
