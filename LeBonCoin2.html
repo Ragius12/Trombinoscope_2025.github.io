@@ -636,7 +636,7 @@ window.loadAds = async () => {
               <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
             ` : ""}
 
-            <a href="${wa}" target="_blank" onclick="markSeen(id)">
+            <a href="${wa}" target="_blank" onclick="markSeen(${a.id})">
               <button>📲 Contactez-moi</button>
             </a>
 
@@ -653,8 +653,7 @@ window.loadAds = async () => {
         </div>
 
         ${a.images?.[0]
-          ? `<img src="${a.images[0]}"
-     onclick="openGalleryById(id)">`
+          ? `<img src="${a.images[0]}" onclick="openGalleryById(${a.id})">`
           : ""
         }
       </div>`;
@@ -720,6 +719,7 @@ $("filterSeen").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
