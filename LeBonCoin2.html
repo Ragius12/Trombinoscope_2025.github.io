@@ -347,8 +347,8 @@ button.icon{padding:6px 10px}
 .banner{
   position: relative;
   width: 100%;
-  height: 260px;
-  background: url("Coin2.png") center 90% /cover no-repeat;
+  height: 180px;
+  background: url("Coin2.png") center center / cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -396,6 +396,22 @@ button.icon{padding:6px 10px}
     text-align: center;
   }
 } 
+
+#copy-msg {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1b2340;
+  color: #ffd76a;
+  padding: 10px 20px;
+  border-radius: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+  font-weight: 700;
+  z-index: 9999;
+}
   
 </style>
 </head>
@@ -409,6 +425,7 @@ button.icon{padding:6px 10px}
 
 <div class="container">
 
+<div id="copy-msg">Copié !</div>
 <div class="tabs">
   <button id="tab-all" class="active" onclick="setTab('all')">Toutes les annonces</button>
   <button id="tab-unseen" onclick="setTab('unseen')">Uniquement les non-vues</button>
@@ -645,6 +662,28 @@ const price = Number($("price").value);
   loadAds();
 };
 
+function showCopyMsg(text) {
+  const el = document.getElementById("copy-msg");
+  el.textContent = text;
+  el.style.opacity = 1;
+  setTimeout(() => {
+    el.style.opacity = 0;
+  }, 1500);
+}
+
+window.contactAd = async (adId, contact) => {
+  await markSeen(adId);
+  if (contact.includes("@")) {
+    navigator.clipboard.writeText(contact)
+      .then(() => showCopyMsg(`Adresse copiée : ${contact}`))
+      .catch(err => console.error("Impossible de copier :", err));
+    return;
+  }
+
+  const wa = `https://wa.me/${contact.replace(/\D/g,"")}`;
+  window.open(wa, "_blank");
+};
+  
 function saveScroll(){
   sessionStorage.setItem("scrollY", window.scrollY);
 }
@@ -931,9 +970,33 @@ window.openGallery = (imgs) => {
   $("gallery").style.display = "flex";
 };
 
-window.contactAd = async (adId, url) => {
+window.contactAd = async (adId, contact) => {
   await markSeen(adId);
-  window.open(url, "_blank");
+
+  contact = contact.trim();
+
+  if (!contact) {
+    alert("Le champ contact est vide !");
+    return;
+  }
+
+  // Cas 1 : mail
+  if (contact.includes("@")) {
+    navigator.clipboard.writeText(contact)
+      .then(() => alert(`Adresse copiée : ${contact}`))
+      .catch(err => console.error("Impossible de copier :", err));
+    return;
+  }
+
+  // Cas 2 : numéro WhatsApp (seulement chiffres)
+  if (/^\d+$/.test(contact)) {
+    const wa = `https://wa.me/${contact}`;
+    window.open(wa, "_blank");
+    return;
+  }
+
+  // Cas 3 : contact invalide
+  alert("Contact incorrect ! Veuillez remplir un numéro ou un email valide.");
 };
   
 window.closeGallery=()=>{$("gallery").style.display="none"};
@@ -953,6 +1016,7 @@ $("filterType").onchange=loadAds;
 
 </body>
 </html>
+
 
 
 
