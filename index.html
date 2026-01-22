@@ -805,6 +805,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	);
 	
   window.sb = sb; // IMPORTANT
+	window.isAdmin = localStorage.getItem("carousel_admin") === "true";
   let currentSession = null;
   const qs = id => document.getElementById(id);
 	
@@ -947,7 +948,7 @@ window.enableAdmin = function () {
   if (pass !== "sans3dit") return;
 
   localStorage.setItem("carousel_admin", "true");
-  isAdmin = true;
+  window.isAdmin = true;
 
   const badge = document.getElementById("adminBadge");
   if (badge) badge.style.display = "block";
@@ -958,13 +959,13 @@ window.enableAdmin = function () {
 
 // Réinitialisation après page load
 window.addEventListener("load", () => {
-    if (isAdmin) initCarouselAdmin();
+    if (window.isAdmin) initCarouselAdmin();
 });
 
 // Désactivation au logout
 qs("btnLogout").addEventListener("click", () => {
     localStorage.removeItem("carousel_admin");
-    isAdmin = false;
+    window.isAdmin = false;
 });
 
 /* =========================
@@ -1051,7 +1052,7 @@ function rebuildDots() {
     nav.appendChild(d);
   });
 
-  if (isAdmin) initCarouselAdmin();
+  if (window.isAdmin) initCarouselAdmin();
 }
 	
 	
@@ -1267,20 +1268,6 @@ window.saveProfile = saveProfile;
 /* =========================
    PROMO IMAGE ROTATION
 ========================= */
-
-const dots = document.querySelectorAll(".nav-dot");
-
-function updateDots(){
-  dots.forEach((d,i)=>d.classList.toggle("active", i===promoIndex));
-}
-
-dots.forEach((dot,i)=>{
-  dot.onclick = ()=>{
-    promoIndex = i;
-    promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
-    updateDots();
-  };
-});
 	
 let promoImages = [
   { url: "Promotion.png", created_at: new Date() }
@@ -1300,8 +1287,7 @@ setInterval(() => {
   }, 300);
 }, 4000);
 
-let isAdmin = localStorage.getItem("carousel_admin") === "true";
-if (isAdmin) {
+if (window.isAdmin) {
   const b = document.getElementById("adminBadge");
   if (b) b.style.display = "block";
 }
@@ -1342,6 +1328,7 @@ async function uploadPromoImage(file) {
 
 </body>
 </html>
+
 
 
 
