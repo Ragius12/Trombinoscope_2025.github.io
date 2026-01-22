@@ -1272,10 +1272,8 @@ dots.forEach((dot,i)=>{
   };
 });
 	
-const promoImages = [
-  "Promotion.png",
-  "Promotion.png",
-  "Promotion.png"
+let promoImages = [
+  { url: "Promotion.png", created_at: new Date() }
 ];
 
 let promoIndex = 0;
@@ -1307,9 +1305,6 @@ window.closeZoom = function () {
   qs("zoomModal").style.display = "none";
 };
 
-const promoImages = [];
-let promoIndex = 0;
-
 async function uploadPromoImage(file) {
   const ext = file.name.split('.').pop();
   const fileName = `promo_${Date.now()}.${ext}`;
@@ -1334,6 +1329,7 @@ async function uploadPromoImage(file) {
 
 </body>
 </html>
+
 
 
 
