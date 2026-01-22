@@ -934,7 +934,7 @@ function initCarouselAdmin() {
 
     promoImages.splice(promoIndex, 1);
     promoIndex = Math.max(0, promoIndex - 1);
-    promoImg.src = promoImages[promoIndex];
+    promoImg.src = promoImages[promoIndex].url;
     rebuildDots();
   };
 
@@ -1035,7 +1035,7 @@ function rebuildDots() {
     d.className = "nav-dot" + (i === promoIndex ? " active" : "");
     d.onclick = () => {
       promoIndex = i;
-      promoImg.src = promoImages[i];
+      promoImg.src = promoImages[i].url;
       rebuildDots();
     };
     nav.appendChild(d);
@@ -1267,7 +1267,7 @@ function updateDots(){
 dots.forEach((dot,i)=>{
   dot.onclick = ()=>{
     promoIndex = i;
-    promoImg.src = promoImages[promoIndex];
+    promoImg.src = promoImages[promoIndex].url;
     updateDots();
   };
 });
@@ -1284,9 +1284,9 @@ setInterval(() => {
   promoImg.style.opacity = 0;
 
   setTimeout(() => {
-	updateDots();
-    promoImg.src = promoImages[promoIndex];
+    promoImg.src = promoImages[promoIndex].url;
     promoImg.style.opacity = 1;
+    updateDots();
   }, 300);
 }, 4000);
 
@@ -1329,6 +1329,7 @@ async function uploadPromoImage(file) {
 
 </body>
 </html>
+
 
 
 
