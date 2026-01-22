@@ -666,11 +666,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 			  alt="Promotion"
 			  class="promo-photo"
 			/>
-		  <div class="carousel-nav">
-			  <button class="nav-dot active"></button>
-			  <button class="nav-dot"></button>
-			  <button class="nav-dot"></button>
-			</div>
+		  <div class="carousel-nav"></div>
 		</section>
 
       <section class="grid">
@@ -1279,13 +1275,14 @@ let promoImages = [
 
 let promoIndex = 0;
 const promoImg = document.getElementById("promoImage");
+rebuildDots();
 
 setInterval(() => {
   promoIndex = (promoIndex + 1) % promoImages.length;
   promoImg.style.opacity = 0;
 
   setTimeout(() => {
-    promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
+    promoImg.src = promoImages[promoIndex].url;
     promoImg.style.opacity = 1;
     rebuildDots();
   }, 300);
@@ -1296,9 +1293,30 @@ if (window.isAdmin) {
   if (b) b.style.display = "block";
 }
 
+function rebuildZoomDots() {
+  const nav = qs("zoomNav");
+  nav.innerHTML = "";
+
+  promoImages.forEach((img, i) => {
+    const d = document.createElement("button");
+    d.className = "nav-dot" + (i === promoIndex ? " active" : "");
+
+    d.onclick = () => {
+      promoIndex = i;
+      qs("zoomImg").src = img.url;
+      promoImg.src = img.url;
+      rebuildDots();
+      rebuildZoomDots();
+    };
+
+    nav.appendChild(d);
+  });
+}
+	
 promoImg.onclick = () => {
-    qs("zoomImg").src = promoImg.src;
-    qs("zoomModal").style.display = "flex";
+  qs("zoomImg").src = promoImages[promoIndex].url;
+  qs("zoomModal").style.display = "flex";
+  rebuildZoomDots();
 };
 
 window.closeZoom = function () {
@@ -1312,7 +1330,7 @@ async function uploadPromoImage(file) {
 
     const { error } = await sb.storage
       .from("promo-carousel")
-      .upload(fileName, file, { upsert: false });
+      .upload(fileName, file, { upsert: true });
 
     if (error) throw error;
 
@@ -1332,6 +1350,7 @@ async function uploadPromoImage(file) {
 
 </body>
 </html>
+
 
 
 
