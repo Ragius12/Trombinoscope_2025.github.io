@@ -96,6 +96,8 @@
     .promo-photo{
 	  width:100%;
 	  max-width:360px;
+	  aspect-ratio: 4 / 3;
+  	  object-fit: cover;
 	  border-radius:18px;
 	  margin-top:14px;
 	  box-shadow:0 8px 30px rgba(0,0,0,0.4);
@@ -660,12 +662,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 			  style="display:none"
 			/>
 		  <h3 class="carousel-title">Infals du jour :</h3>
-		  <img
-			  id="promoImage"
-			  src="Promotion.png"
-			  alt="Promotion"
-			  class="promo-photo"
-			/>
+		  <div style="position:relative;display:inline-block">
+			  <div id="mainNewBadge" class="new-badge" style="display:none">NOUVEAU</div>
+			  <img
+				  id="promoImage"
+				  src="Promotion.png"
+				  alt="Promotion"
+				  class="promo-photo"
+				/>
+			  </div>
 		  <div class="carousel-nav" id="mainNav"></div>
 		</section>
 
@@ -928,25 +933,30 @@ function addAdminButtons(nav) {
   delBtn.style.background = "red";
 
 	delBtn.onclick = async () => {
-	  const img = promoImages[promoIndex];
-	  if (!img?.id) return;
-	
-	  if (!confirm("Supprimer cette image ?")) return;
-	
-	  const { error } = await sb
-	    .from("promo_images")
-	    .delete()
-	    .eq("id", img.id);
-	
-	  if (error) {
-	    console.error(error);
-	    showToast("Suppression refusée", "error");
-	    return;
-	  }
-	
-	  await loadCarousel();
-	  showToast("Image supprimée 🗑️", "success");
-	};
+		  if (promoImages.length <= 1) {
+		    showToast("⚠️ Le carrousel doit contenir au moins une image", "warn");
+		    return;
+		  }
+		
+		  const img = promoImages[promoIndex];
+		  if (!img?.id) return;
+		
+		  if (!confirm("Supprimer cette image ?")) return;
+		
+		  const { error } = await sb
+		    .from("promo_images")
+		    .delete()
+		    .eq("id", img.id);
+		
+		  if (error) {
+		    console.error(error);
+		    showToast("Suppression refusée", "error");
+		    return;
+		  }
+		
+		  await loadCarousel();
+		  showToast("Image supprimée 🗑️", "success");
+		};
 
   container.appendChild(addBtn);
   container.appendChild(delBtn);
@@ -1035,7 +1045,7 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
 
   promoIndex = promoImages.length - 1;
   promoImg.src = promoImages[promoIndex].url;
-
+ updateMainBadge();
   rebuildDots();
   showToast("Image ajoutée ✔️", "success");
 
@@ -1260,14 +1270,15 @@ let promoIndex = 0;
 const promoImg = document.getElementById("promoImage");
 
 setInterval(() => {
-  if (isZoomOpen || promoImages.length === 0) return;
   if (isZoomOpen) return;
+  if (promoImages.length <= 1) return; // 🔥 STOP rotation
 
   promoIndex = (promoIndex + 1) % promoImages.length;
   promoImg.style.opacity = 0;
 
   setTimeout(() => {
     promoImg.src = promoImages[promoIndex].url;
+	updateMainBadge();
     promoImg.style.opacity = 1;
     rebuildDots();
   }, 300);
@@ -1278,6 +1289,15 @@ if (window.isAdmin) {
   if (b) b.style.display = "block";
 }
 
+function updateMainBadge() {
+  const badge = qs("mainNewBadge");
+  if (!badge || promoImages.length === 0) return;
+
+  badge.style.display = isNew(promoImages[promoIndex].created_at)
+    ? "block"
+    : "none";
+}
+	
 function rebuildDots() {
   const nav = document.getElementById("mainNav");
   if (!nav) return;
@@ -1388,6 +1408,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
