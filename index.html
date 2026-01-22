@@ -827,19 +827,21 @@ const isNew = (date) =>
     fillProfileForm(cached);
     updateProfileBadge(cached);
   } else {
-    const { data: profile } = await sb
-      .from("profiles")
-      .select("*")
-      .eq("id", currentSession.user.id)
-      .maybeSingle();
-
-    if (profile) {
-      cacheProfile(profile);
-      fillProfileForm(profile);
-      if (profile.nom && profile.prenom && profile.promo) {
-        updateProfileBadge(profile);
-      }
-    }
+    if (currentSession?.user) {
+	  const { data: profile } = await sb
+	    .from("profiles")
+	    .select("*")
+	    .eq("id", currentSession.user.id)
+	    .maybeSingle();
+	
+	  if (profile) {
+	    cacheProfile(profile);
+	    fillProfileForm(profile);
+	    if (profile.nom && profile.prenom && profile.promo) {
+	      updateProfileBadge(profile);
+	    }
+	  }
+	}
   }
 })();
 
@@ -1271,6 +1273,8 @@ window.saveProfile = saveProfile;
 	
 let promoImages = [
   { url: "Promotion.png", created_at: new Date() }
+  { url: "Coin2.png", created_at: new Date() }
+  { url: "Buzzy.png", created_at: new Date() }
 ];
 
 let promoIndex = 0;
@@ -1328,6 +1332,7 @@ async function uploadPromoImage(file) {
 
 </body>
 </html>
+
 
 
 
