@@ -1028,29 +1028,6 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
 
   e.target.value = "";
 });
-
-function rebuildDots() {
-  const nav = document.getElementById("mainNav");
-  if (!nav) return;
-
-  nav.innerHTML = "";
-
-  promoImages.forEach((img, i) => {
-    if (!img?.url) return;
-
-    const d = document.createElement("button");
-    d.className = "nav-dot" + (i === promoIndex ? " active" : "");
-
-    d.onclick = () => {
-      promoIndex = i;
-      promoImg.src = img.url;
-      rebuildDots();
-    };
-
-    nav.appendChild(d);
-  });
-}
-	
 	
 /* =========================
    AUTH ACTIONS
@@ -1271,6 +1248,7 @@ const promoImg = document.getElementById("promoImage");
 rebuildDots();
 
 setInterval(() => {
+  if (isZoomOpen || promoImages.length === 0) return;
   if (isZoomOpen) return;
 
   promoIndex = (promoIndex + 1) % promoImages.length;
@@ -1396,6 +1374,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
