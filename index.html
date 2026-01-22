@@ -1283,7 +1283,7 @@ setInterval(() => {
   setTimeout(() => {
     promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
     promoImg.style.opacity = 1;
-    updateDots();
+    rebuildDots();
   }, 300);
 }, 4000);
 
@@ -1328,6 +1328,7 @@ async function uploadPromoImage(file) {
 
 </body>
 </html>
+
 
 
 
