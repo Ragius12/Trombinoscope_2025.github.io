@@ -931,13 +931,21 @@ function addAdminButtons(nav) {
 	  const img = promoImages[promoIndex];
 	  if (!img?.id) return;
 	
-	  await sb
+	  if (!confirm("Supprimer cette image ?")) return;
+	
+	  const { error } = await sb
 	    .from("promo_images")
 	    .delete()
 	    .eq("id", img.id);
 	
+	  if (error) {
+	    console.error(error);
+	    showToast("Suppression refusée", "error");
+	    return;
+	  }
+	
 	  await loadCarousel();
-	  showToast("Image supprimée", "success");
+	  showToast("Image supprimée 🗑️", "success");
 	};
 
   container.appendChild(addBtn);
@@ -1012,16 +1020,21 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
   const url = await uploadPromoImage(file);
   if (!url) return;
 
-	await sb.from("promo_images").insert({
-	  url,
-	  position: promoImages.length,
-	  created_at: new Date().toISOString()
-	});
-	
-	await loadCarousel();
+  const { error } = await sb.from("promo_images").insert({
+    url,
+    position: promoImages.length,
+    created_at: new Date().toISOString()
+  });
+
+  if (error) {
+    showToast("Erreur base de données", "error");
+    return;
+  }
+
+  await loadCarousel();
 
   promoIndex = promoImages.length - 1;
-  promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
+  promoImg.src = promoImages[promoIndex].url;
 
   rebuildDots();
   showToast("Image ajoutée ✔️", "success");
@@ -1245,7 +1258,6 @@ window.saveProfile = saveProfile;
 let promoImages = [];
 let promoIndex = 0;
 const promoImg = document.getElementById("promoImage");
-rebuildDots();
 
 setInterval(() => {
   if (isZoomOpen || promoImages.length === 0) return;
@@ -1275,17 +1287,19 @@ function rebuildDots() {
   promoImages.forEach((img, i) => {
     const d = document.createElement("button");
     d.className = "nav-dot" + (i === promoIndex ? " active" : "");
+
     d.onclick = () => {
       promoIndex = i;
       promoImg.src = img.url;
+      if (isZoomOpen) qs("zoomImg").src = img.url;
       rebuildDots();
+      rebuildZoomDots();
     };
+
     nav.appendChild(d);
   });
 
-  if (window.isAdmin) {
-    addAdminButtons(nav);
-  }
+  if (window.isAdmin) addAdminButtons(nav);
 }
 	
 promoImg.onclick = () => {
@@ -1374,6 +1388,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
