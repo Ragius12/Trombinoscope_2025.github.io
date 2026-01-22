@@ -698,64 +698,6 @@ window.publish = async () => {
   loadAds();
 };
 
-  if ($("title").value.length > 80) {
-    alert("Titre trop long (80 caractères max)");
-    return;
-  }
-  
-  if ($("description").value.length > 1000) {
-    alert("Description trop longue");
-    return;
-  }
-
-const price = Number($("price").value);
-    if (price <= 0 || price > 100000) {
-      alert("Prix invalide (1€ à 100 000€ max)");
-      return;
-    }
-  
-  if (window.__editId) {
-    await sb.from("ads").update({
-    title: $("title").value,
-    description: $("description").value || null,
-    price: Number($("price").value),
-    contact: $("contact").value,
-    location: $("location")?.value || null,
-    rooms: $("places")?.value || null,
-    state: $("state")?.value || null,
-    images: imgs   // ✅ IMPORTANT
-  }).eq("id", window.__editId);
-
-    window.__editId = null;
-
-  } else {
-    await sb.from("ads").insert({
-      owner: u.id,
-      type: $("type").value,
-      title: $("title").value,
-      description: $("description").value || null,
-      price: Number($("price").value),
-      contact: $("contact").value,
-      location: $("location")?.value || null,
-      rooms: $("places")?.value || null,
-      state: $("state")?.value || null,
-      images: imgs
-    });
-  }
-
-    $("title").value = "";
-    $("description").value = "";
-    $("price").value = "";
-    $("contact").value = "";
-    $("location").value = "";
-    $("places").value = "";
-    $("state").value = "";
-    $("images").value = "";
-
-  closeModal();
-  loadAds();
-};
-
 function showCopyMsg(text) {
   const el = document.getElementById("copy-msg");
   el.textContent = text;
@@ -1145,6 +1087,7 @@ contactInput.addEventListener("input", () => {
 
 </body>
 </html>
+
 
 
 
