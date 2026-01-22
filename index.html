@@ -934,7 +934,7 @@ function initCarouselAdmin() {
 
     promoImages.splice(promoIndex, 1);
     promoIndex = Math.max(0, promoIndex - 1);
-    promoImg.src = promoImages[promoIndex].url;
+    promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
     rebuildDots();
   };
 
@@ -942,14 +942,18 @@ function initCarouselAdmin() {
   container.appendChild(delBtn);
 }
 
-window.enableAdmin = function() {
-    const pass = prompt("Mot de passe admin");
-    if (pass === "sans3dit") {
-        localStorage.setItem("carousel_admin", "true");
-        isAdmin = true;
-        showToast("Mode admin activé", "success");
-        initCarouselAdmin();
-    }
+window.enableAdmin = function () {
+  const pass = prompt("Mot de passe admin");
+  if (pass !== "sans3dit") return;
+
+  localStorage.setItem("carousel_admin", "true");
+  isAdmin = true;
+
+  const badge = document.getElementById("adminBadge");
+  if (badge) badge.style.display = "block";
+
+  showToast("Mode admin activé", "success");
+  initCarouselAdmin();
 };
 
 // Réinitialisation après page load
@@ -1012,14 +1016,14 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
   const url = await uploadPromoImage(file);
   if (!url) return;
 
-  promoImages.push({ url, created_at: new Date() });
+  promoImages.push({
+    url,
+    created_at: new Date().toISOString()
+  });
+
   promoIndex = promoImages.length - 1;
-  promoImg.src = promoImages[promoIndex].url;
-		if (isNew(promoImages[promoIndex].created_at)) {
-		  badge.style.display = "block";
-		} else {
-		  badge.style.display = "none";
-		}
+  promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
+
   rebuildDots();
   showToast("Image ajoutée ✔️", "success");
 
@@ -1028,16 +1032,22 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
 
 function rebuildDots() {
   const nav = document.querySelector(".carousel-nav");
+  if (!nav) return;
+
   nav.innerHTML = "";
 
-  promoImages.forEach((_, i) => {
+  promoImages.forEach((img, i) => {
+    if (!img?.url) return;
+
     const d = document.createElement("button");
     d.className = "nav-dot" + (i === promoIndex ? " active" : "");
+
     d.onclick = () => {
       promoIndex = i;
-      promoImg.src = promoImages[i].url;
+      promoImg.src = img.url;
       rebuildDots();
     };
+
     nav.appendChild(d);
   });
 
@@ -1267,7 +1277,7 @@ function updateDots(){
 dots.forEach((dot,i)=>{
   dot.onclick = ()=>{
     promoIndex = i;
-    promoImg.src = promoImages[promoIndex].url;
+    promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
     updateDots();
   };
 });
@@ -1284,13 +1294,13 @@ setInterval(() => {
   promoImg.style.opacity = 0;
 
   setTimeout(() => {
-    promoImg.src = promoImages[promoIndex].url;
+    promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
     promoImg.style.opacity = 1;
     updateDots();
   }, 300);
 }, 4000);
 
-const isAdmin = localStorage.getItem("carousel_admin")==="true";
+let isAdmin = localStorage.getItem("carousel_admin") === "true";
 if (isAdmin) {
   const b = document.getElementById("adminBadge");
   if (b) b.style.display = "block";
@@ -1306,29 +1316,33 @@ window.closeZoom = function () {
 };
 
 async function uploadPromoImage(file) {
-  const ext = file.name.split('.').pop();
-  const fileName = `promo_${Date.now()}.${ext}`;
+  try {
+    const ext = file.name.split(".").pop();
+    const fileName = `promo_${Date.now()}.${ext}`;
 
-  const { error } = await sb.storage
-    .from("promo")
-    .upload(fileName, file);
+    const { error } = await sb.storage
+      .from("promo-carousel")
+      .upload(fileName, file, { upsert: false });
 
-  if (error) {
+    if (error) throw error;
+
+    const { data } = sb.storage
+      .from("promo-carousel")
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  } catch (e) {
+    console.error(e);
     showToast("Erreur upload image", "error");
     return null;
   }
-
-  const { data } = sb.storage
-    .from("promo")
-    .getPublicUrl(fileName);
-
-  return data.publicUrl;
 }
 	
 </script>
 
 </body>
 </html>
+
 
 
 
