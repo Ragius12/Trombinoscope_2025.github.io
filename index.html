@@ -666,7 +666,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 			  alt="Promotion"
 			  class="promo-photo"
 			/>
-		  <div class="carousel-nav"></div>
+		  <div class="carousel-nav" id="mainNav"></div>
 		</section>
 
       <section class="grid">
@@ -804,7 +804,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	window.isAdmin = localStorage.getItem("carousel_admin") === "true";
   let currentSession = null;
   const qs = id => document.getElementById(id);
-	
+
+let isZoomOpen = false;
 const MAX_IMAGES = 5;
 const NEW_DAYS = 3;
 const isNew = (date) =>
@@ -904,8 +905,8 @@ sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-function initCarouselAdmin() {
-  const container = document.querySelector(".carousel-nav");
+function addAdminButtons(nav) {
+  const container = document.getElementById("mainNav");
   if (!container) return;
 
   container.querySelectorAll(".admin-btn").forEach(b => b.remove());
@@ -926,16 +927,18 @@ function initCarouselAdmin() {
   delBtn.className = "admin-btn nav-dot";
   delBtn.style.background = "red";
 
-  delBtn.onclick = () => {
-    if (promoImages.length <= 1) {
-      return showToast("Il doit rester au moins une image", "warn");
-    }
-
-    promoImages.splice(promoIndex, 1);
-    promoIndex = Math.max(0, promoIndex - 1);
-    promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
-    rebuildDots();
-  };
+	delBtn.onclick = async () => {
+	  const img = promoImages[promoIndex];
+	  if (!img?.id) return;
+	
+	  await sb
+	    .from("promo_images")
+	    .delete()
+	    .eq("id", img.id);
+	
+	  await loadCarousel();
+	  showToast("Image supprimée", "success");
+	};
 
   container.appendChild(addBtn);
   container.appendChild(delBtn);
@@ -952,13 +955,7 @@ window.enableAdmin = function () {
   if (badge) badge.style.display = "block";
 
   showToast("Mode admin activé", "success");
-  initCarouselAdmin();
 };
-
-// Réinitialisation après page load
-window.addEventListener("load", () => {
-    if (window.isAdmin) initCarouselAdmin();
-});
 
 // Désactivation au logout
 qs("btnLogout").addEventListener("click", () => {
@@ -1015,10 +1012,13 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
   const url = await uploadPromoImage(file);
   if (!url) return;
 
-  promoImages.push({
-    url,
-    created_at: new Date().toISOString()
-  });
+	await sb.from("promo_images").insert({
+	  url,
+	  position: promoImages.length,
+	  created_at: new Date().toISOString()
+	});
+	
+	await loadCarousel();
 
   promoIndex = promoImages.length - 1;
   promoImg.src = promoImages[promoIndex]?.url || promoImg.src;
@@ -1030,7 +1030,7 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
 });
 
 function rebuildDots() {
-  const nav = document.querySelector(".carousel-nav");
+  const nav = document.getElementById("mainNav");
   if (!nav) return;
 
   nav.innerHTML = "";
@@ -1049,8 +1049,6 @@ function rebuildDots() {
 
     nav.appendChild(d);
   });
-
-  if (window.isAdmin) initCarouselAdmin();
 }
 	
 	
@@ -1267,17 +1265,14 @@ window.saveProfile = saveProfile;
    PROMO IMAGE ROTATION
 ========================= */
 	
-let promoImages = [
-  { url: "Promotion.png", created_at: new Date() },
-  { url: "Coin2.png", created_at: new Date() },
-  { url: "Buzzy.png", created_at: new Date() }
-];
-
+let promoImages = [];
 let promoIndex = 0;
 const promoImg = document.getElementById("promoImage");
 rebuildDots();
 
 setInterval(() => {
+  if (isZoomOpen) return;
+
   promoIndex = (promoIndex + 1) % promoImages.length;
   promoImg.style.opacity = 0;
 
@@ -1293,33 +1288,42 @@ if (window.isAdmin) {
   if (b) b.style.display = "block";
 }
 
-function rebuildZoomDots() {
-  const nav = qs("zoomNav");
+function rebuildDots() {
+  const nav = document.getElementById("mainNav");
+  if (!nav) return;
+
   nav.innerHTML = "";
 
   promoImages.forEach((img, i) => {
     const d = document.createElement("button");
     d.className = "nav-dot" + (i === promoIndex ? " active" : "");
-
     d.onclick = () => {
       promoIndex = i;
-      qs("zoomImg").src = img.url;
       promoImg.src = img.url;
       rebuildDots();
-      rebuildZoomDots();
     };
-
     nav.appendChild(d);
   });
+
+  if (window.isAdmin) {
+    addAdminButtons(nav);
+  }
 }
 	
 promoImg.onclick = () => {
+  isZoomOpen = true;
   qs("zoomImg").src = promoImages[promoIndex].url;
   qs("zoomModal").style.display = "flex";
   rebuildZoomDots();
+
+  const badge = qs("newBadge");
+	badge.style.display = isNew(promoImages[promoIndex].created_at)
+	  ? "block"
+	  : "none";
 };
 
 window.closeZoom = function () {
+  isZoomOpen = false;
   qs("zoomModal").style.display = "none";
 };
 
@@ -1345,11 +1349,54 @@ async function uploadPromoImage(file) {
     return null;
   }
 }
+
+function rebuildZoomDots() {
+  const nav = qs("zoomNav");
+  if (!nav) return;
+
+  nav.innerHTML = "";
+
+  promoImages.forEach((img, i) => {
+    const d = document.createElement("button");
+    d.className = "nav-dot" + (i === promoIndex ? " active" : "");
+
+    d.onclick = () => {
+      promoIndex = i;
+      promoImg.src = img.url;
+      qs("zoomImg").src = img.url;
+      rebuildDots();
+      rebuildZoomDots();
+    };
+
+    nav.appendChild(d);
+  });
+}
+	
+async function loadCarousel() {
+  const { data, error } = await sb
+    .from("promo_images")
+    .select("*")
+    .order("position", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  promoImages = data;
+  promoIndex = 0;
+
+  promoImg.src = promoImages[0]?.url || promoImg.src;
+  rebuildDots();
+}
+
+loadCarousel();
 	
 </script>
 
 </body>
 </html>
+
 
 
 
