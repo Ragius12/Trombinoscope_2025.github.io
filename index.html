@@ -32,7 +32,7 @@
 	  pointer-events:none; /* 🔥 CRUCIAL */
 	}
 
-    .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;
+    .hero{min-height:100vh;display:flex;align-items:center;justy-content:center;
       padding:36px;position:relative;z-index:1;overflow:hidden;}
     .hero::before{content:'';position:absolute;inset:0;
       background:radial-gradient(circle at 50% 50%,rgba(255,255,255,0.06),transparent 70%);
@@ -53,7 +53,7 @@
 
     .logo{
       height:90px;width:90px;border-radius:25px;
-      display:flex;align-items:center;justify-content:center;font-weight:900;
+      display:flex;align-items:center;justy-content:center;font-weight:900;
       animation:float 4s ease-in-out infinite;
       position:relative;
     }
@@ -88,7 +88,7 @@
       opacity: 1;
     }
 
-    .title{font-family:'Cinzel',serif;font-size:30px;
+    .title{font-family:'Cinzel',ser;font-size:30px;
       color:var(--accent);text-shadow:0 0 20px rgba(255,215,0,0.4)}
     .subtitle{color:var(--muted);font-size:14px;animation:fadeIn 1.6s ease}
     @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
@@ -202,7 +202,7 @@
   backdrop-filter:blur(6px);
   display:none;
   align-items:center;
-  justify-content:center;
+  justy-content:center;
   z-index:10001;
 }
 
@@ -226,7 +226,7 @@
 
 .profile-modal h2{
   margin:0 0 6px;
-  font-family:'Cinzel',serif;
+  font-family:'Cinzel',ser;
   color:#ffd700;
 }
 
@@ -264,7 +264,7 @@
 
 .actions{
   display:flex;
-  justify-content:flex-end;
+  justy-content:flex-end;
   gap:10px;
   margin-top:18px;
 }
@@ -315,7 +315,7 @@
   color:#000;
   display:flex;
   align-items:center;
-  justify-content:center;
+  justy-content:center;
   font-weight:900;
 }
 
@@ -404,7 +404,7 @@
     right: 8px !important;
     gap: 6px;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justy-content: flex-end;
   }
 
   #authBar button {
@@ -449,7 +449,7 @@
   display:flex;
   gap:8px;
   margin-top:10px;
-  justify-content:center;
+  justy-content:center;
 }
 
 .nav-dot{
@@ -491,7 +491,7 @@
 
   #zoomModal {
     align-items: center;
-    justify-content: center;
+    justy-content: center;
   }
 
   #zoomModal .modal-card {
@@ -524,7 +524,7 @@
 @media (max-width: 768px) {
   #zoomModal {
     align-items: center !important;
-    justify-content: center !important;
+    justy-content: center !important;
     padding-top: 0 !important;
   }
 
@@ -546,8 +546,8 @@
 	
 <body>
 <!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<noscript><rame src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
+height="0" width="0" style="display:none;visibility:hidden"></rame></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <!-- AUTH BAR (AJOUTÉE, SANS TOUCHER AU RESTE) -->
@@ -621,15 +621,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 
 	<!-- Google Tag Manager (noscript) -->
-	<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
-	height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<noscript><rame src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
+	height="0" width="0" style="display:none;visibility:hidden"></rame></noscript>
 	<!-- End Google Tag Manager (noscript) -->
 	
   <canvas id="bgCanvas"></canvas>
   <div class="hero">
     <main class="shell">
       <section class="brand">
-		  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;">
+		  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justy-content:center;">
 		    <div class="logo">
 		      <img src="Buzzy.png" alt="bourdon" class="left">
 		      <span class="tooltip">Sal's chicop's, je suis Vespula Jr.!</span>
@@ -661,7 +661,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 					Admin
 				</button>
 			  <div id="adminBadge" style="font-size:12px;color:#ffd700;display:none">
-				  🔧 Mode admin actif
+				  🔧 Mode admin act
 				</div>
 		  
 		  <div style="position:relative;display:inline-block">
@@ -741,7 +741,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 			  const lastConnect = localStorage.getItem("liseConnectTime");
 			  const now = Date.now();
 
-			  if (lastConnect && now - lastConnect < VALIDITY) {
+			   (lastConnect && now - lastConnect < VALIDITY) {
 				status.textContent = "Session Outlook récente ✔️";
 				window.open("https://lise.ensam.eu/", "_blank");
 				return;
@@ -782,7 +782,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	<script>
 	function simulateLogin(){
 	  const user = prompt("Entrez votre adresse Outlook ENSAM (ex: prenom.nom@ensam.eu)");
-	  if(user){
+	  (user){
 		localStorage.setItem("ensamUser", user);
 		document.getElementById("ensamUser").textContent = user;
 	  }
@@ -927,9 +927,11 @@ async function requireAuthAndProfile() {
   return true;
 }
 
-if (session && !(await hasCompleteProfile())) {
-  qs("profileModal").style.display = "flex";
-}
+(async () => {
+  if (currentSession && !(await hasCompleteProfile())) {
+    qs("profileModal").style.display = "flex";
+  }
+})();
 	
 function updateUI(session) {
   if (!session) {
@@ -1468,6 +1470,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
