@@ -952,12 +952,12 @@ window.loadAds = async () => {
 
       <div class="actions">
         ${(currentTab === "mine" || isAdmin) ? `
-          <button class="secondary" onclick="editAdById(${a.id})">✏️ Modifier</button>
-          <button class="secondary" onclick="deleteAd(${a.id})">🗑 Supprimer</button>
+          <button class="secondary" onclick="editAdById(${a.id})">Modifier</button>
+          <button class="secondary" onclick="deleteAd(${a.id})">Supprimer</button>
         ` : ""}
 
         <button onclick="contactAd(${a.id}, '${a.contact || ""}')">
-          📲 Contactez-moi
+          Contactez-moi
         </button>
 
         <span class="icon-heart ${fav ? "active" : ""}" onclick="toggleFav(${a.id})">
@@ -1087,7 +1087,3 @@ contactInput.addEventListener("input", () => {
 
 </body>
 </html>
-
-
-
-
