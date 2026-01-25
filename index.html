@@ -811,12 +811,70 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 	  "https://wwjsqkktwxciyvzoisyz.supabase.co",
 	  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 	);
-	
+
   window.sb = sb; // IMPORTANT
 	window.isAdmin = localStorage.getItem("carousel_admin") === "true";
   let currentSession = null;
   const qs = id => document.getElementById(id);
 
+async function initUser(session) {
+  currentSession = session;
+  updateUI(session);
+
+  if (!session) {
+    qs("avatar").style.display = "none";
+    qs("profileBadge").style.display = "none";
+    return;
+  }
+
+  qs("profileEmail").innerText = session.user.email;
+
+  // 🔁 Profil
+  let profile = getCachedProfile();
+
+  if (!profile) {
+    const { data } = await sb
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    profile = data;
+    if (profile) cacheProfile(profile);
+  }
+
+  if (profile) {
+    fillProfileForm(profile);
+
+    if (profile.nom && profile.prenom && profile.promo) {
+      updateProfileBadge(profile);
+    }
+  }
+}
+	
+// 🔔 Détection retour après confirmation email
+(async () => {
+  const hash = window.location.hash;
+
+  if (hash.includes("access_token")) {
+    showToast("✅ Email confirmé, bienvenue !", "success");
+
+    // Nettoyage URL
+    history.replaceState(null, "", window.location.pathname);
+
+    const { data } = await sb.auth.getSession();
+    if (data?.session) {
+      await initUser(data.session);
+
+      // Forcer ouverture du profil si incomplet
+      setTimeout(async () => {
+        if (!(await hasCompleteProfile())) {
+          qs("profileModal").style.display = "flex";
+        }
+      }, 500);
+    }
+  }
+})();
+	
 let isZoomOpen = false;
 const MAX_IMAGES = 5;
 const NEW_DAYS = 3;
@@ -854,38 +912,23 @@ const isNew = (date) =>
   }
 })();
 
-async function initUser(session) {
-  currentSession = session;
-  updateUI(session);
-
-  if (!session) {
-    qs("avatar").style.display = "none";
-    qs("profileBadge").style.display = "none";
-    return;
+async function requireAuthAndProfile() {
+  if (!currentSession) {
+    openAuth("login");
+    return false;
   }
 
-  qs("profileEmail").innerText = session.user.email;
-
-  // 🔁 Profil
-  let profile = getCachedProfile();
-
-  if (!profile) {
-    const { data } = await sb
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .maybeSingle();
-    profile = data;
-    if (profile) cacheProfile(profile);
+  if (!(await hasCompleteProfile())) {
+    qs("profileModal").style.display = "flex";
+    showToast("Complète ton profil pour accéder au contenu", "warn");
+    return false;
   }
 
-  if (profile) {
-    fillProfileForm(profile);
+  return true;
+}
 
-    if (profile.nom && profile.prenom && profile.promo) {
-      updateProfileBadge(profile);
-    }
-  }
+if (session && !(await hasCompleteProfile())) {
+  qs("profileModal").style.display = "flex";
 }
 	
 function updateUI(session) {
@@ -1225,21 +1268,14 @@ window.saveProfile = async () => {
 const blockedPages = ["Galerie.html", "LeBonCoin2.html"];
 
 window.openPage = async page => {
+  const blockedPages = ["Galerie.html", "LeBonCoin2.html"];
+
   if (!blockedPages.includes(page)) {
     window.location.href = page;
     return;
   }
 
-  if (!currentSession) {
-    openAuth("login");
-    return;
-  }
-
-  if (!(await hasCompleteProfile())) {
-    qs("profileModal").style.display = "flex";
-    showToast("Complète ton profil pour continuer", "warn");
-    return;
-  }
+  if (!(await requireAuthAndProfile())) return;
 
   window.location.href = page;
 };
@@ -1432,6 +1468,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
