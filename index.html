@@ -741,7 +741,7 @@ height="0" width="0" style="display:none;visibility:hidden"></rame></noscript>
 			  const lastConnect = localStorage.getItem("liseConnectTime");
 			  const now = Date.now();
 
-			   (lastConnect && now - lastConnect < VALIDITY) {
+			  if (lastConnect && now - lastConnect < VALIDITY) {
 				status.textContent = "Session Outlook récente ✔️";
 				window.open("https://lise.ensam.eu/", "_blank");
 				return;
@@ -782,7 +782,7 @@ height="0" width="0" style="display:none;visibility:hidden"></rame></noscript>
 	<script>
 	function simulateLogin(){
 	  const user = prompt("Entrez votre adresse Outlook ENSAM (ex: prenom.nom@ensam.eu)");
-	  (user){
+	  if (user){
 		localStorage.setItem("ensamUser", user);
 		document.getElementById("ensamUser").textContent = user;
 	  }
@@ -1470,6 +1470,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
