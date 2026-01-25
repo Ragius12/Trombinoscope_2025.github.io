@@ -1093,9 +1093,17 @@ async function signup() {
   const email = qs("authEmail").value.trim().toLowerCase();
   const password = qs("authPassword").value;
 
-  // 🔒 Restriction ENSAM
-  if (!email.endsWith("@ensam.eu")) {
-    showToast("Adresse réservée aux mails ENSAM (@ensam.eu)", "error");
+  const allowedException = "thomas.bourdon12112004@gmail.com";
+
+  // 🔒 Restriction emails
+  const isEnsam = email.endsWith("@ensam.eu");
+  const isException = email === allowedException;
+
+  if (!isEnsam && !isException) {
+    showToast(
+      "Inscription réservée aux mails ENSAM (@ensam.eu)",
+      "error"
+    );
     return;
   }
 
@@ -1116,7 +1124,10 @@ async function signup() {
     return showToast(error.message, "error");
   }
 
-  showToast("Mail de confirmation envoyé, vérifie tes mails Ensam !", "success");
+  showToast(
+    "📧 Mail de confirmation envoyé, vérifie ta boîte !",
+    "success"
+  );
   closeAuthModal();
 }
 
@@ -1421,6 +1432,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
