@@ -909,6 +909,15 @@ function updateUI(session) {
 sb.auth.onAuthStateChange(async (event, session) => {
   await initUser(session);
 
+  // 🔒 Si l'utilisateur est déconnecté → plus d'admin
+  if (!session) {
+    localStorage.removeItem("carousel_admin");
+    window.isAdmin = false;
+
+    const badge = document.getElementById("adminBadge");
+    if (badge) badge.style.display = "none";
+  }
+
   if (event === "SIGNED_IN" && session) {
     const cached = getCachedProfile();
     if (!cached?.nom || !cached?.prenom || !cached?.promo) {
@@ -1080,37 +1089,34 @@ async function login() {
   closeAuthModal();
 }
 
-
-
-
 async function signup() {
-  const email = qs("authEmail").value;
+  const email = qs("authEmail").value.trim().toLowerCase();
   const password = qs("authPassword").value;
+
+  // 🔒 Restriction ENSAM
+  if (!email.endsWith("@ensam.eu")) {
+    showToast("Adresse réservée aux mails ENSAM (@ensam.eu)", "error");
+    return;
+  }
 
   const { data, error } = await sb.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/index.html"
+      emailRedirectTo: "https://ragius12.github.io/Trombinoscope_2025.github.io/"
     }
   });
 
   if (error) {
     if (error.message.includes("already registered")) {
-      showToast("Compte existant, connecte-toi 🔐", "warn");
+      showToast("Compte existant, connecte-toi", "warn");
       openAuth("login");
       return;
     }
     return showToast(error.message, "error");
   }
 
-  if (data?.user?.email_confirmed_at) {
-    showToast("Compte déjà activé, connexion possible ✔️", "success");
-    openAuth("login");
-  } else {
-    showToast("📧 Mail de confirmation envoyé", "success");
-  }
-
+  showToast("Mail de confirmation envoyé, vérifie tes mails Ensam !", "success");
   closeAuthModal();
 }
 
@@ -1415,6 +1421,7 @@ loadCarousel();
 
 </body>
 </html>
+
 
 
 
