@@ -88,7 +88,7 @@
       opacity: 1;
     }
 
-    .title{font-family:'Cinzel',ser;font-size:30px;
+    .title{font-family:'Cinzel',serif;font-size:30px;
       color:var(--accent);text-shadow:0 0 20px rgba(255,215,0,0.4)}
     .subtitle{color:var(--muted);font-size:14px;animation:fadeIn 1.6s ease}
     @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
@@ -226,7 +226,7 @@
 
 .profile-modal h2{
   margin:0 0 6px;
-  font-family:'Cinzel',ser;
+  font-family:'Cinzel',serif;
   color:#ffd700;
 }
 
@@ -546,8 +546,10 @@
 	
 <body>
 <!-- Google Tag Manager (noscript) -->
-<noscript><rame src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
-height="0" width="0" style="display:none;visibility:hidden"></rame></noscript>
+<noscript>
+  <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5X9NDHBP"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe>
+</noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <!-- AUTH BAR (AJOUTÉE, SANS TOUCHER AU RESTE) -->
@@ -1105,7 +1107,9 @@ document.getElementById("promoUpload").addEventListener("change", async e => {
   await loadCarousel();
 
   promoIndex = promoImages.length - 1;
-  promoImg.src = promoImages[promoIndex].url;
+      if (promoImages[promoIndex]?.url) {
+	  promoImg.src = promoImages[promoIndex].url;
+	}
  updateMainBadge();
   rebuildDots();
   showToast("Image ajoutée ✔️", "success");
@@ -1339,7 +1343,9 @@ setInterval(() => {
   promoImg.style.opacity = 0;
 
   setTimeout(() => {
-    promoImg.src = promoImages[promoIndex].url;
+    if (promoImages[promoIndex]?.url) {
+	  promoImg.src = promoImages[promoIndex].url;
+	}
 	updateMainBadge();
     promoImg.style.opacity = 1;
     rebuildDots();
@@ -1385,16 +1391,22 @@ function rebuildDots() {
 }
 	
 promoImg.onclick = () => {
+  if (!promoImages.length || !promoImages[promoIndex]) {
+    console.warn("Carousel not ready");
+    return;
+  }
+
   isZoomOpen = true;
   qs("zoomImg").src = promoImages[promoIndex].url;
   qs("zoomModal").style.display = "flex";
   rebuildZoomDots();
 
   const badge = qs("newBadge");
-	badge.style.display = isNew(promoImages[promoIndex].created_at)
-	  ? "block"
-	  : "none";
+  badge.style.display = isNew(promoImages[promoIndex].created_at)
+    ? "block"
+    : "none";
 };
+
 
 window.closeZoom = function () {
   isZoomOpen = false;
@@ -1460,7 +1472,9 @@ async function loadCarousel() {
   promoImages = data;
   promoIndex = 0;
 
-  promoImg.src = promoImages[0]?.url || promoImg.src;
+  if (promoImages.length > 0 && promoImages[0]?.url) {
+	  promoImg.src = promoImages[0].url;
+	}
   rebuildDots();
 }
 
@@ -1470,5 +1484,3 @@ loadCarousel();
 
 </body>
 </html>
-
-
