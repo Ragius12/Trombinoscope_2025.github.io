@@ -856,7 +856,7 @@ async function initUser(session) {
   const hash = window.location.hash;
 
   if (hash.includes("access_token")) {
-    showToast("✅ Email confirmé, bienvenue !", "success");
+    showToast("Email confirmé, bienvenue !", "success");
 
     // Nettoyage URL
     history.replaceState(null, "", window.location.pathname);
@@ -1016,7 +1016,7 @@ function addAdminButtons(nav) {
 		  }
 		
 		  await loadCarousel();
-		  showToast("Image supprimée 🗑️", "success");
+		  showToast("Image supprimée", "success");
 		};
 
   container.appendChild(addBtn);
@@ -1260,7 +1260,7 @@ window.saveProfile = async () => {
   closeProfileModal();
   updateProfileBadge(payload);
   cacheProfile(payload);
-  showToast("Profil sauvegardé ✨", "success");
+  showToast("Profil sauvegardé", "success");
 };
 
 /* =========================
@@ -1470,32 +1470,3 @@ loadCarousel();
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
