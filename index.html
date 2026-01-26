@@ -814,9 +814,16 @@
 	  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3anNxa2t0d3hjaXl2em9pc3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNTY0NzEsImV4cCI6MjA3OTgzMjQ3MX0.lBigIn0vRPEseB-iZEGfoQhi7aHaK01k2P-a88YDdCU"
 	);
 
-  window.sb = sb; // IMPORTANT
-	window.isAdmin = localStorage.getItem("carousel_admin") === "true";
+  window.sb = sb;
+  window.isAdmin = localStorage.getItem("carousel_admin") === "true";
+  let forceProfileModal = false;
   let currentSession = null;
+  async function refreshSession() {
+	  const { data } = await sb.auth.getSession();
+	  currentSession = data?.session || null;
+	  updateUI(currentSession);
+	  return currentSession;
+	}
   const qs = id => document.getElementById(id);
 
 async function initUser(session) {
@@ -853,87 +860,49 @@ async function initUser(session) {
   }
 }
 	
-// 🔔 Détection retour après confirmation email
-(async () => {
-  const hash = window.location.hash;
+window.addEventListener("load", async () => {
+  await refreshSession();
 
-  if (hash.includes("access_token")) {
-    showToast("Email confirmé, bienvenue !", "success");
+  if (!currentSession) return;
 
-    // Nettoyage URL
-    history.replaceState(null, "", window.location.pathname);
+  await initUser(currentSession);
 
-    const { data } = await sb.auth.getSession();
-    if (data?.session) {
-      await initUser(data.session);
+  const profile = await getProfileSafe();
 
-      // Forcer ouverture du profil si incomplet
-      setTimeout(async () => {
-        if (!(await hasCompleteProfile())) {
-          qs("profileModal").style.display = "flex";
-        }
-      }, 500);
-    }
+  if (!isProfileComplete(profile)) {
+    forceProfileModal = true;
+	qs("profileModal").style.display = "flex";
   }
-})();
+});
 	
 let isZoomOpen = false;
 const MAX_IMAGES = 5;
 const NEW_DAYS = 3;
 const isNew = (date) =>
   (Date.now() - new Date(date)) < NEW_DAYS * 86400000;
-	
-(async () => {
-  const { data } = await sb.auth.getSession();
-
-  if (data?.session) {
-	  await initUser(data.session);
-	}
-	
-  // 🔥 CHARGEMENT DU PROFIL AU REFRESH
-  const cached = getCachedProfile();
-  if (cached) {
-    fillProfileForm(cached);
-    updateProfileBadge(cached);
-  } else {
-    if (currentSession?.user) {
-	  const { data: profile } = await sb
-	    .from("profiles")
-	    .select("*")
-	    .eq("id", currentSession.user.id)
-	    .maybeSingle();
-	
-	  if (profile) {
-	    cacheProfile(profile);
-	    fillProfileForm(profile);
-	    if (profile.nom && profile.prenom && profile.promo) {
-	      updateProfileBadge(profile);
-	    }
-	  }
-	}
-  }
-})();
 
 async function requireAuthAndProfile() {
+  await refreshSession();
+
   if (!currentSession) {
     openAuth("login");
     return false;
   }
 
-  if (!(await hasCompleteProfile())) {
-    qs("profileModal").style.display = "flex";
-    showToast("Complète ton profil pour accéder au contenu", "warn");
+  const profile = await getProfileSafe();
+
+  if (!isProfileComplete(profile)) {
+    forceProfileModal = true;
+	qs("profileModal").style.display = "flex";
+    showToast(
+      "Tu peux compléter ton profil plus tard, mais l’accès est bloqué",
+      "warn"
+    );
     return false;
   }
 
   return true;
 }
-
-(async () => {
-  if (currentSession && !(await hasCompleteProfile())) {
-    qs("profileModal").style.display = "flex";
-  }
-})();
 	
 function updateUI(session) {
   if (!session) {
@@ -963,13 +932,6 @@ sb.auth.onAuthStateChange(async (event, session) => {
 
     const badge = document.getElementById("adminBadge");
     if (badge) badge.style.display = "none";
-  }
-
-  if (event === "SIGNED_IN" && session) {
-    const cached = getCachedProfile();
-    if (!cached?.nom || !cached?.prenom || !cached?.promo) {
-      qs("profileModal").style.display = "flex";
-    }
   }
 });
 
@@ -1039,10 +1001,14 @@ window.enableAdmin = function () {
 };
 
 // Désactivation au logout
-qs("btnLogout").addEventListener("click", () => {
-    localStorage.removeItem("carousel_admin");
-    window.isAdmin = false;
-});
+qs("btnLogout").onclick = async () => {
+  await sb.auth.signOut();
+  localStorage.removeItem("profile_cache");
+  localStorage.removeItem("carousel_admin");
+  currentSession = null;
+  updateUI(null);
+  showToast("Déconnecté", "success");
+};
 
 /* =========================
    MODALS
@@ -1059,17 +1025,24 @@ window.closeAuthModal = () => {
   qs("authModal").style.display = "none";
 };
 
-window.closeProfileModal = () => {
+function closeProfileModal() {
+  if (forceProfileModal) {
+    alert("Complète ton profil pour continuer");
+    return;
+  }
+
   qs("profileModal").style.display = "none";
-};
+}
 
 function cacheProfile(profile) {
+  if (!profile || !profile.id) return;
   localStorage.setItem("profile_cache", JSON.stringify(profile));
 }
 
 function getCachedProfile() {
   try {
-    return JSON.parse(localStorage.getItem("profile_cache"));
+    const p = JSON.parse(localStorage.getItem("profile_cache"));
+    return p && p.id ? p : null;
   } catch {
     return null;
   }
@@ -1261,6 +1234,7 @@ window.saveProfile = async () => {
     return showToast("Erreur lors de la sauvegarde", "error");
   }
 
+  forceProfileModal = false;
   closeProfileModal();
   updateProfileBadge(payload);
   cacheProfile(payload);
@@ -1289,30 +1263,30 @@ window.openPage = async page => {
 
 window.openPage = openPage;
 
-
-async function hasCompleteProfile() {
-  if (!currentSession) return false;
+async function getProfileSafe() {
+  if (!currentSession) return null;
 
   const cached = getCachedProfile();
-  if (cached?.nom && cached?.prenom && cached?.promo) return true;
+  if (cached && isProfileComplete(cached)) return cached;
 
-  const { data, error } = await sb
+  const { data } = await sb
     .from("profiles")
-    .select("nom, prenom, promo, anniversaire")
+    .select("*")
     .eq("id", currentSession.user.id)
     .maybeSingle();
 
-  if (error) return false;
-
-  return Boolean(
-  data?.nom &&
-  data?.prenom &&
-  data?.promo &&
-  data?.anniversaire
-);
+  if (data) cacheProfile(data);
+  return data;
 }
 
-
+function isProfileComplete(profile) {
+  return !!(
+    profile?.nom &&
+    profile?.prenom &&
+    profile?.promo &&
+    profile?.anniversaire
+  );
+}
 	
 function showToast(msg, type="success"){
   const t = qs("toast");
@@ -1470,11 +1444,14 @@ async function loadCarousel() {
   }
 
   promoImages = data;
-  promoIndex = 0;
-
-  if (promoImages.length > 0 && promoImages[0]?.url) {
-	  promoImg.src = promoImages[0].url;
+	  if (promoIndex >= promoImages.length) {
+	  promoIndex = promoImages.length - 1;
 	}
+
+	if (promoImages[promoIndex]?.url) {
+	  promoImg.src = promoImages[promoIndex].url;
+	}
+
   rebuildDots();
 }
 
