@@ -816,7 +816,6 @@
 
   window.sb = sb;
   window.isAdmin = localStorage.getItem("carousel_admin") === "true";
-  let forceProfileModal = false;
   let currentSession = null;
   async function refreshSession() {
 	  const { data } = await sb.auth.getSession();
@@ -829,7 +828,7 @@
 async function initUser(session) {
   currentSession = session;
   updateUI(session);
-
+  
   if (!session) {
     qs("avatar").style.display = "none";
     qs("profileBadge").style.display = "none";
@@ -842,6 +841,7 @@ async function initUser(session) {
   let profile = getCachedProfile();
 
   if (!profile) {
+    localStorage.removeItem("profile_cache");
     const { data } = await sb
       .from("profiles")
       .select("*")
@@ -870,9 +870,8 @@ window.addEventListener("load", async () => {
   const profile = await getProfileSafe();
 
   if (!isProfileComplete(profile)) {
-    forceProfileModal = true;
-	qs("profileModal").style.display = "flex";
-  }
+	  qs("profileModal").style.display = "flex";
+	}
 });
 	
 let isZoomOpen = false;
@@ -892,7 +891,6 @@ async function requireAuthAndProfile() {
   const profile = await getProfileSafe();
 
   if (!isProfileComplete(profile)) {
-    forceProfileModal = true;
 	qs("profileModal").style.display = "flex";
     showToast(
       "Tu peux compléter ton profil plus tard, mais l’accès est bloqué",
@@ -1026,12 +1024,12 @@ window.closeAuthModal = () => {
 };
 
 function closeProfileModal() {
-  if (forceProfileModal) {
-    alert("Complète ton profil pour continuer");
-    return;
-  }
-
   qs("profileModal").style.display = "none";
+
+  showToast(
+    "Profil incomplet : certaines pages restent bloquées",
+    "warn"
+  );
 }
 
 function cacheProfile(profile) {
@@ -1042,7 +1040,12 @@ function cacheProfile(profile) {
 function getCachedProfile() {
   try {
     const p = JSON.parse(localStorage.getItem("profile_cache"));
-    return p && p.id ? p : null;
+    if (!p || !p.id) return null;
+
+    // 🔥 on ignore le cache incomplet
+    if (!isProfileComplete(p)) return null;
+
+    return p;
   } catch {
     return null;
   }
@@ -1234,7 +1237,6 @@ window.saveProfile = async () => {
     return showToast("Erreur lors de la sauvegarde", "error");
   }
 
-  forceProfileModal = false;
   closeProfileModal();
   updateProfileBadge(payload);
   cacheProfile(payload);
@@ -1458,6 +1460,37 @@ async function loadCarousel() {
 loadCarousel();
 	
 </script>
+
+<button 
+  id="debugBtn"
+  style="
+    position:fixed;
+    bottom:12px;
+    left:12px;
+    background:#ff3b3b;
+    color:white;
+    border:none;
+    padding:10px 14px;
+    border-radius:10px;
+    font-weight:700;
+    cursor:pointer;
+    z-index:99999;
+  "
+>
+  Débug
+</button>
+
+<script>
+document.getElementById("debugBtn").onclick = () => {
+  console.log("DEBUG RESET");
+
+  localStorage.clear();
+  sessionStorage.clear();
+
+  location.reload();
+};
+</script>
+
 
 </body>
 </html>
